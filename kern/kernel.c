@@ -45,6 +45,14 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
 
     enable_interrupts();
 
+    // Virtual memory initialize
+
+    // Create the initial task and load everything into memory
+
+    // Enable virtual memory
+    
+    // Run the task in user mode
+    // Call gettid from the task
     while (1) {
         continue;
     }
