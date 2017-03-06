@@ -116,7 +116,7 @@ AUTOSTACK_OBJS = autostack.o
 #
 # Kernel object files you provide in from kern/
 #
-KERNEL_OBJS = fake_console.o kernel.o loader.o malloc_wrappers.o
+KERNEL_OBJS = console.o kernel.o loader.o malloc_wrappers.o interrupts.o keyboard.o keyboard_asm.o prechecks.o timer.o timer_asm.o queue.o
 
 ###########################################################################
 # WARNING: Do not put **test** programs into the REQPROGS variables.  Your

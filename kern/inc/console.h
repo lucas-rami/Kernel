@@ -156,4 +156,13 @@ void draw_char(int row, int col, int ch, int color);
  */
 char get_char(int row, int col);
 
+// TODO: Document these
+void console_init();
+
+void scroll_up();
+
+int set_color_for_pixel(int row, int col, int color);
+
+
+
 #endif /* _CONSOLE_H */
