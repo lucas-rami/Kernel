@@ -21,6 +21,10 @@
 /* x86 specific includes */
 #include <x86/asm.h>                /* enable_interrupts() */
 
+#include <interrupts.h>
+
+void tick(unsigned int numTicks);
+
 /** @brief Kernel entrypoint.
  *  
  *  This is the entrypoint for the kernel.
@@ -37,9 +41,28 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
 
     lprintf( "Hello from a brand new kernel!" );
 
+    handler_install(tick);
+
+    enable_interrupts();
+
     while (1) {
         continue;
     }
 
     return 0;
+}
+
+/** @brief Tick function, to be called by the timer interrupt handler
+ *   This function sets the game_tick variable equal to the numTicks
+ *   Also, sets the refresh time which is a flag for the game to update
+ *   the time being shown on the screen.
+ *
+ *  @param numTicks The number of ticks that have occured till now
+ *
+ *  @return void
+ **/
+void tick(unsigned int numTicks)
+{
+  numTicks++;
+  return;
 }

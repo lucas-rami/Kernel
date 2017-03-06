@@ -28,4 +28,23 @@
 int register_handler( void ( *handler_function ) ( void ), uint8_t gate_type,
 	uint32_t idt_offset, uint8_t privilege_level, uint16_t segment );
 
+/*********************************************************************/
+/*                                                                   */
+/* Interface for device-driver initialization and timer callback     */
+/*                                                                   */
+/*********************************************************************/
+
+/** @brief The driver-library initialization function
+ *
+ *   Installs the timer and keyboard interrupt handler.
+ *   NOTE: handler_install should ONLY install and activate the
+ *   handlers; any application-specific initialization should
+ *   take place elsewhere.
+ *
+ *   @param tickback Pointer to clock-tick callback function
+ *   
+ *   @return A negative error code on error, or 0 on success
+ **/
+int handler_install(void (*tickback)(unsigned int));
+
 #endif
