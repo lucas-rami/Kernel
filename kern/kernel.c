@@ -22,11 +22,12 @@
 #include <x86/asm.h>                /* enable_interrupts() */
 
 #include <interrupts.h>
+#include <idt_syscall.h>
 
 void tick(unsigned int numTicks);
 
 /** @brief Kernel entrypoint.
- *  
+ *
  *  This is the entrypoint for the kernel.
  *
  * @return Does not return
@@ -43,6 +44,8 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
 
     handler_install(tick);
 
+    idt_syscall_install();
+
     enable_interrupts();
 
     // Virtual memory initialize
@@ -50,7 +53,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
     // Create the initial task and load everything into memory
 
     // Enable virtual memory
-    
+
     // Run the task in user mode
     // Call gettid from the task
     while (1) {
