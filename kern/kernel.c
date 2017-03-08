@@ -24,6 +24,9 @@
 #include <interrupts.h>
 #include <idt_syscall.h>
 #include <console.h>
+#include <virtual_memory.h>
+
+#define FIRST_TASK "idle"
 
 void tick(unsigned int numTicks);
 
@@ -49,10 +52,15 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
     enable_interrupts();
 
     // Virtual memory initialize
+    if (vm_init() < 0) {
+      lprintf("VM init failed\n");
+    }
 
     // Create the initial task and load everything into memory
+    setup_vm(FIRST_TASK);
 
     // Enable virtual memory
+    vm_enable();
 
     // Run the task in user mode
     // Call gettid from the task
