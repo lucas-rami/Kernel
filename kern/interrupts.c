@@ -77,8 +77,7 @@ int register_handler( void ( *handler_function ) ( void ), uint8_t gate_type,
 	uint32_t idt_offset, uint8_t privilege_level, uint16_t segment )
 {
 	// Sanity precheck
-	if ( privilege_level != KERNEL_PRIVILEGE_LEVEL || 
-		segment != SEGSEL_KERNEL_CS || gate_type != TRAP_GATE ) {
+	if (segment != SEGSEL_KERNEL_CS || gate_type != TRAP_GATE ) {
 		printf( "Either privilege level is not KERNEL_PRIVILEGE_LEVEL" 
 			"or segment is not SEGSEL_KERNEL_CS\n" );
 		return -1;
@@ -91,7 +90,7 @@ int register_handler( void ( *handler_function ) ( void ), uint8_t gate_type,
 	uint32_t offset_upper = ( offset & TWO_MSB_MASK ) >> BITS_IN_TWO_BYTES;
 	uint32_t interrupt_gate_descriptor_upper = 
 		( ( offset_upper << BITS_IN_TWO_BYTES ) | WORKING_GATE | 
-		SIZE_GATE_32 );
+		SIZE_GATE_32 | ((int)privilege_level << 13));
 	interrupt_gate_descriptor_upper |= TRAP_GATE_IDENTIFIER;
 
 	// Set the higher 32 bits for the IDT entry for this handler

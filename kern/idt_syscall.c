@@ -32,7 +32,7 @@ int idt_syscall_install() {
   // }
   if (register_handler((void (*)(void))sys_gettid_wrapper,
                        (uint8_t)TRAP_GATE_IDENTIFIER, (uint32_t)GETTID_INT,
-                       (uint8_t)KERNEL_PRIVILEGE_LEVEL,
+                       (uint8_t)3,
                        (uint16_t)SEGSEL_KERNEL_CS) < 0) {
     lprintf("Failed to register gettid() handler in IDT");
     return -1;
