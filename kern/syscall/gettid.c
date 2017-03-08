@@ -3,7 +3,8 @@
  *  @author akanjani, lramire1
  */
 
+#include <kernel_state.h>
+
 int sys_gettid() {
-  // TODO
-  return 0;
+  return kernel.current_tid;
 }

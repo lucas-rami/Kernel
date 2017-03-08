@@ -5,7 +5,7 @@
  */
 
 #include <idt_syscall.h>
-#include <syscalls.h>
+#include <syscall_wrappers.h>
 
 #include <asm.h>
 #include <seg.h>
@@ -26,7 +26,7 @@
 int idt_syscall_install() {
 
   // As of now only the gettid() system call handler is registered
-  if (register_syscall_handler(TRAP_GATE_IDENTIFIER, (unsigned int) sys_gettid, GETTID_INT) < 0) {
+  if (register_syscall_handler(TRAP_GATE_IDENTIFIER, (unsigned int) sys_gettid_wrapper, GETTID_INT) < 0) {
     lprintf("Failed to register gettid() handler in IDT");
     return -1;
   }

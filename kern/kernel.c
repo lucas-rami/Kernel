@@ -23,6 +23,7 @@
 
 #include <interrupts.h>
 #include <idt_syscall.h>
+#include <console.h>
 
 void tick(unsigned int numTicks);
 
@@ -39,6 +40,8 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
      * You should delete this comment, and enable them --
      * when you are ready.
      */
+
+    clear_console();
 
     lprintf( "Hello from a brand new kernel!" );
 

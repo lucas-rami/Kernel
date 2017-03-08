@@ -93,7 +93,13 @@ AUTOSTACK_OBJS = autostack.o
 #
 # Kernel object files you provide in from kern/
 #
-KERNEL_OBJS = console.o kernel.o loader.o malloc_wrappers.o interrupts.o keyboard.o keyboard_asm.o prechecks.o timer.o timer_asm.o queue.o page_fault_asm.o page_fault_handler.o idt_syscall.o syscall/gettid.o
+KERNEL_OBJS = console.o kernel.o loader.o malloc_wrappers.o interrupts.o keyboard.o keyboard_asm.o prechecks.o timer.o timer_asm.o queue.o page_fault_asm.o page_fault_handler.o idt_syscall.o
+
+# Files in syscall/
+KERNEL_OBJS += syscall/gettid.o
+
+# Files in syscall_wrapper/
+KERNEL_OBJS += syscall_wrapper/gettid.o
 
 ###########################################################################
 # WARNING: Do not put **test** programs into the REQPROGS variables.  Your
