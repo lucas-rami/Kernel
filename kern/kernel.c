@@ -88,7 +88,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
     eflags |= EFL_IOPL_RING3;     // Set privilege level to 3
     eflags |= EFL_IF;             // Enable interrupts
 
-    lprintf("Running user task");
+    lprintf("Running user task with entry point %p\n", (void*)entrypoint);
 
     // Run the user task
     run_first_task(entrypoint, ESP, eflags);

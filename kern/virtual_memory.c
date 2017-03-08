@@ -60,8 +60,9 @@ int setup_vm(const simple_elf_t *elf_info) {
 
   int i;
   for (i = 0; i < USER_MEM_START; i += PAGE_SIZE) {
-    load_frame(i*PAGE_SIZE, SECTION_KERNEL);
+    load_frame(i, SECTION_KERNEL);
   }
+
   // Load kernel section as well
   // Add stack area as well.
   if (load_every_segment(elf_info) < 0) {
@@ -167,7 +168,7 @@ void *load_frame(unsigned int address, unsigned int type) {
       *page_table_entry |=  PAGE_TABLE_FLAGS;
     } else {
       *page_table_entry = address & PAGE_ADDR_MASK;
-      // TODO: Make it user accessible only
+      // TODO: Make it kernel accessible only
       *page_table_entry |=  PAGE_TABLE_FLAGS;
     }
   }
@@ -191,5 +192,6 @@ void *allocate_frame() {
 }
 
 void vm_enable() {
-  set_cr0(get_cr0() | PAGING_ENABLE_MASK);
+  uint32_t curr = get_cr0();
+  set_cr0(curr | PAGING_ENABLE_MASK);
 }

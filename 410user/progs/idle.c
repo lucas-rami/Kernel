@@ -6,9 +6,10 @@
  *  @covers
  *  @status done
  */
-
+#include <simics.h>
 int main()
 {
+    lprintf("Idle task running\n");
     while (1) {
     }
 }
