@@ -47,31 +47,20 @@ int vm_init() {
   return 0;
 }
 
-int setup_vm(const char *filename) {
-
-  if (elf_check_header(filename) != ELF_SUCCESS) {
-    return -1;
-  }
+int setup_vm(const simple_elf_t *elf_info) {
 
   unsigned int *page_table_directory = (unsigned int *)smemalign( PAGE_SIZE,
                                         PAGE_SIZE);
   // set cr3 to this value;
   set_cr3((uint32_t)page_table_directory);
 
-  simple_elf_t elf_info;
-
-  if (elf_load_helper(&elf_info, filename) != ELF_SUCCESS) {
-    // free?
-    return -1;
-  }
-
   int i;
   for (i = 0; i < USER_MEM_START; i += PAGE_SIZE) {
     load_frame(i*PAGE_SIZE, SECTION_KERNEL);
   }
   // Load kernel section as well
-  // Add stack area as well. 
-  if (load_every_segment(&elf_info) < 0) {
+  // Add stack area as well.
+  if (load_every_segment(elf_info) < 0) {
     // free?
     return -1;
   }
@@ -80,26 +69,26 @@ int setup_vm(const char *filename) {
 }
 
 int load_every_segment(const simple_elf_t *elf) {
-  load_segment(elf->e_fname, elf->e_txtoff, elf->e_txtlen, elf->e_txtstart, 
+  load_segment(elf->e_fname, elf->e_txtoff, elf->e_txtlen, elf->e_txtstart,
     SECTION_TXT);
-  load_segment(elf->e_fname, elf->e_datoff, elf->e_datlen, elf->e_datstart, 
+  load_segment(elf->e_fname, elf->e_datoff, elf->e_datlen, elf->e_datstart,
     SECTION_DATA);
-  load_segment(elf->e_fname, elf->e_rodatoff, elf->e_rodatlen, 
+  load_segment(elf->e_fname, elf->e_rodatoff, elf->e_rodatlen,
     elf->e_rodatstart, SECTION_RODATA);
   load_segment(elf->e_fname, 0, elf->e_bsslen, elf->e_bssstart, SECTION_BSS);
-  load_segment(NULL, 0, STACK_SIZE, STACK_START_ADDR, SECTION_STACK);  
-  // Initialize the global variables and bss to zero once they are allocated 
+  load_segment(NULL, 0, STACK_SIZE, STACK_START_ADDR, SECTION_STACK);
+  // Initialize the global variables and bss to zero once they are allocated
   // space for
   return 0;
 }
 
-int load_segment(const char *fname, unsigned long offset, unsigned long size, 
+int load_segment(const char *fname, unsigned long offset, unsigned long size,
   unsigned long start_addr, int type) {
 
   // get page table base register
   // assume it is base_addr;
 
- 
+
 
   char *buf;
   if ( type != SECTION_STACK && type != SECTION_BSS) {
@@ -122,7 +111,7 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
       return -1;
     }
     int temp_offset = ((unsigned int)frame_addr % PAGE_SIZE);
-    unsigned int size_allocated = ((PAGE_SIZE - temp_offset) < max_size) ? 
+    unsigned int size_allocated = ((PAGE_SIZE - temp_offset) < max_size) ?
       (PAGE_SIZE - temp_offset) : max_size;
 
     if (type != SECTION_STACK && type != SECTION_BSS) {
@@ -143,24 +132,24 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
 void *load_frame(unsigned int address, unsigned int type) {
   // get base register in base_addr(unsigned int *)
   unsigned int *base_addr = (unsigned int *)get_cr3();
-  
-  unsigned int offset = (((unsigned int)address & PAGE_TABLE_DIRECTORY_MASK) 
+
+  unsigned int offset = (((unsigned int)address & PAGE_TABLE_DIRECTORY_MASK)
     >> PAGE_DIR_RIGHT_SHIFT);
 
   unsigned int *page_table_directory_entry_addr = base_addr + offset;
 
   if (!(*page_table_directory_entry_addr & PRESENT_BIT_MASK)) {
-    unsigned int *page_table_entry_addr = (unsigned int *)smemalign(PAGE_SIZE, 
+    unsigned int *page_table_entry_addr = (unsigned int *)smemalign(PAGE_SIZE,
       PAGE_SIZE);
     memset(page_table_entry_addr, 0, PAGE_SIZE);
-    *page_table_directory_entry_addr = ((unsigned int)page_table_entry_addr & 
+    *page_table_directory_entry_addr = ((unsigned int)page_table_entry_addr &
       PAGE_ADDR_MASK);
     *page_table_directory_entry_addr |= PAGE_TABLE_DIRECTORY_FLAGS;
   }
 
-  unsigned int *page_table_base_addr = (unsigned int *)(*page_table_directory_entry_addr & 
+  unsigned int *page_table_base_addr = (unsigned int *)(*page_table_directory_entry_addr &
     PAGE_ADDR_MASK);
-  offset = (((unsigned int)address & PAGE_TABLE_MASK) >> 
+  offset = (((unsigned int)address & PAGE_TABLE_MASK) >>
     PAGE_TABLE_RIGHT_SHIFT);
   unsigned int *page_table_entry = page_table_base_addr + offset;
 
@@ -179,7 +168,7 @@ void *load_frame(unsigned int address, unsigned int type) {
 
   uint8_t *frame_base_addr = (uint8_t*)(*page_table_entry & PAGE_ADDR_MASK);
   offset = ((unsigned int)address & FRAME_OFFSET_MASK);
-  
+
   // TODO: This should be uint8_t *  and not unsinged int *, right?
   return (frame_base_addr + offset);
 }

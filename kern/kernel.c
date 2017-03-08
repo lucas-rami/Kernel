@@ -35,20 +35,17 @@ void tick(unsigned int numTicks);
  */
 int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
 {
-    /*
-     * When kernel_main() begins, interrupts are DISABLED.
-     * You should delete this comment, and enable them --
-     * when you are ready.
-     */
-
-    clear_console();
 
     lprintf( "Hello from a brand new kernel!" );
 
+    // Initialize the IDT
     handler_install(tick);
-
     idt_syscall_install();
 
+    // Clear the console before running anything
+    clear_console();
+
+    // Enable interrupts
     enable_interrupts();
 
     // Virtual memory initialize

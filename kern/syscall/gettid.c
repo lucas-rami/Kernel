@@ -6,5 +6,5 @@
 #include <kernel_state.h>
 
 int sys_gettid() {
-  return kernel.current_tid;
+  return kernel.current_thread->tid;
 }
