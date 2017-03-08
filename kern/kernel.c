@@ -26,8 +26,12 @@
 #include <console.h>
 #include <virtual_memory.h>
 #include <task_create.h>
+#include <run_first_task.h>
+#include <eflags.h>
+#include <seg.h>
 
 #define FIRST_TASK "idle"
+#define ESP 0xFFFFFFFF
 
 void tick(unsigned int numTicks);
 
@@ -58,12 +62,30 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
     }
 
     // Create the initial task and load everything into memory
-    create_task_executable(FIRST_TASK);
+    uint32_t entrypoint;
+    if ( (entrypoint = create_task_executable(FIRST_TASK)) == 0 ) {
+      lprintf("Failed to create user task\n");
+      while (1) {
+        continue;
+      }
+    }
 
     // Enable virtual memory
     vm_enable();
 
-    // Run the task in user mode
+    // Create EFLAGS for the user task
+    uint32_t eflags = get_eflags();
+    eflags |= EFL_RESV1;          // Set bit 1
+    eflags &= !EFL_AC;            // Alignment checking off
+    eflags &= !EFL_IOPL_RING3;    // Clear current privilege level
+    eflags |= EFL_IOPL_RING3;     // Set privilege level to 3
+    eflags |= EFL_IF;             // Enable interrupts
+
+    // Run the user task
+    run_first_task(entrypoint, ESP, eflags, SEGSEL_USER_DS);
+
+    // We never get here
+
     // Call gettid from the task
     while (1) {
         continue;

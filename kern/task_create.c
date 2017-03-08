@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <elf_410.h>
+#include <cr.h>
 #include <virtual_memory.h>
 #include <malloc.h>
 #include <syscall.h>
@@ -22,13 +23,13 @@ int create_task_executable(const char *task_name) {
 
   if (task_name == NULL) {
     lprintf("Invalid argument to function create_task_executable()ç\n");
-    return -1;
+    return 0;
   }
 
   // Check that the ELF header exists and is valid
   if (elf_check_header(task_name) == ELF_NOTELF) {
     lprintf("Could not find ELF header for task \"%s\"\n", task_name);
-    return -1;
+    return 0;
   }
 
   // Hold information about the ELF header
@@ -37,49 +38,49 @@ int create_task_executable(const char *task_name) {
   // Populate the simple_elf_t data structure
   if (elf_load_helper(&elf, task_name) == ELF_NOTELF) {
     lprintf("ELF header is invalid for task \"%s\"\n", task_name);
-    return -1;
+    return 0;
   }
 
   // Allocate a kernel stack for the root thread
   void* stack_kernel = malloc(PAGE_SIZE);
   if (stack_kernel == NULL) {
     lprintf("Could not allocate kernel stack for task's root thread\n");
-    return -1;
+    return 0;
   }
 
   // Setup virtual memory for this task
   if (setup_vm(&elf) < 0) {
     lprintf("Task creation failed for task \"%s\"\n", task_name);
     free(stack_kernel);
-    return -1;
+    return 0;
   }
 
-  // Initialize tcb_t/pcb_t data structures
-  // pcb_t* new_pcb = create_new_pcb();
-  // tcb_t* new_tcb = create_new_root_tcb();
+  // Set the kernel stack for the root thread
+  set_esp0((uint32_t) stack_kernel);
 
-  return 0;
+  // Initialize new tcb_t/pcb_t data structures
+  create_new_pcb();
+  create_new_root_tcb();
+
+  return elf.e_entry;
 }
 
-/* Return statically allocated pcb */
-pcb_t* create_new_pcb() {
+/* Operated on statically allocated PCB */
+void create_new_pcb() {
 
   pcb.return_status = 0;
   pcb.task_state = TASK_RUNNING;
   pcb.tid = kernel.task_id;
   ++kernel.task_id;
 
-  return &pcb;
-
 }
 
-/* Return statically allocated tcb */
-tcb_t* create_new_root_tcb() {
+/* Operated on statically allocated TCB */
+void create_new_root_tcb() {
 
   tcb.task = &pcb;
   tcb.thread_state = THR_RUNNING;
   tcb.tid = kernel.thread_id;
   ++kernel.thread_id;
 
-  return &tcb;
 }
