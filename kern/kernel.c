@@ -25,6 +25,7 @@
 #include <idt_syscall.h>
 #include <console.h>
 #include <virtual_memory.h>
+#include <task_create.h>
 
 #define FIRST_TASK "idle"
 
@@ -57,7 +58,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
     }
 
     // Create the initial task and load everything into memory
-    setup_vm(FIRST_TASK);
+    create_task_executable(FIRST_TASK);
 
     // Enable virtual memory
     vm_enable();
