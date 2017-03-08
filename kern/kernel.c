@@ -50,6 +50,8 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
     handler_install(tick);
     idt_syscall_install();
 
+    lprintf("Device drivers and handlers registered");
+
     // Clear the console before running anything
     clear_console();
 
@@ -60,6 +62,8 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
     if (vm_init() < 0) {
       lprintf("VM init failed\n");
     }
+
+    lprintf("Creating user task");
 
     // Create the initial task and load everything into memory
     uint32_t entrypoint;

@@ -48,12 +48,16 @@ int create_task_executable(const char *task_name) {
     return 0;
   }
 
+  lprintf("About to call setup_vm");
+
   // Setup virtual memory for this task
   if (setup_vm(&elf) < 0) {
     lprintf("Task creation failed for task \"%s\"\n", task_name);
     free(stack_kernel);
     return 0;
   }
+
+  lprintf("setup_vm returned");
 
   // Set the kernel stack for the root thread
   set_esp0((uint32_t) stack_kernel);
