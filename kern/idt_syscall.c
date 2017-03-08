@@ -22,14 +22,13 @@
 #define ENTRY_INTERRUPT 0x00008E00
 #define ENTRY_TRAP 0x00008F00
 
+/** @brief Register the software interrupt handlers in the IDT
+ *
+ *  @return 0 on success, a negative number of error
+ */
 int idt_syscall_install() {
 
   // As of now only the gettid() system call handler is registered
-  // if (register_syscall_handler(TRAP_GATE_IDENTIFIER, (unsigned int)
-  // sys_gettid_wrapper, GETTID_INT) < 0) {
-  //   lprintf("Failed to register gettid() handler in IDT");
-  //   return -1;
-  // }
   if (register_handler((void (*)(void))sys_gettid_wrapper,
                        (uint8_t)TRAP_GATE_IDENTIFIER, (uint32_t)GETTID_INT,
                        (uint8_t)3,
@@ -41,6 +40,13 @@ int idt_syscall_install() {
   return 0;
 }
 
+/** @brief Register an handler in the IDT for a software interrupt
+ *
+ *  BUG: DON'T SET THE IDT ENTRY PROPERLY, DO NOT USE THE FUNCTION.
+ *  USE register_handler() INSTEAD
+ *
+ *  @return 0 on success, a negative number on error
+ */
 int register_syscall_handler(int gate_type, unsigned int handler_addr,
                              int idt_index) {
 

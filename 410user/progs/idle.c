@@ -9,6 +9,7 @@
 #include <simics.h>
 #include <syscall.h>
 
+<<<<<<< HEAD
 int main()
 {
     lprintf("Running thread with ID %d\n", gettid());

@@ -1,3 +1,9 @@
+/** @file virtual_memory.c
+ *  @brief This file contains the definitions for functions manipulating
+ *  virtual memory
+ *  @author akanjani, lramire1
+ */
+
 #include <bitmap.h>
 #include <elf_410.h>
 #include <free_map.h>
@@ -36,9 +42,14 @@
 #define STACK_START_ADDR 0xfffff000
 
 #define PAGING_ENABLE_MASK 0x80000000
+#define PAGE_GLOBAL_ENABLE_MASK 0x80
 
 unsigned int num_user_frames;
 
+/** @brief Initialize the virtual memory system
+ *
+ *  @return 0 on success, a negative number on error
+ */
 int vm_init() {
 
   // Figure out the number of user frames
@@ -51,6 +62,13 @@ int vm_init() {
   return 0;
 }
 
+/** @brief Setup the virtual memory for a single task
+ *
+ *  @param elf_info Data strucure holding the important features
+ *  of the task's ELF header
+ *
+ *  @return 0 on success, a negative number on error
+ */
 int setup_vm(const simple_elf_t *elf_info) {
 
   unsigned int *page_table_directory = (unsigned int *)smemalign( PAGE_SIZE,
@@ -73,6 +91,13 @@ int setup_vm(const simple_elf_t *elf_info) {
   return 0;
 }
 
+/** @brief Load every segment of a task into virtual memory
+ *
+ *  @param elf_info Data strucure holding the important features
+ *  of the task's ELF header
+ *
+ *  @return 0 on success, a negative number on error
+ */
 int load_every_segment(const simple_elf_t *elf) {
   load_segment(elf->e_fname, elf->e_txtoff, elf->e_txtlen, elf->e_txtstart,
     SECTION_TXT);
@@ -87,6 +112,16 @@ int load_every_segment(const simple_elf_t *elf) {
   return 0;
 }
 
+/** @brief Load one segment of a task into virtual memory
+ *
+ *  @param fname Task's filename
+ *  @param offset Offset in the file where the segment is located
+ *  @param size Size of the segment in the file
+ *  @param start_addr Starting address of segment in virtual memory
+ *  @param type Segment's type
+ *
+ *  @return 0 on success, a negative number on error
+ */
 int load_segment(const char *fname, unsigned long offset, unsigned long size,
   unsigned long start_addr, int type) {
 
@@ -135,6 +170,13 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
   return 0;
 }
 
+/** @brief Allocate one frame
+ *
+ *  @param address Frame's address
+ *  @param type Frame's type
+ *
+ *  @return 0 The frame's address
+ */
 void *load_frame(unsigned int address, unsigned int type) {
   // get base register in base_addr(unsigned int *)
 
@@ -180,6 +222,10 @@ void *load_frame(unsigned int address, unsigned int type) {
   return (frame_base_addr + offset);
 }
 
+/** @brief Try to find a free frame in memory
+ *
+ *  @return The frame's address is one free frame was found, NULL otherwise
+ */
 void *allocate_frame() {
   int i;
   for (i = 0; i < num_user_frames; i++) {
@@ -191,7 +237,11 @@ void *allocate_frame() {
   return NULL;
 }
 
+/** @brief Enable paging and the "Page Global Enable" bit in %cr4
+ *
+ *  @return void
+ */
 void vm_enable() {
-  uint32_t curr = get_cr0();
-  set_cr0(curr | PAGING_ENABLE_MASK);
+  set_cr0(get_cr0() | PAGING_ENABLE_MASK);
+  set_cr4(get_cr4() | PAGE_GLOBAL_ENABLE_MASK);
 }
