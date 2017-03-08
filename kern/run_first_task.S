@@ -4,17 +4,19 @@
  *  @author akanjani, lramire1
  */
 
+#include <seg.h>
+
 .global run_first_task
 
 run_first_task:
 
   /* Change the value of data segment selectors */
 
-  movw 16(%esp),  %cx   // %cx contains the value for data segment selectors
-  movw %ecx,      %ds   // Change the value of %ds
-  movw %ecx,      %es   // Change the value of %es
-  movw %ecx,      %fs   // Change the value of %fs
-  movw %ecx,      %gs   // Change the value of %gs
+  movl $SEGSEL_USER_DS, %ecx
+  movw %ecx, %ds   // Change the value of %ds
+  movw %ecx, %es   // Change the value of %es
+  movw %ecx, %fs   // Change the value of %fs
+  movw %ecx, %gs   // Change the value of %gs
 
   /* Store function arguments into registers to initialize the stack */
 
@@ -24,9 +26,9 @@ run_first_task:
 
   /* Craft the stack for the new thread */
 
-  pushw %ss             // SS
-  pushl %ecx            // ESP
-  pushl %edx            // EFLAGS
-  pushw %cs             // CS
-  pushl %eax            // EIP
-  iret                  // Return from "interrupt"
+  pushw $SEGSEL_USER_DS             // SS
+  pushl %ecx                        // ESP
+  pushl %edx                        // EFLAGS
+  pushw $SEGSEL_USER_CS             // CS
+  pushl %eax                        // EIP
+  iret                              // Return from "interrupt"

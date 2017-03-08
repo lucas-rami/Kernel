@@ -9,7 +9,6 @@
 
 #include <stdint.h>
 
-void run_first_task(uint32_t entry_point, uint32_t esp, uint32_t eflags,
-                    uint16_t data_segsel);
+void run_first_task(uint32_t entry_point, uint32_t esp, uint32_t eflags);
 
 #endif /* _RUN_FIRST_TASK_H_ */

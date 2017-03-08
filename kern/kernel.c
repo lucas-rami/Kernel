@@ -28,7 +28,6 @@
 #include <task_create.h>
 #include <run_first_task.h>
 #include <eflags.h>
-#include <seg.h>
 
 #define FIRST_TASK "idle"
 #define ESP 0xFFFFFFFF
@@ -74,8 +73,12 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
       }
     }
 
+    lprintf("User task created");
+
     // Enable virtual memory
     vm_enable();
+
+    lprintf("VM enabled");
 
     // Create EFLAGS for the user task
     uint32_t eflags = get_eflags();
@@ -85,8 +88,10 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
     eflags |= EFL_IOPL_RING3;     // Set privilege level to 3
     eflags |= EFL_IF;             // Enable interrupts
 
+    lprintf("Running user task");
+
     // Run the user task
-    run_first_task(entrypoint, ESP, eflags, SEGSEL_USER_DS);
+    run_first_task(entrypoint, ESP, eflags);
 
     // We never get here
 
