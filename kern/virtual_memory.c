@@ -10,6 +10,8 @@
 #include <string.h>
 #include <cr.h>
 
+#include <simics.h>
+
 #define NUM_KERNEL_FRAMES 4096
 
 #define PAGE_TABLE_DIRECTORY_MASK 0xffc00000
@@ -90,8 +92,6 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
   // get page table base register
   // assume it is base_addr;
 
-
-
   char *buf;
   if ( type != SECTION_STACK && type != SECTION_BSS) {
     buf = (char *)malloc(sizeof(char) * size);
@@ -127,12 +127,16 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
     addr += size_allocated;
   }
 
-  free(buf);
+  if (type != SECTION_STACK && type != SECTION_BSS) {
+    free(buf);
+  }
+
   return 0;
 }
 
 void *load_frame(unsigned int address, unsigned int type) {
   // get base register in base_addr(unsigned int *)
+
   unsigned int *base_addr = (unsigned int *)get_cr3();
 
   unsigned int offset = (((unsigned int)address & PAGE_TABLE_DIRECTORY_MASK)
@@ -187,5 +191,5 @@ void *allocate_frame() {
 }
 
 void vm_enable() {
-  set_cr0(PAGING_ENABLE_MASK);
+  set_cr0(get_cr0() | PAGING_ENABLE_MASK);
 }
