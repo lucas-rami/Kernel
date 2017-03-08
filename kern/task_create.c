@@ -60,7 +60,7 @@ int create_task_executable(const char *task_name) {
   lprintf("setup_vm returned");
 
   // Set the kernel stack for the root thread
-  set_esp0((uint32_t) stack_kernel);
+  set_esp0((uint32_t) stack_kernel + PAGE_SIZE);
 
   // Initialize new tcb_t/pcb_t data structures
   create_new_pcb();
