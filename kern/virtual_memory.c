@@ -93,7 +93,7 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
 
 
   char *buf;
-  if ( type != SECTION_STACK && type != SECTION_BSS) {
+  if (type != SECTION_STACK && type != SECTION_BSS) {
     buf = (char *)malloc(sizeof(char) * size);
     if (getbytes(fname, offset, size, buf) < 0) {
       return -1;
@@ -127,7 +127,9 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
     addr += size_allocated;
   }
 
-  free(buf);
+  if (type != SECTION_STACK && type != SECTION_BSS) {
+    free(buf);
+  }
   return 0;
 }
 
@@ -187,5 +189,5 @@ void *allocate_frame() {
 }
 
 void vm_enable() {
-  set_cr0(PAGING_ENABLE_MASK);
+  set_cr0(get_cr0() | PAGING_ENABLE_MASK);
 }
