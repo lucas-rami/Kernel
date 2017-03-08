@@ -6,5 +6,7 @@
 .global sys_gettid_wrapper
 
 sys_gettid_wrapper:
+  pusha
   call sys_gettid   // call sys_gettid procedure
-	iret			        // return from software interrupt
+  popa
+  iret			        // return from software interrupt

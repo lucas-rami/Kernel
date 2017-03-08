@@ -8,25 +8,32 @@
 #include <syscall_wrappers.h>
 
 #include <asm.h>
-#include <seg.h>
 #include <interrupts.h>
+#include <seg.h>
 
 #include <common_kern.h>
-#include <syscall_int.h>
 #include <syscall.h>
-
+#include <syscall_int.h>
 
 // Debuging
 #include <simics.h>
 
 #define IDT_ENTRY_SIZE_BYTES 8 /* The size of an entry in the IDT */
-#define ENTRY_INTERRUPT 0x8E00
-#define ENTRY_TRAP 0x8F00
+#define ENTRY_INTERRUPT 0x00008E00
+#define ENTRY_TRAP 0x00008F00
 
 int idt_syscall_install() {
 
   // As of now only the gettid() system call handler is registered
-  if (register_syscall_handler(TRAP_GATE_IDENTIFIER, (unsigned int) sys_gettid_wrapper, GETTID_INT) < 0) {
+  // if (register_syscall_handler(TRAP_GATE_IDENTIFIER, (unsigned int)
+  // sys_gettid_wrapper, GETTID_INT) < 0) {
+  //   lprintf("Failed to register gettid() handler in IDT");
+  //   return -1;
+  // }
+  if (register_handler((void (*)(void))sys_gettid_wrapper,
+                       (uint8_t)TRAP_GATE_IDENTIFIER, (uint32_t)GETTID_INT,
+                       (uint8_t)KERNEL_PRIVILEGE_LEVEL,
+                       (uint16_t)SEGSEL_KERNEL_CS) < 0) {
     lprintf("Failed to register gettid() handler in IDT");
     return -1;
   }
@@ -40,7 +47,7 @@ int register_syscall_handler(int gate_type, unsigned int handler_addr,
   // Check that gate type is correct
   if (gate_type != TRAP_GATE_IDENTIFIER &&
       gate_type != INTERRUPT_GATE_IDENTIFIER) {
-    lprintf("Falied to register syscall handler: gate type is neither trap "
+    lprintf("Failed to register syscall handler: gate type is neither trap "
             "or interrupt\n");
     return -1;
   }

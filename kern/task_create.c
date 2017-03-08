@@ -60,7 +60,7 @@ int create_task_executable(const char *task_name) {
   lprintf("setup_vm returned");
 
   // Set the kernel stack for the root thread
-  set_esp0((uint32_t) stack_kernel + PAGE_SIZE);
+  set_esp0((uint32_t)stack_kernel);
 
   // Initialize new tcb_t/pcb_t data structures
   create_new_pcb();
@@ -76,6 +76,7 @@ void create_new_pcb() {
   pcb.task_state = TASK_RUNNING;
   pcb.tid = kernel.task_id;
   ++kernel.task_id;
+  kernel.current_task = &pcb;
 
 }
 
@@ -86,5 +87,6 @@ void create_new_root_tcb() {
   tcb.thread_state = THR_RUNNING;
   tcb.tid = kernel.thread_id;
   ++kernel.thread_id;
+  kernel.current_thread = &tcb;
 
 }
