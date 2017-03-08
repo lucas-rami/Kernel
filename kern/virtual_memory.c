@@ -33,6 +33,8 @@
 #define STACK_SIZE 4096
 #define STACK_START_ADDR 0xfffff000
 
+#define PAGING_ENABLE_MASK 0x10000000
+
 unsigned int num_user_frames;
 
 int vm_init() {
@@ -193,4 +195,8 @@ void *allocate_frame() {
     }
   }
   return NULL;
+}
+
+void vm_enable() {
+  set_cr0(PAGING_ENABLE_MASK);
 }
