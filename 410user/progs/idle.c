@@ -7,9 +7,22 @@
  *  @status done
  */
 #include <simics.h>
-int main()
-{
-    lprintf("Idle task running\n");
-    while (1) {
-    }
+#include <syscall.h>
+
+void get_tid_and_print() {
+
+  lprintf("Entered get_tid_and_print()");
+
+  int tid = gettid();
+  lprintf("TID is %d", tid);
+
+}
+
+int main() {
+
+  lprintf("Idle task running !");
+  get_tid_and_print();
+  while (1) {
+    continue;
+  }
 }

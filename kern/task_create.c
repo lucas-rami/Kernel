@@ -48,8 +48,6 @@ int create_task_executable(const char *task_name) {
     return 0;
   }
 
-  lprintf("About to call setup_vm");
-
   // Setup virtual memory for this task
   if (setup_vm(&elf) < 0) {
     lprintf("Task creation failed for task \"%s\"\n", task_name);
@@ -57,10 +55,8 @@ int create_task_executable(const char *task_name) {
     return 0;
   }
 
-  lprintf("setup_vm returned");
-
   // Set the kernel stack for the root thread
-  set_esp0((uint32_t)stack_kernel);
+  set_esp0((uint32_t)stack_kernel + PAGE_SIZE);
 
   // Initialize new tcb_t/pcb_t data structures
   create_new_pcb();
