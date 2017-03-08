@@ -33,7 +33,7 @@
 #define STACK_SIZE 4096
 #define STACK_START_ADDR 0xfffff000
 
-#define PAGING_ENABLE_MASK 0x10000000
+#define PAGING_ENABLE_MASK 0x80000000
 
 unsigned int num_user_frames;
 
