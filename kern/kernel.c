@@ -26,7 +26,7 @@
 #include <console.h>
 #include <virtual_memory.h>
 #include <task_create.h>
-#include <run_first_task.h>
+#include <context_switch_asm.h>
 #include <eflags.h>
 
 #define FIRST_TASK "idle"
@@ -78,7 +78,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
     eflags |= EFL_IF;             // Enable interrupts
 
     // Run the user task
-    run_first_task(entrypoint, ESP, eflags);
+    run_first_thread(entrypoint, ESP, eflags);
 
     // We never get here
 

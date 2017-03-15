@@ -93,7 +93,7 @@ AUTOSTACK_OBJS = autostack.o
 #
 # Kernel object files you provide in from kern/
 #
-KERNEL_OBJS = console.o kernel.o loader.o malloc_wrappers.o interrupts.o keyboard.o keyboard_asm.o prechecks.o timer.o timer_asm.o queue.o page_fault_asm.o page_fault_handler.o virtual_memory.o bitmap.o idt_syscall.o task_create.o run_first_task.o
+KERNEL_OBJS = console.o kernel.o loader.o malloc_wrappers.o interrupts.o keyboard.o keyboard_asm.o prechecks.o timer.o timer_asm.o queue.o page_fault_asm.o page_fault_handler.o virtual_memory.o bitmap.o idt_syscall.o task_create.o context_switch_asm.o context_switch.o
 
 # Files in syscall/
 KERNEL_OBJS += syscall/gettid.o
