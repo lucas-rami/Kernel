@@ -7,8 +7,10 @@
 #ifndef _IDT_SYSCALL_H_
 #define _IDT_SYSCALL_H_
 
+#include <stdint.h>
+
 int idt_syscall_install();
-int register_syscall_handler(int gate_type, unsigned int handler_addr,
-                             int indt_index);
+int register_syscall_handler(uint8_t gate_type, uintptr_t handler_addr,
+                             uint32_t indt_index);
 
 #endif /* _IDT_SYSCALL_H_ */

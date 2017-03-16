@@ -29,10 +29,8 @@
 int idt_syscall_install() {
 
   // As of now only the gettid() system call handler is registered
-  if (register_handler((void (*)(void))sys_gettid_wrapper,
-                       (uint8_t)TRAP_GATE_IDENTIFIER, (uint32_t)GETTID_INT,
-                       (uint8_t)3,
-                       (uint16_t)SEGSEL_KERNEL_CS) < 0) {
+  if (register_syscall_handler((uint8_t)TRAP_GATE_IDENTIFIER,
+                               (uintptr_t)sys_gettid_wrapper, GETTID_INT) < 0) {
     lprintf("Failed to register gettid() handler in IDT");
     return -1;
   }
@@ -42,39 +40,17 @@ int idt_syscall_install() {
 
 /** @brief Register an handler in the IDT for a software interrupt
  *
- *  BUG: DON'T SET THE IDT ENTRY PROPERLY, DO NOT USE THE FUNCTION.
- *  USE register_handler() INSTEAD
- *
  *  @return 0 on success, a negative number on error
  */
-int register_syscall_handler(int gate_type, unsigned int handler_addr,
-                             int idt_index) {
+int register_syscall_handler(uint8_t gate_type, uintptr_t handler_addr,
+                             uint32_t idt_index) {
 
-  // Check that gate type is correct
   if (gate_type != TRAP_GATE_IDENTIFIER &&
       gate_type != INTERRUPT_GATE_IDENTIFIER) {
-    lprintf("Failed to register syscall handler: gate type is neither trap "
-            "or interrupt\n");
-    return -1;
+    lprintf("Invalid argument to register_syscall_handler(): Gate type is "
+            "neither TRAP nor INTERRUPT");
   }
 
-  // Check that the handler function address is correct
-  if (handler_addr >= USER_MEM_START) {
-    lprintf("Failed to register syscall handler: handler function address "
-            "located in user space\n");
-    return -1;
-  }
-
-  unsigned int low32 = (SEGSEL_KERNEL_CS << 16) | (handler_addr & TWO_LSB_MASK);
-  unsigned int high32 =
-      (handler_addr & TWO_MSB_MASK) | (gate_type == TRAP_GATE_IDENTIFIER)
-          ? ENTRY_TRAP
-          : ENTRY_INTERRUPT;
-
-  unsigned int idt_addr =
-      ((unsigned int)idt_base() + IDT_ENTRY_SIZE_BYTES * idt_index);
-  *(unsigned int *)idt_addr = low32;
-  *(unsigned int *)(idt_addr + IDT_ENTRY_SIZE_BYTES / 2) = high32;
-
-  return 0;
+  return register_handler(handler_addr, gate_type, idt_index,
+                          USER_PRIVILEGE_LEVEL, SEGSEL_KERNEL_CS);
 }

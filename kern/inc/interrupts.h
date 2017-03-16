@@ -25,8 +25,9 @@
 #define KERNEL_PRIVILEGE_LEVEL 0
 #define USER_PRIVILEGE_MASK 0x6000
 
-int register_handler( void ( *handler_function ) ( void ), uint8_t gate_type,
-	uint32_t idt_offset, uint8_t privilege_level, uint16_t segment );
+int register_handler(uintptr_t handler_function, uint8_t gate_type,
+                     uint32_t idt_offset, uint8_t privilege_level,
+                     uint16_t segment);
 
 /*********************************************************************/
 /*                                                                   */
@@ -42,7 +43,7 @@ int register_handler( void ( *handler_function ) ( void ), uint8_t gate_type,
  *   take place elsewhere.
  *
  *   @param tickback Pointer to clock-tick callback function
- *   
+ *
  *   @return A negative error code on error, or 0 on success
  **/
 int handler_install(void (*tickback)(unsigned int));

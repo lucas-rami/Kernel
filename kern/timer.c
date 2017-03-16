@@ -1,7 +1,7 @@
 /** @file timer.c
  *  @brief Implementation of the functions required for the timer interrupt
  *
- *   This file contains the implementation of the c interrupt handler and 
+ *   This file contains the implementation of the c interrupt handler and
  *   initializing function for the time interrupt.
  *
  *  @author Anirudh Kanjani
@@ -34,12 +34,12 @@ timer_state_t timer_state_;
 
 /** @brief The function called by the interrupt handler for the timer interrupt
  *
- *   The handler for timer interrupts, timer_interrupt_handler defined in 
- *   timer_asm.h calls this function after storing the current context on 
+ *   The handler for timer interrupts, timer_interrupt_handler defined in
+ *   timer_asm.h calls this function after storing the current context on
  *   stack.
  *
  *  @param void
- *   
+ *
  *  @return void
  **/
 void timer_c_handler()
@@ -57,13 +57,13 @@ void timer_c_handler()
 /** @brief Initializes the timer and registers its handler with the IDT
  *
  *   This function configures the timer interrupt with the correct
- *   waveform and period for the timer. It also registers the handler for the 
+ *   waveform and period for the timer. It also registers the handler for the
  *   interrupt at the particular IDT offset. Lastly, it initializes the
  *   state maintained by the timer to their default values and the callback
  *   function is also maintained as part of the state.
  *
  *  @param tickback A function pointer to the callback function for the timer
- *   
+ *
  *  @return int Returns a negative error code on error, 0 on success
  **/
 int timer_init( void ( *tickback )( unsigned int ) )
@@ -73,7 +73,7 @@ int timer_init( void ( *tickback )( unsigned int ) )
 		printf( "Pointer validation failed\n" );
 		return -1;
 	}
-	if ( register_handler( timer_interrupt_handler, TRAP_GATE, TIMER_IDT_ENTRY,
+	if ( register_handler( (uintptr_t) timer_interrupt_handler, TRAP_GATE, TIMER_IDT_ENTRY,
 		KERNEL_PRIVILEGE_LEVEL, SEGSEL_KERNEL_CS ) == -1 ) {
 		// Some error trying to register the handler
 		printf( "Registering timer handler failed\n" );
