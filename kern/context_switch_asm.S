@@ -21,8 +21,6 @@ context_switch_asm:
   /* Push thread's current state on stack */
 
   pusha         // General purpose registers
-  pushl %cs     // Code segment selector
-  pushl %ss     // Stack & Data segment selector
   pushl %eax    // cr3
 
   /* Update the 'esp' field in invoking thread's TCB */
@@ -38,18 +36,6 @@ context_switch_asm:
   // Pop out cr3
   popl %ecx
   mov %ecx, %cr3
-
-  // Pop out stack/data segment selector
-  popl %ecx
-  movw %cx, %ss
-  movw %cx, %ds
-  movw %cx, %es
-  movw %cx, %fs
-  movw %cx, %gs
-
-  // Pop out code segment selector
-  popl %ecx
-  movw %cx, %cs
 
   // Pop out general purpose registers
   popa
