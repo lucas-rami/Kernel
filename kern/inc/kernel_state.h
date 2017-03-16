@@ -20,11 +20,11 @@ typedef struct kernel {
    * only works for kernel running on uniprocessor */
   pcb_t* current_task;
 
-  /* Hold the task id that should be assigned to the first
+  /* Hold the task id that should be assigned to the next
    * task created, the value is incremented each time a task is created */
   int task_id;
 
-  /* Hold the thread id that should be assigned to the first
+  /* Hold the thread id that should be assigned to the next
    * thread created, the value is incremented each time a thread is created */
   int thread_id;
 

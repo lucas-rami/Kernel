@@ -24,7 +24,7 @@ typedef struct tcb {
   /* Thread's current state: may be one of [RUNNABLE, RUNNING, BLOCKED, ZOMBIE] */
   int thread_state;
 
-  /* Hold the value of %esp for this thread */
+  /* Hold the value of %esp for this thread when context switching */
   void* esp;
 
 } tcb_t;
