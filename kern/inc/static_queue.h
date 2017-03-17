@@ -39,5 +39,6 @@ int static_queue_destroy(static_queue_t* static_queue);
 int static_queue_enqueue(static_queue_t* static_queue, void* elem);
 void* static_queue_dequeue(static_queue_t* static_queue);
 
+int static_queue_remove(static_queue_t* static_queue, void* elem);
 
-#endif
+#endif /* _STATIC_QUEUE_H_ */

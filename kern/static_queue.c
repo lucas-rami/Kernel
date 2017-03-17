@@ -5,9 +5,9 @@
  *  @author akanjani, lramire1
  */
 
+#include <malloc.h>
 #include <static_queue.h>
 #include <stdlib.h>
-#include <malloc.h>
 
 #include <simics.h>
 
@@ -41,7 +41,7 @@ int static_queue_init(static_queue_t *static_queue, unsigned int nb_elem) {
   }
 
   // Allocate the queue
-  static_queue->queue = calloc(nb_elem, sizeof(void*));
+  static_queue->queue = calloc(nb_elem, sizeof(void *));
   if (static_queue->queue == NULL) {
     lprintf("static_queue_init(): Impossible to allocate memory for the queue");
     return -1;
@@ -66,7 +66,7 @@ int static_queue_init(static_queue_t *static_queue, unsigned int nb_elem) {
  *
  *  @return 0 on success, a negative number on error
  */
-int static_queue_destroy(static_queue_t* static_queue) {
+int static_queue_destroy(static_queue_t *static_queue) {
 
   // Check validity of arguments
   if (static_queue == NULL || static_queue->queue == NULL) {
@@ -100,7 +100,7 @@ int static_queue_destroy(static_queue_t* static_queue) {
  *
  *  @return 0 on success, a negative number on error
  */
-int static_queue_enqueue(static_queue_t* static_queue, void* elem) {
+int static_queue_enqueue(static_queue_t *static_queue, void *elem) {
 
   // Check validity of arguments
   if (static_queue == NULL || static_queue->queue == NULL) {
@@ -144,7 +144,7 @@ int static_queue_enqueue(static_queue_t* static_queue, void* elem) {
  *  @return The dequeued element if the queue wasn't empty, NULL if the
  *  queue was empty or if an error occured.
  */
-void* static_queue_dequeue(static_queue_t* static_queue) {
+void *static_queue_dequeue(static_queue_t *static_queue) {
 
   // Check validity of arguments
   if (static_queue == NULL || static_queue->queue == NULL) {
@@ -165,11 +165,70 @@ void* static_queue_dequeue(static_queue_t* static_queue) {
   }
 
   // Dequeue the element
-  void* ret = static_queue->queue[static_queue->head];
+  void *ret = static_queue->queue[static_queue->head];
   static_queue->head = (static_queue->head + 1) % static_queue->size;
 
   // Update the total number of elements
   static_queue->nb_elem--;
 
   return ret;
+}
+
+/** @brief Remove an element from the queue
+ *
+ *  It is possible to call this function even if one is unsure about the
+ *  presence of the element in the queue. In the case where the element can't be
+ *  found, the queue will stay unchanged and the fucntion will return 1;
+ *
+ *  @param static_queue A static queue
+ *  @param elem         The element to remove
+ *
+ *  @return 0 if the element was found and removed, 1 if the element wasn't
+ *  found, a negative number on error
+ */
+int static_queue_remove(static_queue_t *static_queue, void *elem) {
+
+  // Check validity of arguments
+  if (static_queue == NULL || static_queue->queue == NULL) {
+    lprintf("static_queue_force_head(): Invalid arguments");
+    return -1;
+  }
+
+  // Check that the static queue is initialized
+  if (static_queue->init == STATIC_QUEUE_INIT_FALSE) {
+    lprintf("static_queue_force_head(): The queue is not initialized");
+    return -1;
+  }
+
+  // Try to find the element in the queue
+  int i, index = static_queue->head;
+  int element_found = 0;
+  for (i = 0; i < static_queue->nb_elem && !element_found; ++i) {
+    if (static_queue->queue[index] == elem) {
+      element_found = 1;
+    } else {
+      index = (index + 1) % static_queue->nb_elem;
+    }
+  }
+
+  if (element_found) {
+
+    // Shift to the left all the elements to the right of the removed one
+    while (index != static_queue->tail) {
+      int next_index = (index + 1) % static_queue->nb_elem;
+      static_queue->queue[index] = static_queue->queue[next_index];
+      index = next_index;
+    }
+
+    // Update TAIL attribute
+    static_queue->tail--;
+    if (static_queue->tail < 0) {
+      static_queue->tail = static_queue->size - 1;
+    }
+
+    return 0;
+
+  } else {
+    return 1;
+  }
 }
