@@ -226,6 +226,8 @@ int static_queue_remove(static_queue_t *static_queue, void *elem) {
       static_queue->tail = static_queue->size - 1;
     }
 
+    static_queue->nb_elem--;
+
     return 0;
 
   } else {
