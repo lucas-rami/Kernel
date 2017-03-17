@@ -9,4 +9,9 @@
 
 int sys_gettid();
 
+/* Scheduling related calls */
+int sys_yield(int tid);
+int sys_deschedule(int *reject);
+int sys_make_runnable(int tid);
+
 #endif /* _SYSCALLS_H_ */

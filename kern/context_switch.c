@@ -7,16 +7,20 @@
 #include <cr.h>
 #include <tcb.h>
 #include <stdlib.h>
+#include <kernel_state.h>
 #include <context_switch_asm.h>
+#include <assert.h>
 
 void context_switch(tcb_t* from, tcb_t* to) {
 
-  if (from == NULL || to == NULL) {
-    //TODO: panic
-  }
+  assert(from != NULL && to != NULL);
 
   uint32_t cr3 = get_cr3();
 
   context_switch_asm(cr3, &from->esp, to->esp);
+
+  kernel.current_thread = to;
+  to->thread_state = THR_RUNNING;
+  to->descheduled = THR_DESCHEDULED_FALSE;
 
 }

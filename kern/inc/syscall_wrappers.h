@@ -9,4 +9,9 @@
 
 int sys_gettid_wrapper();
 
+/* Scheduling related calls */
+int sys_yield_wrapper(int tid);
+int sys_deschedule_wrapper(int *reject);
+int sys_make_runnable_wrapper(int tid);
+
 #endif /* _SYSCALLS_WRAPPERS_H_ */

@@ -72,7 +72,6 @@ void create_new_pcb() {
   pcb.task_state = TASK_RUNNING;
   pcb.tid = kernel.task_id;
   ++kernel.task_id;
-  kernel.current_task = &pcb;
 
 }
 

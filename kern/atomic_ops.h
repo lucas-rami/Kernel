@@ -8,5 +8,6 @@
 #define _ATOMIC_OPS_H_
 
 int atomic_add_and_update(int *i, int j);
+int atomic_exchange(void* addr, int value);
 
 #endif /* _ATOMIC_OPS_H_ */

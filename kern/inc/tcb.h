@@ -7,25 +7,38 @@
 #define _TCB_H_
 
 #include <pcb.h>
+#include <kern_mutex.h>
 
+/* Thread's lifecycle possible states */
 #define THR_RUNNABLE 0
 #define THR_RUNNING 1
 #define THR_BLOCKED 2
 #define THR_ZOMBIE 3
 
+/* Constants for descheduled field */
+#define THR_DESCHEDULED_FALSE 0
+#define THR_DESCHEDULED_TRUE 1
+
 typedef struct tcb {
 
-  /* The PCB of the task containing this thread */
+  /* @brief The PCB of the task containing this thread */
   pcb_t* task;
 
-  /* The thread's kernel issued TID */
+  /* @brief The thread's kernel issued TID */
   int tid;
 
-  /* Thread's current state: may be one of [RUNNABLE, RUNNING, BLOCKED, ZOMBIE] */
+  /* @brief Thread's current state: may be one of [RUNNABLE, RUNNING, BLOCKED, ZOMBIE] */
   int thread_state;
 
-  /* Hold the value of %esp for this thread when context switching */
+  /* @brief Indicate whether the thread is blocked due to a call to
+   * deschedule() */
+  char descheduled;
+
+  /* @brief Hold the value of %esp for this thread when context switching */
   void* esp;
+
+  /** @brief Mutex used to ensure atomicity when changing the thread state */
+  kern_mutex_t mutex;
 
 } tcb_t;
 

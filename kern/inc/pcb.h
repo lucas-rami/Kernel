@@ -11,13 +11,13 @@
 
 typedef struct pcb {
 
-  /* The task's kernel issued id */
+  /* @brief The task's kernel issued id */
   int tid;
 
-  /* The task's return status */
+  /* @brief The task's return status */
   int return_status;
 
-  /* Task's current state: may be one of [RUNNING, ZOMBIE] */
+  /* @brief Task's current state: may be one of [RUNNING, ZOMBIE] */
   int task_state;
 
 } pcb_t;

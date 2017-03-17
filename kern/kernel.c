@@ -28,9 +28,12 @@
 #include <task_create.h>
 #include <context_switch_asm.h>
 #include <eflags.h>
+#include <kernel_state.h>
+#include <static_queue.h>
 
 #define FIRST_TASK "idle"
 #define ESP 0xFFFFFFFF
+#define QUEUE_SIZE 32
 
 void tick(unsigned int numTicks);
 
@@ -41,6 +44,14 @@ void tick(unsigned int numTicks);
  * @return Does not return
  */
 int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
+
+    // Initialize kernel state
+    if (kernel_init() < 0) {
+      lprintf("kernel_main(): Failed to initialize kernel state");
+      while (1) {
+        continue;
+      }
+    }
 
     // Initialize the IDT
     handler_install(tick);
@@ -88,6 +99,36 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
 
     return 0;
 }
+
+/** @brief Initialize the kernel state
+ *
+ *  @return 0 on success, a negative number on error
+ */
+int kernel_init() {
+
+  // Set various fields of the state to their initial value
+  kernel.current_thread = NULL;
+  kernel.task_id = 0;
+  kernel.thread_id = 0;
+
+  // Initialize queue for runnable threads
+  if (static_queue_init(&kernel.runnable_threads, QUEUE_SIZE) < 0) {
+    lprintf("kernel_init(): Failed to initialize runnable threads queue");
+    return -1;
+  }
+
+  if (kern_mutex_init(&kernel.mutex) < 0) {
+    lprintf("kernel_init(): Failed to initialize mutex");
+    return -1;
+  }
+
+  // Mark the kernel state as initialized
+  kernel.init = KERNEL_INIT_TRUE;
+
+  return 0;
+
+}
+
 
 /** @brief Tick function, to be called by the timer interrupt handler
  *   This function sets the game_tick variable equal to the numTicks
