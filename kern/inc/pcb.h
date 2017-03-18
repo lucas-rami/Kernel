@@ -6,6 +6,8 @@
 #ifndef _PCB_H_
 #define _PCB_H_
 
+#include <kern_mutex.h>
+
 #define TASK_RUNNING 0
 #define TASK_ZOMBIE 1
 
@@ -19,6 +21,9 @@ typedef struct pcb {
 
   /* @brief Task's current state: may be one of [RUNNING, ZOMBIE] */
   int task_state;
+
+  /** @brief Mutex used to ensure atomicity when changing the task state */
+  kern_mutex_t mutex;
 
 } pcb_t;
 
