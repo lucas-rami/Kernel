@@ -1,5 +1,5 @@
 /** @file syscall_wrappers.h
- *  @brief This file contains the declarations for the system calls handler
+ *  @brief This file contains the declarations for the system calls
  *  wrappers functions.
  *  @author akanjani, lramire1
  */

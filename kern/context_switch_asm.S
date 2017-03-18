@@ -1,4 +1,4 @@
-/** @file context_switch_asm.h
+/** @file context_switch_asm.S
  *  @brief This file contains the definitions for assembly functions related
  *  to context switching
  *  @author akanjani, lramire1

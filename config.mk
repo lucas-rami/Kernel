@@ -102,7 +102,7 @@ KERNEL_OBJS += drivers/console.o drivers/keyboard.o drivers/keyboard_asm.o drive
 KERNEL_OBJS += syscalls/gettid.o syscalls/scheduling_calls.o
 
 # Files in syscall_wrappers/
-KERNEL_OBJS += syscall_wrappers/gettid.o syscall_wrappers/scheduling_calls.o
+KERNEL_OBJS += syscall_wrappers/gettid.o syscall_wrappers/scheduling_calls.o syscall_wrappers/syscalls_helper.o
 
 ###########################################################################
 # WARNING: Do not put **test** programs into the REQPROGS variables.  Your

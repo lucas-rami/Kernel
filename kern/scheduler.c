@@ -13,6 +13,15 @@
 
 #include <assert.h>
 
+/** @brief Run the next thread in the queue of runnable threads
+ *
+ *  The function performs a context switch to the first thread present in
+ *  the queue. If the queue is empty, then the "idle" task is ran.
+ *
+ *  @param current_tcb The invoking thread's tcb_t
+ *
+ *  @return void
+ */
 void run_next_thread(tcb_t *current_tcb) {
 
   // Check if the kernel state is initialized
@@ -27,6 +36,12 @@ void run_next_thread(tcb_t *current_tcb) {
   }
 }
 
+/** @brief Make a thread runnable
+ *
+ *  @param tcb The TCB of the thread we want to make runnable
+ *
+ *  @return void
+ */
 void add_runnable_thread(tcb_t *tcb) {
 
   assert(tcb != NULL && kernel.init == KERNEL_INIT_TRUE);
@@ -39,6 +54,15 @@ void add_runnable_thread(tcb_t *tcb) {
 
 }
 
+/** @brief Block a thread
+ *
+ *  If the TCB passed as parameter is not the one of the invoking thread, then
+ *  the kernel's behavior is undefined.
+ *
+ *  @param tcb The TCB of the thread we want to block
+ *
+ *  @return void
+ */
 void add_blocked_thread(tcb_t *tcb) {
 
   assert(tcb != NULL && kernel.init == KERNEL_INIT_TRUE);
@@ -47,7 +71,16 @@ void add_blocked_thread(tcb_t *tcb) {
 
 }
 
-
+/** @brief Forces the kernel to run a particular thread
+ *
+ *  The function performs a context switch to a particular thread given as
+ *  argument, overriding the scheduler's normal behavior. 
+ *
+ *  @param current_tcb    The invoking thread's TCB
+ *  @param force_next_tcb The TCB of the thread we want to run next
+ *
+ *  @return void
+ */
 void force_next_thread(tcb_t *current_tcb, tcb_t *force_next_tcb) {
 
   assert(current_tcb != NULL && force_next_tcb != NULL &&

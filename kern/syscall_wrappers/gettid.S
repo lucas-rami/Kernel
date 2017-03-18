@@ -9,32 +9,6 @@
 
 sys_gettid_wrapper:
 
-  /* Save all registers on stack */
-
-  pusha
-  pushl %ds
-  pushl %es
-  pushl %fs
-  pushl %gs
-
-  /* Set data segment selectors to their "kernel version" */
-
-  movw $SEGSEL_KERNEL_DS, %cx
-  movw %cx, %ds
-  movw %cx, %es
-  movw %cx, %fs
-  movw %cx, %gs
-
-  /* Call procedure */
-
+  call save_state
   call sys_gettid
-
-  /* Pop all registers from stack and return */
-
-  popl %gs
-  popl %fs
-  popl %es
-  popl %ds
-  popa
-
-  iret
+  call restore_state_and_iret
