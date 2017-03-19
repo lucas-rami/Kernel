@@ -55,7 +55,7 @@ void make_runnable_and_switch(tcb_t *current_tcb) {
   }
   current_tcb->thread_state = THR_RUNNABLE;
 
-  kern_mutex_unlock(&current_tcb->mutex);
+  mutex_unlock(&current_tcb->mutex);
 
   run_next_thread(current_tcb);
 }
@@ -76,7 +76,7 @@ void block_and_switch(tcb_t *current_tcb) {
   current_tcb->thread_state = THR_BLOCKED;
   current_tcb->descheduled = THR_DESCHEDULED_TRUE;
 
-  kern_mutex_unlock(&current_tcb->mutex);
+  mutex_unlock(&current_tcb->mutex);
 
   run_next_thread(current_tcb);
 }
@@ -121,7 +121,7 @@ void force_next_thread(tcb_t *current_tcb, tcb_t *force_next_tcb) {
 
   current_tcb->thread_state = THR_RUNNABLE;
 
-  kern_mutex_unlock(&current_tcb->mutex);
+  mutex_unlock(&current_tcb->mutex);
 
   context_switch(current_tcb, force_next_tcb);
 }

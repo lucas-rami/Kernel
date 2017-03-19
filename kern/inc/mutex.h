@@ -1,15 +1,14 @@
-/** @file kern_mutex.h
- *  @brief This file defines the type and functions for the kern_mutex_t
- *  structure.
+/** @file mutex.h
+ *  @brief This file defines the type for mutex.
  *  @author akanjani, lramire1
  */
 
-#ifndef _KERN_MUTEX_H_
-#define _KERN_MUTEX_H_
+#ifndef _MUTEX_H
+#define _MUTEX_H
 
 /** @brief The structure of a mutex
  */
-typedef struct kern_mutex {
+typedef struct mutex {
 
   /** @brief An int which stores the ticket number of the thread which ran last
    */
@@ -23,13 +22,11 @@ typedef struct kern_mutex {
   /** @brief An int which stores whether the miutex has been initialized or not
    */
   int init;
+} mutex_t;
 
-} kern_mutex_t;
+int mutex_init( mutex_t *mp );
+void mutex_destroy( mutex_t *mp );
+void mutex_lock( mutex_t *mp );
+void mutex_unlock( mutex_t *mp );
 
-int kern_mutex_init(kern_mutex_t* mp);
-void kern_mutex_destroy(kern_mutex_t* mp);
-
-void kern_mutex_lock(kern_mutex_t* mp);
-void kern_mutex_unlock(kern_mutex_t* mp);
-
-#endif /* _KERN_MUTEX_H_ */
+#endif /* _MUTEX_H */

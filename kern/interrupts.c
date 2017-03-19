@@ -9,7 +9,7 @@
  *  @author Anirudh Kanjani
  */
 
-#include "timer_asm.h"
+#include <drivers/timer_asm.h>
 #include <asm.h>
 #include <ctype.h>
 #include <interrupt_defines.h>

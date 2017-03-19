@@ -117,7 +117,7 @@ int kernel_init() {
     return -1;
   }
 
-  if (kern_mutex_init(&kernel.mutex) < 0) {
+  if (mutex_init(&kernel.mutex) < 0) {
     lprintf("kernel_init(): Failed to initialize mutex");
     return -1;
   }

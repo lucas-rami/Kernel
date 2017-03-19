@@ -24,11 +24,11 @@ void context_switch(tcb_t* from, tcb_t* to) {
   kernel.current_thread = to;
 
   // Update the thread's state
-  kern_mutex_lock(&to->mutex);
+  mutex_lock(&to->mutex);
   to->thread_state = THR_RUNNING;
   to->descheduled = THR_DESCHEDULED_FALSE;
-  kern_mutex_unlock(&to->mutex);
+  mutex_unlock(&to->mutex);
 
-  kern_mutex_unlock(&kernel.mutex);
+  mutex_unlock(&kernel.mutex);
 
 }

@@ -3,23 +3,22 @@
  *  @author akanjani, lramire1
  */
 
-#include <atomic_ops.h>
-#include <scheduler.h>
-#include <assert.h>
-#include <kern_mutex.h>
-#include <kernel_state.h>
-
+#include <mutex.h>
 #include <simics.h>
+#include <atomic_ops.h>
+#include <syscall.h>
+#include <assert.h>
+#include <syscalls.h>
 
 /** @brief A state of the mutex which means that mutex_init hasn't been called
  *   after a mutex_destroy
  */
-#define KERN_MUTEX_UNINITIALIZED 0
+#define MUTEX_UNINITIALIZED 0
 
 /** @brief A state of the mutex which means that mutex_destroy hasn't been called
  *   after a mutex_init
  */
-#define KERN_MUTEX_INITIALIZED 1
+#define MUTEX_INITIALIZED 1
 
 /** @brief Initialize a mutex
  *
@@ -32,7 +31,7 @@
  *
  *  @return Zero on success, a negative number on error
  */
-int kern_mutex_init(kern_mutex_t *mp) {
+int mutex_init(mutex_t *mp) {
 
   if (!mp) {
     // Invalid parameter
@@ -42,7 +41,7 @@ int kern_mutex_init(kern_mutex_t *mp) {
   // Initialize the state for the mutex
   mp->prev = 0;
   mp->next_ticket = 1;
-  mp->init = KERN_MUTEX_INITIALIZED;
+  mp->init = MUTEX_INITIALIZED;
 
   return 0;
 }
@@ -58,13 +57,13 @@ int kern_mutex_init(kern_mutex_t *mp) {
  *
  *  @return void
  */
-void kern_mutex_destroy(kern_mutex_t *mp) {
+void mutex_destroy(mutex_t *mp) {
 
   // Invalid parameter
   assert(mp);
 
   // Illegal Operation. Destroy on an uninitalized mutex
-  assert(mp->init == KERN_MUTEX_INITIALIZED);
+  assert(mp->init == MUTEX_INITIALIZED);
 
   int j = 1;
 
@@ -75,7 +74,7 @@ void kern_mutex_destroy(kern_mutex_t *mp) {
   assert((mp->prev + 1) == my_ticket);
 
   // Reset the mutex state
-  mp->init = KERN_MUTEX_UNINITIALIZED;
+  mp->init = MUTEX_UNINITIALIZED;
 }
 
 /** @brief Acquire the lock on a mutex
@@ -87,10 +86,10 @@ void kern_mutex_destroy(kern_mutex_t *mp) {
  *
  *  @return void
  */
-void kern_mutex_lock(kern_mutex_t *mp) {
+void mutex_lock(mutex_t *mp) {
 
   // Validate parameter and the fact that the mutex is initialized
-  assert(mp && mp->init == KERN_MUTEX_INITIALIZED);
+  assert(mp && mp->init == MUTEX_INITIALIZED);
 
   int j = 1;
 
@@ -98,8 +97,9 @@ void kern_mutex_lock(kern_mutex_t *mp) {
   int my_ticket = atomic_add_and_update(&mp->next_ticket, j);
 
   while((mp->prev + 1) != my_ticket) {
-    add_runnable_thread(kernel.current_thread);
-    run_next_thread(kernel.current_thread);
+    // A thread which acquired the mutex earlier is running
+    // Yield till it releases the lock
+    sys_yield(-1);
   }
 
 }
@@ -113,10 +113,10 @@ void kern_mutex_lock(kern_mutex_t *mp) {
  *
  *  @return void
  */
-void kern_mutex_unlock(kern_mutex_t *mp) {
+void mutex_unlock(mutex_t *mp) {
 
   // Validate parameter and the fact that the mutex is initialized
-  assert(mp && mp->init == KERN_MUTEX_INITIALIZED);
+  assert(mp && mp->init == MUTEX_INITIALIZED);
 
   // Increment the prev value which stores the ticket of the last run thread
   mp->prev++;

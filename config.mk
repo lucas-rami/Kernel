@@ -63,7 +63,7 @@ STUDENTFILES =
 ###########################################################################
 # Object files for your thread library
 ###########################################################################
-THREAD_OBJS = malloc.o panic.o
+THREAD_OBJS = malloc.o panic.o mutex.o atomic_ops.o cond_var.o queue.o linked_list.o hash_table.o thr_create.o thread_fork.o thr_init.o thr_exit.o thr_join.o tcb.o get_esp.o thr_getid.o thr_yield.o sem.o rwlock.o rwlock_helper.o mutex_asm.o
 
 # Thread Group Library Support.
 #
@@ -71,7 +71,7 @@ THREAD_OBJS = malloc.o panic.o
 # P3" we give you can't build libthrgrp.a.  Once you install your thread
 # library and fix THREAD_OBJS above, uncomment this line to enable building
 # libthrgrp.a:
-#410USER_LIBS_EARLY += libthrgrp.a
+410USER_LIBS_EARLY += libthrgrp.a
 
 ###########################################################################
 # Object files for your syscall wrappers
@@ -81,7 +81,7 @@ SYSCALL_OBJS = vanish.o set_status.o print.o deschedule.o exec.o fork.o getchar.
 ###########################################################################
 # Object files for your automatic stack handling
 ###########################################################################
-AUTOSTACK_OBJS = autostack.o
+AUTOSTACK_OBJS = autostack.o page_fault_handler.o
 
 ###########################################################################
 # Parts of your kernel
@@ -93,7 +93,7 @@ AUTOSTACK_OBJS = autostack.o
 #
 # Kernel object files you provide in from kern/
 #
-KERNEL_OBJS = kernel.o loader.o malloc_wrappers.o interrupts.o queue.o page_fault_asm.o page_fault_handler.o virtual_memory.o bitmap.o idt_syscall.o task_create.o context_switch_asm.o context_switch.o static_queue.o kern_mutex.o scheduler.o atomic_ops.o
+KERNEL_OBJS = mutex.o kernel.o loader.o malloc_wrappers.o interrupts.o queue.o page_fault_asm.o page_fault_handler.o virtual_memory.o bitmap.o idt_syscall.o task_create.o context_switch_asm.o context_switch.o static_queue.o scheduler.o atomic_ops.o
 
 # Files in drivers/
 KERNEL_OBJS += drivers/console.o drivers/keyboard.o drivers/keyboard_asm.o drivers/prechecks.o drivers/timer.o drivers/timer_asm.o

@@ -11,11 +11,11 @@
 
 int sys_yield(int tid) {
 
-  kern_mutex_lock(&kernel.mutex);
+  mutex_lock(&kernel.mutex);
 
   tcb_t *current_thread = kernel.current_thread;
 
-  kern_mutex_lock(&current_thread->mutex);
+  mutex_lock(&current_thread->mutex);
 
   if (tid == -1) {
     make_runnable_and_switch(current_thread);
@@ -24,14 +24,14 @@ int sys_yield(int tid) {
     if (next_thread != NULL && next_thread->thread_state == THR_RUNNABLE) {
       force_next_thread(current_thread, next_thread);
     } else {
-      kern_mutex_unlock(&current_thread->mutex);
-      kern_mutex_unlock(&kernel.mutex);
+      mutex_unlock(&current_thread->mutex);
+      mutex_unlock(&kernel.mutex);
       return -1;
     }
   }
 
-  kern_mutex_unlock(&current_thread->mutex);
-  kern_mutex_unlock(&kernel.mutex);
+  mutex_unlock(&current_thread->mutex);
+  mutex_unlock(&kernel.mutex);
   return 0;
 }
 
@@ -40,23 +40,23 @@ int sys_deschedule(int *reject) {
   // TODO: check that reject is a valid pointer
 
   // Lock the mutex on the kernel
-  kern_mutex_lock(&kernel.mutex);
+  mutex_lock(&kernel.mutex);
 
   // Get the invoking thread's TCB
   tcb_t *current_thread = kernel.current_thread;
 
   // Lock the mutex on the thread
-  kern_mutex_lock(&current_thread->mutex);
+  mutex_lock(&current_thread->mutex);
 
   // Atomically checks the integer pointed to by reject
   int r = atomic_exchange(reject, *reject);
 
   if (r == 0) {
     current_thread->descheduled = THR_DESCHEDULED_TRUE;
-    block_and_switch(current_thread); // context_switch() will release the mutex
+    block_and_switch(current_thread);
   } else {
-    kern_mutex_unlock(&current_thread->mutex);
-    kern_mutex_unlock(&kernel.mutex);
+    mutex_unlock(&current_thread->mutex);
+    mutex_unlock(&kernel.mutex);
   }
 
   return 0;
@@ -75,18 +75,18 @@ int sys_make_runnable(int tid) {
     return -1;
   }
 
-  kern_mutex_lock(&kernel.mutex);
-  kern_mutex_lock(&tcb->mutex);
+  mutex_lock(&kernel.mutex);
+  mutex_lock(&tcb->mutex);
 
   // If the thread exists and has been descheduled make it runnable again
   if (tcb->thread_state == THR_BLOCKED &&
       tcb->descheduled == THR_DESCHEDULED_TRUE) {
     add_runnable_thread(tcb);
-    kern_mutex_unlock(&tcb->mutex);
-    kern_mutex_unlock(&kernel.mutex);
+    mutex_unlock(&tcb->mutex);
+    mutex_unlock(&kernel.mutex);
     return 0;
   }
-  kern_mutex_unlock(&tcb->mutex);
-  kern_mutex_unlock(&kernel.mutex);
+  mutex_unlock(&tcb->mutex);
+  mutex_unlock(&kernel.mutex);
   return -1;
 }

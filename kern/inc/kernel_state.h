@@ -9,7 +9,7 @@
 
 #include <static_queue.h>
 #include <tcb.h>
-#include <kern_mutex.h>
+#include <mutex.h>
 
 #define KERNEL_INIT_FALSE 0
 #define KERNEL_INIT_TRUE 1
@@ -29,15 +29,15 @@ typedef struct kernel {
   int thread_id;
 
   /* @brief Queue containing the list of runnable threads, in the order
-   * that they should be run in */
+   * that they should be run in. The queue should be initialized by calling
+   * kernel_init()  */
   static_queue_t runnable_threads;
 
-  /** @brief Indicate whether the kernel state is initialized or not.
-    * The queue should be initialized by calling kernel_init() */
-  char init;
-
   /** @brief Mutex used to ensure atomicity when changing the kernel state */
-  kern_mutex_t mutex;
+  mutex_t mutex;
+
+  /** @brief Indicate whether the kernel state is initialized or not */
+  char init;
 
 } kernel_t;
 

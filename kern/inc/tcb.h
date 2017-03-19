@@ -7,7 +7,7 @@
 #define _TCB_H_
 
 #include <pcb.h>
-#include <kern_mutex.h>
+#include <mutex.h>
 
 /* Thread's lifecycle possible states */
 #define THR_RUNNABLE 0
@@ -38,7 +38,7 @@ typedef struct tcb {
   void* esp;
 
   /** @brief Mutex used to ensure atomicity when changing the thread state */
-  kern_mutex_t mutex;
+  mutex_t mutex;
 
 } tcb_t;
 
