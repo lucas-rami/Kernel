@@ -28,11 +28,24 @@
  */
 int idt_syscall_install() {
 
-  // As of now only the gettid() system call handler is registered
-  if (register_syscall_handler((uint8_t)TRAP_GATE_IDENTIFIER,
-                               (uintptr_t)sys_gettid_wrapper, GETTID_INT) < 0) {
-    lprintf("Failed to register gettid() handler in IDT");
-    return -1;
+  // List of syscalls
+  uintptr_t syscalls[] = {
+      (uintptr_t)sys_gettid_wrapper, (uintptr_t)sys_deschedule_wrapper,
+      (uintptr_t)sys_make_runnable_wrapper, (uintptr_t)sys_yield_wrapper};
+
+  // List of offsets in the IDT corresponding to syscalls
+  uint32_t idt_indexes[] = {GETTID_INT, DESCHEDULE_INT, MAKE_RUNNABLE_INT,
+                            YIELD_INT};
+
+  int nb_syscalls = sizeof(syscalls) / sizeof(uintptr_t);
+  int i;
+  for (i = 0; i < nb_syscalls; ++i) {
+    if (register_syscall_handler((uint8_t)TRAP_GATE_IDENTIFIER, syscalls[i],
+                                 idt_indexes[i]) < 0) {
+      lprintf("Failed to register handler %u in IDT",
+              (unsigned int)idt_indexes[i]);
+      return -1;
+    }
   }
 
   return 0;
