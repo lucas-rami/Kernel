@@ -11,7 +11,5 @@
 #include <tcb.h>
 
 int create_task_executable(const char* task_name);
-void create_new_pcb();
-void create_new_root_tcb();
 
 #endif /* _TASK_CREATE_H_ */

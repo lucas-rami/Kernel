@@ -13,35 +13,14 @@
 context_switch_asm:
 
   /* Get function arguments */
+  movl 4(%esp), %ecx
+  movl 8(%esp), %edx
 
-  movl 4(%esp), %eax
-  movl 8(%esp), %ecx
-  movl 12(%esp), %edx
-
-  /* Push thread's current state on stack */
-
-  pusha         // General purpose registers
-  pushl %eax    // cr3
-
-  /* Update the 'esp' field in invoking thread's TCB */
-
-  movl %esp, (%ecx)
-
-  /* Restore stack pointer of scheduled thread */
-
-  movl %edx, %esp
-
-  /* Pop next thread's state from stack */
-
-  // Pop out cr3
-  popl %ecx
-  mov %ecx, %cr3
-
-  // Pop out general purpose registers
-  popa
-
-  /* Return from procedure as another thread */
-  ret
+  pusha               // Push general purpose registers on stack
+  movl %esp, (%ecx)   // Update the 'esp' field in invoking thread's TCB
+  movl %edx, %esp     // Restore stack pointer of scheduled thread
+  popa                // Pop general purpose registers from stack
+  ret                 // Return from procedure as another thread
 
 
 run_first_thread:

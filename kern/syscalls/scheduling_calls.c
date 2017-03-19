@@ -11,26 +11,30 @@
 
 int sys_yield(int tid) {
 
+  // Lock the mutex on the kernel
   mutex_lock(&kernel.mutex);
-
-  tcb_t *current_thread = kernel.current_thread;
-
-  mutex_lock(&current_thread->mutex);
+  // Lock the mutex on the thread
+  mutex_lock(&kernel.current_thread->mutex);
 
   if (tid == -1) {
-    make_runnable_and_switch(current_thread);
+    // If the argument is -1, run the next thread in the queue
+    make_runnable_and_switch();
   } else if (tid >= 0) {
-    tcb_t *next_thread = NULL; // TODO: should get the TCB
+    tcb_t *next_thread = hash_table_get_element(&kernel.tcbs, (void*)tid);
+
     if (next_thread != NULL && next_thread->thread_state == THR_RUNNABLE) {
-      force_next_thread(current_thread, next_thread);
+      // If the thread exists and is in the THR_RUNNABLE state, run it
+      force_next_thread(next_thread);
     } else {
-      mutex_unlock(&current_thread->mutex);
+      // Otherwise unlock the mutexes and return immediately with an error code
+      mutex_unlock(&kernel.current_thread->mutex);
       mutex_unlock(&kernel.mutex);
       return -1;
     }
   }
 
-  mutex_unlock(&current_thread->mutex);
+  // Unlock the mutexes and return normally
+  mutex_unlock(&kernel.current_thread->mutex);
   mutex_unlock(&kernel.mutex);
   return 0;
 }
@@ -41,21 +45,17 @@ int sys_deschedule(int *reject) {
 
   // Lock the mutex on the kernel
   mutex_lock(&kernel.mutex);
-
-  // Get the invoking thread's TCB
-  tcb_t *current_thread = kernel.current_thread;
-
   // Lock the mutex on the thread
-  mutex_lock(&current_thread->mutex);
+  mutex_lock(&kernel.current_thread->mutex);
 
   // Atomically checks the integer pointed to by reject
   int r = atomic_exchange(reject, *reject);
 
   if (r == 0) {
-    current_thread->descheduled = THR_DESCHEDULED_TRUE;
-    block_and_switch(current_thread);
+    kernel.current_thread->descheduled = THR_DESCHEDULED_TRUE;
+    block_and_switch();
   } else {
-    mutex_unlock(&current_thread->mutex);
+    mutex_unlock(&kernel.current_thread->mutex);
     mutex_unlock(&kernel.mutex);
   }
 
@@ -70,7 +70,7 @@ int sys_make_runnable(int tid) {
   }
 
   // Try to get the TCB with the given tid
-  tcb_t *tcb = NULL; // TODO; should get the TCB
+  tcb_t *tcb = hash_table_get_element(&kernel.tcbs, (void*)tid);
   if (tcb == NULL) {
     return -1;
   }

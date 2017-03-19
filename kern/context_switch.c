@@ -11,16 +11,20 @@
 #include <context_switch_asm.h>
 #include <assert.h>
 
-void context_switch(tcb_t* from, tcb_t* to) {
+/** @brief Performs a context switch between two threads
+ *
+ *  @param to The TCB of the thread we are switching to
+ *
+ *  @return void
+ */
+void context_switch(tcb_t* to) {
 
-  assert(from != NULL && to != NULL);
-
-  // Get the value of the cr3 register (page directory address)
-  uint32_t cr3 = get_cr3();
+  assert(kernel.current_thread != NULL && to != NULL);
 
   // Context switch to the other thread
-  context_switch_asm(cr3, &from->esp, to->esp);
+  context_switch_asm(&kernel.current_thread->esp, to->esp);
 
+  // Update the kernel state
   kernel.current_thread = to;
 
   // Update the thread's state
@@ -29,6 +33,11 @@ void context_switch(tcb_t* from, tcb_t* to) {
   to->descheduled = THR_DESCHEDULED_FALSE;
   mutex_unlock(&to->mutex);
 
+  // Update cr3 and esp0 registers
+  set_cr3(to->cr3);
+  set_esp0(to->esp0);
+
+  // Unlock the mutex on the kernel state
   mutex_unlock(&kernel.mutex);
 
 }

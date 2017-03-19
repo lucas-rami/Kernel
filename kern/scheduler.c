@@ -22,7 +22,7 @@
  *
  *  @return void
  */
-void run_next_thread(tcb_t *current_tcb) {
+void run_next_thread() {
 
   // Check if the kernel state is initialized
   assert(kernel.init == KERNEL_INIT_TRUE);
@@ -30,55 +30,47 @@ void run_next_thread(tcb_t *current_tcb) {
   tcb_t *next_tcb = static_queue_dequeue(&kernel.runnable_threads);
 
   if (next_tcb != NULL) {
-    context_switch(current_tcb, next_tcb);
+    context_switch(next_tcb);
   } else {
     // TODO: Run idle task when there is nothing to run
   }
 }
 
-/** @brief Make a thread runnable and then context switch to another thread
- *
- *  If the TCB passed as parameter is not the one of the invoking thread, then
- *  the kernel's behavior is undefined.
- *
- *  @param current_tcb The TCB of the thread we want to make runnable
+/** @brief Change the invoking thread's state to runnable and then context
+ *  switch to another thread
  *
  *  @return void
  */
-void make_runnable_and_switch(tcb_t *current_tcb) {
+void make_runnable_and_switch() {
 
-  assert(current_tcb != NULL && kernel.init == KERNEL_INIT_TRUE);
+  assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
 
-  if (static_queue_enqueue(&kernel.runnable_threads, current_tcb) < 0) {
+  if (static_queue_enqueue(&kernel.runnable_threads, kernel.current_thread) <
+      0) {
     panic(
         "make_runnable_and_switch(): Failed to add thread to runnable queue\n");
   }
-  current_tcb->thread_state = THR_RUNNABLE;
+  kernel.current_thread->thread_state = THR_RUNNABLE;
 
-  mutex_unlock(&current_tcb->mutex);
+  mutex_unlock(&kernel.current_thread->mutex);
 
-  run_next_thread(current_tcb);
+  run_next_thread();
 }
 
-/** @brief Block a thread and then context switch to another thread
- *
- *  If the TCB passed as parameter is not the one of the invoking thread, then
- *  the kernel's behavior is undefined.
- *
- *  @param current_tcb The TCB of the thread we want to block
+/** @brief Block the invoking thread and then context switch to another thread
  *
  *  @return void
  */
-void block_and_switch(tcb_t *current_tcb) {
+void block_and_switch() {
 
-  assert(current_tcb != NULL && kernel.init == KERNEL_INIT_TRUE);
+  assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
 
-  current_tcb->thread_state = THR_BLOCKED;
-  current_tcb->descheduled = THR_DESCHEDULED_TRUE;
+  kernel.current_thread->thread_state = THR_BLOCKED;
+  kernel.current_thread->descheduled = THR_DESCHEDULED_TRUE;
 
-  mutex_unlock(&current_tcb->mutex);
+  mutex_unlock(&kernel.current_thread->mutex);
 
-  run_next_thread(current_tcb);
+  run_next_thread();
 }
 
 /** @brief Make a thread runnable
@@ -105,23 +97,22 @@ void add_runnable_thread(tcb_t *tcb) {
  *  argument, overriding the scheduler's normal behavior. The invoking thread is
  *  put in the queue of runnable threads.
  *
- *  @param current_tcb    The invoking thread's TCB
  *  @param force_next_tcb The TCB of the thread we want to run next
  *
  *  @return void
  */
-void force_next_thread(tcb_t *current_tcb, tcb_t *force_next_tcb) {
+void force_next_thread(tcb_t *force_next_tcb) {
 
-  assert(current_tcb != NULL && force_next_tcb != NULL &&
+  assert(kernel.current_thread != NULL && force_next_tcb != NULL &&
          kernel.init == KERNEL_INIT_TRUE);
 
   if (static_queue_remove(&kernel.runnable_threads, force_next_tcb) != 0) {
     panic("force_next_thread(): Error when calling static_queue_remove()\n");
   }
 
-  current_tcb->thread_state = THR_RUNNABLE;
+  kernel.current_thread->thread_state = THR_RUNNABLE;
 
-  mutex_unlock(&current_tcb->mutex);
+  mutex_unlock(&kernel.current_thread->mutex);
 
-  context_switch(current_tcb, force_next_tcb);
+  context_switch(force_next_tcb);
 }

@@ -58,30 +58,5 @@ int create_task_executable(const char *task_name) {
   // Set the kernel stack for the root thread
   set_esp0((uint32_t)stack_kernel + PAGE_SIZE);
 
-  // Initialize new tcb_t/pcb_t data structures
-  create_new_pcb();
-  create_new_root_tcb();
-
   return elf.e_entry;
-}
-
-/* Operated on statically allocated PCB */
-void create_new_pcb() {
-
-  pcb.return_status = 0;
-  pcb.task_state = TASK_RUNNING;
-  pcb.tid = kernel.task_id;
-  ++kernel.task_id;
-
-}
-
-/* Operated on statically allocated TCB */
-void create_new_root_tcb() {
-
-  tcb.task = &pcb;
-  tcb.thread_state = THR_RUNNING;
-  tcb.tid = kernel.thread_id;
-  ++kernel.thread_id;
-  kernel.current_thread = &tcb;
-
 }

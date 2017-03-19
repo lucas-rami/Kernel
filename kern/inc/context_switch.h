@@ -7,4 +7,4 @@
 #include <tcb.h>
 #include <stdint.h>
 
-void context_switch(tcb_t* from, tcb_t* to);
+void context_switch(tcb_t* to);

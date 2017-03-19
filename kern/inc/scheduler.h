@@ -9,11 +9,11 @@
 
 #include <tcb.h>
 
-void run_next_thread(tcb_t *current_tcb);
-void make_runnable_and_switch(tcb_t *tcb);
-void block_and_switch(tcb_t *tcb);
+void run_next_thread();
+void make_runnable_and_switch();
+void block_and_switch();
 
-void add_runnable_thread(tcb_t *current_tcb);
-void force_next_thread(tcb_t *current_tcb, tcb_t *force_next_tcb);
+void add_runnable_thread(tcb_t *tcb);
+void force_next_thread(tcb_t *force_next_tcb);
 
 #endif /* _SCHEDULER_H_ */
