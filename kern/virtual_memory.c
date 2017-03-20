@@ -73,18 +73,20 @@ int setup_vm(const simple_elf_t *elf_info) {
 
   unsigned int *page_table_directory = (unsigned int *)smemalign( PAGE_SIZE,
                                         PAGE_SIZE);
+  memset(page_table_directory, 0, PAGE_SIZE);
+
   // set cr3 to this value;
   set_cr3((uint32_t)page_table_directory);
 
+  // Load kernel section
   int i;
   for (i = 0; i < USER_MEM_START; i += PAGE_SIZE) {
     load_frame(i, SECTION_KERNEL);
   }
 
-  // Load kernel section as well
   // Add stack area as well.
   if (load_every_segment(elf_info) < 0) {
-    // free?
+    // TODO: free
     return -1;
   }
 
@@ -126,7 +128,7 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
   unsigned long start_addr, int type) {
 
   // get page table base register
-  // assume it is base_addr;
+  // assume it is base_addr
 
   char *buf;
   if (type != SECTION_STACK && type != SECTION_BSS) {
@@ -170,16 +172,16 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
   return 0;
 }
 
-/** @brief Allocate one frame
+/** @brief Allocate one physical frame
  *
- *  @param address Frame's address
- *  @param type Frame's type
+ *  @param address The frame's address
+ *  @param type The frame's type
  *
- *  @return 0 The frame's address
+ *  @return 0 The frame's physical address
  */
 void *load_frame(unsigned int address, unsigned int type) {
-  // get base register in base_addr(unsigned int *)
 
+  // get base register in base_addr(unsigned int *)
   unsigned int *base_addr = (unsigned int *)get_cr3();
 
   unsigned int offset = (((unsigned int)address & PAGE_TABLE_DIRECTORY_MASK)
@@ -187,6 +189,7 @@ void *load_frame(unsigned int address, unsigned int type) {
 
   unsigned int *page_table_directory_entry_addr = base_addr + offset;
 
+  // If there is no page table associated with this entry, create it
   if (!(*page_table_directory_entry_addr & PRESENT_BIT_MASK)) {
     unsigned int *page_table_entry_addr = (unsigned int *)smemalign(PAGE_SIZE,
       PAGE_SIZE);
@@ -196,12 +199,14 @@ void *load_frame(unsigned int address, unsigned int type) {
     *page_table_directory_entry_addr |= PAGE_TABLE_DIRECTORY_FLAGS;
   }
 
+  // Access the page table
   unsigned int *page_table_base_addr = (unsigned int *)(*page_table_directory_entry_addr &
     PAGE_ADDR_MASK);
   offset = (((unsigned int)address & PAGE_TABLE_MASK) >>
     PAGE_TABLE_RIGHT_SHIFT);
   unsigned int *page_table_entry = page_table_base_addr + offset;
 
+  // If there is no physical frame associated with this entry, create it
   if (!(*page_table_entry & PRESENT_BIT_MASK)) {
     if (type != SECTION_KERNEL) {
       unsigned int *physical_frame_addr = allocate_frame();
@@ -222,7 +227,7 @@ void *load_frame(unsigned int address, unsigned int type) {
   return (frame_base_addr + offset);
 }
 
-/** @brief Try to find a free frame in memory
+/** @brief Find and allocate a free frame in memory
  *
  *  @return The frame's address is one free frame was found, NULL otherwise
  */

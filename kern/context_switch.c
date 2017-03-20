@@ -8,8 +8,11 @@
 #include <tcb.h>
 #include <stdlib.h>
 #include <kernel_state.h>
+#include <context_switch.h>
 #include <context_switch_asm.h>
 #include <assert.h>
+
+static void init_thread(tcb_t* to);
 
 /** @brief Performs a context switch between two threads
  *
@@ -23,6 +26,21 @@ void context_switch(tcb_t* to) {
 
   // Context switch to the other thread
   context_switch_asm(&kernel.current_thread->esp, to->esp);
+
+  // Update the running thread state and the kernel state
+  init_thread(to);
+
+}
+
+/** @brief Update the running thread state and the kernel state
+ *
+ *  The function unlocks the kernel state mutex before returning.
+ *
+ *  @param to The TCB of the thread we are switching to
+ *
+ *  @return void
+ */
+static void init_thread(tcb_t* to) {
 
   // Update the kernel state
   kernel.current_thread = to;
