@@ -19,10 +19,10 @@
 // Debugging
 #include <simics.h>
 
-int create_task_executable(const char *task_name) {
+int create_task_from_executable(const char *task_name) {
 
   if (task_name == NULL) {
-    lprintf("Invalid argument to function create_task_executable()ç\n");
+    lprintf("Invalid argument to function create_task_from_executable()ç\n");
     return 0;
   }
 

@@ -10,6 +10,6 @@
 #include <pcb.h>
 #include <tcb.h>
 
-int create_task_executable(const char* task_name);
+int create_task_from_executable(const char* task_name);
 
 #endif /* _TASK_CREATE_H_ */

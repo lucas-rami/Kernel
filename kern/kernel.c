@@ -69,7 +69,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
 
     // Create the initial task and load everything into memory
     uint32_t entrypoint;
-    if ( (entrypoint = create_task_executable(FIRST_TASK)) == 0 ) {
+    if ( (entrypoint = create_task_from_executable(FIRST_TASK)) == 0 ) {
       lprintf("Failed to create user task\n");
       while (1) {
         continue;
