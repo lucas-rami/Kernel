@@ -8,3 +8,4 @@
 #include <stdint.h>
 
 void context_switch(tcb_t* to);
+void init_thread(tcb_t* to);

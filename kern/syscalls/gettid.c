@@ -1,5 +1,5 @@
 /** @file gettid.c
- *  @brief This file contains the definition for the sys_gettid() system call.
+ *  @brief This file contains the definition for the kern_gettid() system call.
  *  @author akanjani, lramire1
  */
 
@@ -7,6 +7,6 @@
 
 #include <simics.h>
 
-int sys_gettid() {
+int kern_gettid() {
   return kernel.current_thread->tid;
 }

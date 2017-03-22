@@ -9,7 +9,7 @@
 #include <scheduler.h>
 #include <stdlib.h>
 
-int sys_yield(int tid) {
+int kern_yield(int tid) {
 
   // Lock the mutex on the kernel
   mutex_lock(&kernel.mutex);
@@ -39,7 +39,7 @@ int sys_yield(int tid) {
   return 0;
 }
 
-int sys_deschedule(int *reject) {
+int kern_deschedule(int *reject) {
 
   // TODO: check that reject is a valid pointer
 
@@ -62,7 +62,7 @@ int sys_deschedule(int *reject) {
   return 0;
 }
 
-int sys_make_runnable(int tid) {
+int kern_make_runnable(int tid) {
 
   // If the tid is less than 0, we return immediately
   if (tid < 0) {

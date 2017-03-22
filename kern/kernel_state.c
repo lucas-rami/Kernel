@@ -22,8 +22,8 @@ int kernel_init() {
 
   // Set various fields of the state to their initial value
   kernel.current_thread = NULL;
-  kernel.task_id = 0;
-  kernel.thread_id = 0;
+  kernel.task_id = 1337;
+  kernel.thread_id = 1337;
 
   // Initialize the queue for runnable threads
   if (static_queue_init(&kernel.runnable_threads, QUEUE_SIZE) < 0) {
@@ -73,10 +73,12 @@ pcb_t *create_new_pcb() {
   new_pcb->return_status = 0;
   new_pcb->task_state = TASK_RUNNING;
 
-  // Assign a unique id tp the PCB
+  // Assign a unique id to the PCB
   mutex_lock(&kernel.mutex);
   new_pcb->tid = kernel.task_id;
-  kernel.task_id++;
+  if (++kernel.task_id < 0) {
+    kernel.task_id = 1;
+  }
   mutex_unlock(&kernel.mutex);
 
   // Add the new PCB to the hash table
@@ -105,18 +107,19 @@ tcb_t *create_new_tcb(const pcb_t *pcb, uint32_t esp0, uint32_t cr3) {
   }
 
   // Set various fields to their initial value
-  // TODO: we will probably need to modify these
   new_tcb->task = pcb;
-  new_tcb->thread_state = THR_RUNNABLE;
+  new_tcb->thread_state = THR_BLOCKED; // NOTE: not really, just not ready...
   new_tcb->descheduled = THR_DESCHEDULED_FALSE;
-  new_tcb->esp = 0;
+  new_tcb->esp = 0; // NOTE: should be modified when the stack is crafted
   new_tcb->esp0 = esp0;
   new_tcb->cr3 = cr3;
 
-  // Assign a unique id tp the PCB
+  // Assign a unique id to the TCB
   mutex_lock(&kernel.mutex);
   new_tcb->tid = kernel.thread_id;
-  kernel.thread_id++;
+  if (++kernel.thread_id < 0) {
+    kernel.task_id = 1;
+  }
   mutex_unlock(&kernel.mutex);
 
   // Add the new PCB to the hash table

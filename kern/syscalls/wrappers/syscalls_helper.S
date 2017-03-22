@@ -31,6 +31,7 @@ restore_state_and_iret:
   popl %fs
   popl %es
   popl %ds
+  movl %eax, 28(%esp)   // Replace the value of %eax on the stack
   popa                  // Pop general purpose registers
 
   addl $4, %esp         // Put back the stack pointer to where it was when the

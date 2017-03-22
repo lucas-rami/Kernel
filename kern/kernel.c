@@ -27,12 +27,10 @@
 #include <virtual_memory.h>
 #include <task_create.h>
 #include <context_switch_asm.h>
-#include <eflags.h>
 #include <kernel_state.h>
 #include <static_queue.h>
 
 #define FIRST_TASK "idle"
-#define ESP 0xFFFFFFFF
 
 void tick(unsigned int numTicks);
 
@@ -59,9 +57,6 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
     // Clear the console before running anything
     clear_console();
 
-    // Enable interrupts
-    enable_interrupts();
-
     // Virtual memory initialize
     if (vm_init() < 0) {
       lprintf("VM init failed\n");
@@ -79,18 +74,8 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
     // Enable virtual memory
     vm_enable();
 
-    // Create EFLAGS for the user task
-    uint32_t eflags = get_eflags();
-    eflags |= EFL_RESV1;          // Set bit 1
-    eflags &= !EFL_AC;            // Alignment checking off
-    eflags &= !EFL_IOPL_RING3;    // Clear current privilege level
-    eflags |= EFL_IOPL_RING3;     // Set privilege level to 3
-    eflags |= EFL_IF;             // Enable interrupts
-
-    // Run the user task
-    run_first_thread(entrypoint, ESP, eflags);
-
-    // We never get here
+    // Enable interrupts
+    enable_interrupts();
 
     while (1) {
         continue;

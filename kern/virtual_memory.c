@@ -5,16 +5,16 @@
  */
 
 #include <bitmap.h>
+#include <common_kern.h>
+#include <cr.h>
 #include <elf_410.h>
 #include <free_map.h>
-#include <stdint.h>
-#include <common_kern.h>
-#include <stdlib.h>
-#include <page.h>
-#include <virtual_memory.h>
 #include <loader.h>
+#include <page.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
-#include <cr.h>
+#include <virtual_memory.h>
 
 #include <simics.h>
 
@@ -44,6 +44,9 @@
 #define PAGING_ENABLE_MASK 0x80000000
 #define PAGE_GLOBAL_ENABLE_MASK 0x80
 
+#define ENTRY_SIZE_LOG2 2
+#define PAGE_SIZE_LOG2 12
+
 unsigned int num_user_frames;
 
 /** @brief Initialize the virtual memory system
@@ -67,12 +70,12 @@ int vm_init() {
  *  @param elf_info Data strucure holding the important features
  *  of the task's ELF header
  *
- *  @return 0 on success, a negative number on error
+ *  @return The page table directory address on success, NULL on error
  */
-int setup_vm(const simple_elf_t *elf_info) {
+unsigned int *setup_vm(const simple_elf_t *elf_info) {
 
-  unsigned int *page_table_directory = (unsigned int *)smemalign( PAGE_SIZE,
-                                        PAGE_SIZE);
+  unsigned int *page_table_directory =
+      (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
   memset(page_table_directory, 0, PAGE_SIZE);
 
   // set cr3 to this value;
@@ -87,10 +90,10 @@ int setup_vm(const simple_elf_t *elf_info) {
   // Add stack area as well.
   if (load_every_segment(elf_info) < 0) {
     // TODO: free
-    return -1;
+    return NULL;
   }
 
-  return 0;
+  return page_table_directory;
 }
 
 /** @brief Load every segment of a task into virtual memory
@@ -102,11 +105,11 @@ int setup_vm(const simple_elf_t *elf_info) {
  */
 int load_every_segment(const simple_elf_t *elf) {
   load_segment(elf->e_fname, elf->e_txtoff, elf->e_txtlen, elf->e_txtstart,
-    SECTION_TXT);
+               SECTION_TXT);
   load_segment(elf->e_fname, elf->e_datoff, elf->e_datlen, elf->e_datstart,
-    SECTION_DATA);
+               SECTION_DATA);
   load_segment(elf->e_fname, elf->e_rodatoff, elf->e_rodatlen,
-    elf->e_rodatstart, SECTION_RODATA);
+               elf->e_rodatstart, SECTION_RODATA);
   load_segment(elf->e_fname, 0, elf->e_bsslen, elf->e_bssstart, SECTION_BSS);
   load_segment(NULL, 0, STACK_SIZE, STACK_START_ADDR, SECTION_STACK);
   // Initialize the global variables and bss to zero once they are allocated
@@ -125,7 +128,7 @@ int load_every_segment(const simple_elf_t *elf) {
  *  @return 0 on success, a negative number on error
  */
 int load_segment(const char *fname, unsigned long offset, unsigned long size,
-  unsigned long start_addr, int type) {
+                 unsigned long start_addr, int type) {
 
   // get page table base register
   // assume it is base_addr
@@ -151,13 +154,14 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
       return -1;
     }
     int temp_offset = ((unsigned int)frame_addr % PAGE_SIZE);
-    unsigned int size_allocated = ((PAGE_SIZE - temp_offset) < max_size) ?
-      (PAGE_SIZE - temp_offset) : max_size;
+    unsigned int size_allocated = ((PAGE_SIZE - temp_offset) < max_size)
+                                      ? (PAGE_SIZE - temp_offset)
+                                      : max_size;
 
     if (type != SECTION_STACK && type != SECTION_BSS) {
       memcpy((frame_addr), buf + curr_offset, size_allocated);
     }
-    if ( type == SECTION_BSS) {
+    if (type == SECTION_BSS) {
       memset(frame_addr, 0, size_allocated);
     }
     remaining_size -= size_allocated;
@@ -172,55 +176,53 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
   return 0;
 }
 
-/** @brief Allocate one physical frame
+/** @brief Set up a page table entry and allocate an new frame for this entry
  *
- *  @param address The frame's address
- *  @param type The frame's type
+ *  @param address A virtual address
+ *  @param type The address's type (e.g. code, data...)
  *
- *  @return 0 The frame's physical address
+ *  @return 0 The allocated frame's physical address
  */
 void *load_frame(unsigned int address, unsigned int type) {
 
   // get base register in base_addr(unsigned int *)
   unsigned int *base_addr = (unsigned int *)get_cr3();
 
-  unsigned int offset = (((unsigned int)address & PAGE_TABLE_DIRECTORY_MASK)
-    >> PAGE_DIR_RIGHT_SHIFT);
+  unsigned int offset = (((unsigned int)address & PAGE_TABLE_DIRECTORY_MASK) >>
+                         PAGE_DIR_RIGHT_SHIFT);
 
-  unsigned int *page_table_directory_entry_addr = base_addr + offset;
+  unsigned int *page_directory_entry_addr = base_addr + offset;
 
   // If there is no page table associated with this entry, create it
-  if (!(*page_table_directory_entry_addr & PRESENT_BIT_MASK)) {
-    unsigned int *page_table_entry_addr = (unsigned int *)smemalign(PAGE_SIZE,
-      PAGE_SIZE);
-    memset(page_table_entry_addr, 0, PAGE_SIZE);
-    *page_table_directory_entry_addr = ((unsigned int)page_table_entry_addr &
-      PAGE_ADDR_MASK);
-    *page_table_directory_entry_addr |= PAGE_TABLE_DIRECTORY_FLAGS;
+  if (!is_entry_present(page_directory_entry_addr)) {
+    create_page_table(page_directory_entry_addr);
   }
 
   // Access the page table
-  unsigned int *page_table_base_addr = (unsigned int *)(*page_table_directory_entry_addr &
-    PAGE_ADDR_MASK);
-  offset = (((unsigned int)address & PAGE_TABLE_MASK) >>
-    PAGE_TABLE_RIGHT_SHIFT);
+  unsigned int *page_table_base_addr =
+      get_page_table_addr(page_directory_entry_addr);
+
+  offset =
+      (((unsigned int)address & PAGE_TABLE_MASK) >> PAGE_TABLE_RIGHT_SHIFT);
   unsigned int *page_table_entry = page_table_base_addr + offset;
 
   // If there is no physical frame associated with this entry, create it
-  if (!(*page_table_entry & PRESENT_BIT_MASK)) {
+  if (!is_entry_present(page_table_entry)) {
     if (type != SECTION_KERNEL) {
       unsigned int *physical_frame_addr = allocate_frame();
       *page_table_entry = ((unsigned int)physical_frame_addr & PAGE_ADDR_MASK);
       // TODO: Set appropriate flag based on the type passed
-      *page_table_entry |=  PAGE_TABLE_FLAGS;
+      // NOTE: When this is done, we should use create_page_table_entry() to
+      // allocate the frame
+      *page_table_entry |= PAGE_TABLE_FLAGS;
     } else {
       *page_table_entry = address & PAGE_ADDR_MASK;
       // TODO: Make it kernel accessible only
-      *page_table_entry |=  PAGE_TABLE_FLAGS;
+      *page_table_entry |= PAGE_TABLE_FLAGS;
     }
   }
 
-  uint8_t *frame_base_addr = (uint8_t*)(*page_table_entry & PAGE_ADDR_MASK);
+  uint8_t *frame_base_addr = (uint8_t *)(*page_table_entry & PAGE_ADDR_MASK);
   offset = ((unsigned int)address & FRAME_OFFSET_MASK);
 
   // TODO: This should be uint8_t *  and not unsinged int *, right?
@@ -236,10 +238,62 @@ void *allocate_frame() {
   for (i = 0; i < num_user_frames; i++) {
     if (get_bit(&free_map, i) == BITMAP_UNALLOCATED) {
       set_bit(&free_map, i);
-      return (void*)(USER_MEM_START + (i * PAGE_SIZE));
+      return (void *)(USER_MEM_START + (i * PAGE_SIZE));
     }
   }
   return NULL;
+}
+
+int is_entry_present(unsigned int *entry_addr) {
+  return *entry_addr & PRESENT_BIT_MASK;
+}
+
+unsigned int *create_page_table(unsigned int *page_directory_entry_addr) {
+  unsigned int *page_table_entry_addr =
+      (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
+  memset(page_table_entry_addr, 0, PAGE_SIZE);
+  *page_directory_entry_addr =
+      ((unsigned int)page_table_entry_addr & PAGE_ADDR_MASK);
+  *page_directory_entry_addr |= PAGE_TABLE_DIRECTORY_FLAGS;
+  return page_table_entry_addr;
+}
+
+unsigned int *create_page_table_entry(unsigned int *page_table_entry_addr,
+                                      uint32_t flags) {
+  unsigned int *physical_frame_addr = allocate_frame();
+  *page_table_entry_addr = ((unsigned int)physical_frame_addr & PAGE_ADDR_MASK);
+  *page_table_entry_addr |= flags;
+  return physical_frame_addr;
+}
+
+unsigned int *get_page_table_addr(unsigned int *page_directory_entry_addr) {
+  return (unsigned int *)(*page_directory_entry_addr & PAGE_ADDR_MASK);
+}
+
+unsigned int *get_frame_addr(unsigned int *page_table_entry_addr) {
+  return (unsigned int *)(*page_table_entry_addr & PAGE_ADDR_MASK);
+}
+
+uint32_t get_entry_flags(unsigned int *entry_addr) {
+  return *entry_addr & PAGE_TABLE_FLAGS;
+}
+
+unsigned int *get_virtual_address(unsigned int *page_directory_entry_addr,
+                                  unsigned int *page_table_entry_addr) {
+
+  unsigned int virtual_address = 0;
+
+  unsigned int page_dir_index =
+      ((unsigned int)page_directory_entry_addr & FRAME_OFFSET_MASK) >>
+      ENTRY_SIZE_LOG2;
+  unsigned int page_tab_index =
+      ((unsigned int)page_table_entry_addr & FRAME_OFFSET_MASK) >>
+      ENTRY_SIZE_LOG2;
+
+  virtual_address |= page_dir_index << PAGE_DIR_RIGHT_SHIFT;
+  virtual_address |= page_tab_index << PAGE_SIZE_LOG2;
+
+  return (unsigned int *) virtual_address;
 }
 
 /** @brief Enable paging and the "Page Global Enable" bit in %cr4

@@ -99,7 +99,7 @@ void mutex_lock(mutex_t *mp) {
   while((mp->prev + 1) != my_ticket) {
     // A thread which acquired the mutex earlier is running
     // Yield till it releases the lock
-    sys_yield(-1);
+    kern_yield(-1);
   }
 
 }

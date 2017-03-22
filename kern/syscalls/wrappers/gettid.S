@@ -1,14 +1,14 @@
 /** @file gettid.S
- *  @brief Wrapper for sys_gettid procedure
+ *  @brief Wrapper for gettid() system call
  *  @author akanjani, lramire1
  */
 
 #include <seg.h>
 
-.global sys_gettid_wrapper
+.global gettid
 
-sys_gettid_wrapper:
+gettid:
 
   call save_state
-  call sys_gettid
+  call kern_gettid
   call restore_state_and_iret

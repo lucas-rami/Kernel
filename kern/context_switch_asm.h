@@ -39,9 +39,6 @@ uint32_t init_new_task(uint32_t esp_new_task, uint32_t eflags,
 
 /** @brief Run the first thread in a newly created task
  *
- *  TODO: avoid usage for now, not sure it is working
- *  BUG: avoid usage for now, not sure it is working
- *
  *  @param entry_point  Adrress of the function to first run
  *  @param esp          Highest address of the thread's stack
  *  @param eflags       Value for the EFLAGS register

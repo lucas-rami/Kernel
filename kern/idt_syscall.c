@@ -5,13 +5,11 @@
  */
 
 #include <idt_syscall.h>
-#include <syscall_wrappers.h>
 
 #include <asm.h>
 #include <interrupts.h>
 #include <seg.h>
 
-#include <common_kern.h>
 #include <syscall.h>
 #include <syscall_int.h>
 
@@ -19,8 +17,6 @@
 #include <simics.h>
 
 #define IDT_ENTRY_SIZE_BYTES 8 /* The size of an entry in the IDT */
-#define ENTRY_INTERRUPT 0x00008E00
-#define ENTRY_TRAP 0x00008F00
 
 /** @brief Register the software interrupt handlers in the IDT
  *
@@ -29,13 +25,13 @@
 int idt_syscall_install() {
 
   // List of syscalls
-  uintptr_t syscalls[] = {
-      (uintptr_t)sys_gettid_wrapper, (uintptr_t)sys_deschedule_wrapper,
-      (uintptr_t)sys_make_runnable_wrapper, (uintptr_t)sys_yield_wrapper};
+  uintptr_t syscalls[] = {(uintptr_t)gettid, (uintptr_t)deschedule,
+                          (uintptr_t)make_runnable, (uintptr_t)yield,
+                          (uintptr_t)fork};
 
   // List of offsets in the IDT corresponding to syscalls
   uint32_t idt_indexes[] = {GETTID_INT, DESCHEDULE_INT, MAKE_RUNNABLE_INT,
-                            YIELD_INT};
+                            YIELD_INT, FORK_INT};
 
   int nb_syscalls = sizeof(syscalls) / sizeof(uintptr_t);
   int i;

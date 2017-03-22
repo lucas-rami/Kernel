@@ -12,8 +12,6 @@
 #include <context_switch_asm.h>
 #include <assert.h>
 
-static void init_thread(tcb_t* to);
-
 /** @brief Performs a context switch between two threads
  *
  *  @param to The TCB of the thread we are switching to
@@ -40,7 +38,7 @@ void context_switch(tcb_t* to) {
  *
  *  @return void
  */
-static void init_thread(tcb_t* to) {
+void init_thread(tcb_t* to) {
 
   // Update the kernel state
   kernel.current_thread = to;
