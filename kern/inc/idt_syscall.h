@@ -10,7 +10,7 @@
 #include <stdint.h>
 
 int idt_syscall_install();
-int register_syscall_handler(uint8_t gate_type, uintptr_t handler_addr,
+int register_syscall_handler(uint32_t gate_type, uintptr_t handler_addr,
                              uint32_t indt_index);
 
 #endif /* _IDT_SYSCALL_H_ */

@@ -11,6 +11,8 @@
 #include <context_switch.h>
 #include <context_switch_asm.h>
 #include <assert.h>
+#include <asm.h>
+#include <simics.h>
 
 /** @brief Performs a context switch between two threads
  *
@@ -44,16 +46,13 @@ void init_thread(tcb_t* to) {
   kernel.current_thread = to;
 
   // Update the thread's state
-  mutex_lock(&to->mutex);
   to->thread_state = THR_RUNNING;
   to->descheduled = THR_DESCHEDULED_FALSE;
-  mutex_unlock(&to->mutex);
 
   // Update cr3 and esp0 registers
   set_cr3(to->cr3);
   set_esp0(to->esp0);
 
-  // Unlock the mutex on the kernel state
-  mutex_unlock(&kernel.mutex);
+  enable_interrupts();
 
 }

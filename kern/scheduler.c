@@ -1,9 +1,10 @@
-/** @file scheduler.c
+  /** @file scheduler.c
  *  @brief This file contains the definition for the functions related to
  *  thread scheduling
  *  @author akanjani, lramire1
  */
 
+#include <asm.h>
 #include <context_switch.h>
 #include <kernel_state.h>
 #include <scheduler.h>
@@ -12,6 +13,7 @@
 #include <tcb.h>
 
 #include <assert.h>
+#include <simics.h>
 
 /** @brief Run the next thread in the queue of runnable threads
  *
@@ -25,14 +27,35 @@
 void run_next_thread() {
 
   // Check if the kernel state is initialized
-  assert(kernel.init == KERNEL_INIT_TRUE);
+  assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
 
   tcb_t *next_tcb = static_queue_dequeue(&kernel.runnable_threads);
 
   if (next_tcb != NULL) {
+    kernel.cpu_idle = CPU_IDLE_FALSE;
+
+    if (next_tcb == kernel.current_thread) {
+      lprintf("run_next_thread(): Just avoided context switching to myself !");
+      enable_interrupts();
+      return;
+    }
+
+    lprintf("run_next_thread(): Running new thread !");
+
     context_switch(next_tcb);
   } else {
-    // TODO: Run idle task when there is nothing to run
+
+    if (kernel.cpu_idle) {
+      lprintf("run_next_thread(): Just avoided context switching to myself "
+              "(idle thread) !");
+      enable_interrupts();
+      return;
+    }
+
+    lprintf("run_next_thread(): Nothing to run, idling now...");
+
+    kernel.cpu_idle = CPU_IDLE_TRUE;
+    context_switch(kernel.idle_thread);
   }
 }
 
@@ -45,14 +68,16 @@ void make_runnable_and_switch() {
 
   assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
 
-  if (static_queue_enqueue(&kernel.runnable_threads, kernel.current_thread) <
-      0) {
-    panic(
-        "make_runnable_and_switch(): Failed to add thread to runnable queue\n");
+  disable_interrupts();
+
+  if (kernel.cpu_idle == CPU_IDLE_FALSE) {
+    if (static_queue_enqueue(&kernel.runnable_threads, kernel.current_thread) <
+        0) {
+      panic("make_runnable_and_switch(): Failed to add thread to runnable "
+            "queue\n");
+    }
   }
   kernel.current_thread->thread_state = THR_RUNNABLE;
-
-  mutex_unlock(&kernel.current_thread->mutex);
 
   run_next_thread();
 }
@@ -63,12 +88,12 @@ void make_runnable_and_switch() {
  */
 void block_and_switch() {
 
-  assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
+  assert(kernel.init == KERNEL_INIT_TRUE);
 
-  kernel.current_thread->thread_state = THR_BLOCKED;
-  kernel.current_thread->descheduled = THR_DESCHEDULED_TRUE;
-
-  mutex_unlock(&kernel.current_thread->mutex);
+  if (kernel.current_thread != NULL && kernel.cpu_idle == CPU_IDLE_FALSE) {
+    kernel.current_thread->thread_state = THR_BLOCKED;
+    kernel.current_thread->descheduled = THR_DESCHEDULED_TRUE;
+  }
 
   run_next_thread();
 }

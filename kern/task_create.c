@@ -68,9 +68,10 @@ int create_task_from_executable(const char *task_name) {
     return -1;
   }
 
+  // Highest address of kernel stack
   uint32_t esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
 
-  // Create new PCB/TCB for the task and its root thread
+  // Create new PCB for the task
   pcb_t *new_pcb = create_new_pcb();
   if (new_pcb == NULL) {
     lprintf("create_task_from_executable(): PCB initialization failed");
@@ -78,6 +79,7 @@ int create_task_from_executable(const char *task_name) {
     return -1;
   }
 
+  // Create new TCB for task's root thread
   tcb_t *new_tcb = create_new_tcb(new_pcb, esp0, (uint32_t)cr3);
   if (new_tcb == NULL) {
     lprintf("create_task_from_executable(): TCB initialization failed");

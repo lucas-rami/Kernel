@@ -42,7 +42,7 @@ typedef struct tcb {
   /* @brief Hold the value of %cr3 for this thread when context switching */
   uint32_t cr3;
 
-  /* @brief Hold the value of %eps0 for this thread when context switching */
+  /* @brief Hold the value of %esp0 for this thread when context switching */
   uint32_t esp0;
 
   /** @brief Mutex used to ensure atomicity when changing the thread state */
