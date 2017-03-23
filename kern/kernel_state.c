@@ -7,12 +7,17 @@
 #include <assert.h>
 #include <kernel_state.h>
 #include <stdlib.h>
+#include <cond_var.h>
 
 /* Debugging */
 #include <simics.h>
 
 #define QUEUE_SIZE 32
 #define NB_BUCKETS 8
+
+// Conditional variable for malloc wrappers
+extern cond_t cond_malloc;
+extern mutex_t mutex_malloc;
 
 /** @brief Initialize the kernel state
  *
@@ -35,16 +40,30 @@ int kernel_init() {
   if (hash_table_init(&kernel.pcbs, NB_BUCKETS, find_pcb, hash_function_pcb) <
       0) {
     lprintf("kernel_init(): Failed to initialize hash table for PCBs");
+    return -1;
   }
 
   // Initialize the TCBs hash table
   if (hash_table_init(&kernel.tcbs, NB_BUCKETS, find_tcb, hash_function_tcb) <
       0) {
     lprintf("kernel_init(): Failed to initialize hash table for TCBs");
+    return -1;
   }
 
   if (mutex_init(&kernel.mutex) < 0) {
     lprintf("kernel_init(): Failed to initialize mutex");
+    return -1;
+  }
+
+  // Initialize the mutex for the functions in malloc_wrappers.c
+  if (mutex_init(&mutex_malloc) < 0) {
+    lprintf("kernel_init(): Failed to initialize mutex for malloc_wrappers.c");
+    return -1;
+  }
+
+  // Initialize the condition variable for the functions in malloc_wrappers.c
+  if (cond_init(&cond_malloc) < 0) {
+    lprintf("kernel_init(): Failed to initialize conditional variable for malloc_wrappers.c");
     return -1;
   }
 
