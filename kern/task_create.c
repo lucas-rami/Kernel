@@ -26,6 +26,10 @@
 // NOTE: Temporary
 #define ESP 0xFFFFFFFF
 
+// Number of registers poped during a popa instruction
+#define NB_REGISTERS_POPA 8
+
+
 // TODO: doc
 int create_task_from_executable(const char *task_name) {
 
@@ -91,11 +95,23 @@ int create_task_from_executable(const char *task_name) {
   eflags |= EFL_IF;          // Enable interrupts
 
   // Craft the kernel stack for first context switch to this thread
-  uint32_t esp_kernel =
-      init_new_task(esp0, eflags, ESP, elf.e_entry, new_tcb,
-                    (uintptr_t)init_thread, (uintptr_t)run_first_thread);
+  unsigned int * stack_addr = (unsigned int *) esp0;
+  --stack_addr;
+  *stack_addr = eflags;
+  --stack_addr;
+  *stack_addr = ESP;
+  --stack_addr;
+  *stack_addr = elf.e_entry;
+  --stack_addr;
+  *stack_addr = (unsigned int) new_tcb;
+  --stack_addr;
+  *stack_addr = (unsigned int) run_first_thread;
+  --stack_addr;
+  *stack_addr = (unsigned int) init_thread;
+  stack_addr -= NB_REGISTERS_POPA;
 
-  new_tcb->esp = esp_kernel;
+  // Save stack pointer value in TCB
+  new_tcb->esp = (uint32_t) stack_addr;
 
   // Make the thread runnable
   mutex_lock(&kernel.mutex);

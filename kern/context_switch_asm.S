@@ -9,7 +9,6 @@
 
 .global context_switch_asm
 .global run_first_thread
-.global init_new_task
 
 context_switch_asm:
 
@@ -23,33 +22,6 @@ context_switch_asm:
   popa                // Pop general purpose registers from stack
   ret                 // Return from procedure as another thread
 
-init_new_task:
-
-  movl %esp, %edx     // Save %esp in %edx
-
-  movl 4(%edx), %esp  // Set the stack pointer to the new task's stack
-
-  movl 8(%edx), %ecx  // Push EFLAGS
-  pushl %ecx
-  movl 12(%edx), %ecx // Push the stack pointer for user stack
-  pushl %ecx
-  movl 16(%edx), %ecx // Push the entry point address
-  pushl %ecx
-  movl 20(%edx), %ecx // Push the task's root thread TCB
-  pushl %ecx
-  movl 24(%edx), %ecx // Push &init_thread
-  pushl %ecx
-  movl 28(%edx), %ecx // Push &run_first_thread
-  pushl %ecx
-
-  pusha               // Push general purpose registers (dummy, here because
-                      // context_switch_asm() will pop them)
-
-  movl %esp, %eax     // Save and later return the stack pointer value
-
-  movl %edx, %esp     // Restore original stack pointer value
-
-  ret                 // Return
 
 run_first_thread:
 
