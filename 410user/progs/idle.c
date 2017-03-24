@@ -12,6 +12,13 @@
 int main()
 {
     lprintf("Running thread with ID %d\n", gettid());
-    while (1) {
+    /*int pid = fork();
+    if (pid == 0) {
+      lprintf("Child process\n");
+      while(1) {
+      }
+    }
+    lprintf("Parent process\n");
+    */while (1) {
     }
 }

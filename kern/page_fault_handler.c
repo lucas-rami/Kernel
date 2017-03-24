@@ -1,6 +1,7 @@
 #include <interrupts.h>
 #include "page_fault_asm.h"
 #include <seg.h>
+#include <simics.h>
 
 #define PAGE_FAULT_IDT 0xE
 
@@ -12,6 +13,7 @@ int page_fault_init(void)
 
 void page_fault_c_handler(void)
 {
+  lprintf("Page fault handler called\n");
   // Get the page table base register from the register cr3
   //
   // Figure out the correct offset and check if the entry is valid
