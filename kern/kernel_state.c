@@ -37,8 +37,8 @@ int kernel_init() {
 
   // Set various fields of the state to their initial value
   kernel.current_thread = NULL;
-  kernel.task_id = 1337;
-  kernel.thread_id = 1337;
+  kernel.task_id = 1;
+  kernel.thread_id = 1;
   kernel.cpu_idle = CPU_IDLE_TRUE;
 
   // Initialize the mutex for the functions in malloc_wrappers.c

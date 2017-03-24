@@ -68,11 +68,10 @@ void keyboard_c_handler(void) {
   static int i = 0;
   lprintf("Keyboard handler !");
 
-  if (i == 0) {
+  if ((i % 2) == 0) {
     make_runnable_and_switch();
-    ++i;
   }
-
+  i++;
   // Ack the PIC
   outb(INT_CTL_PORT, INT_ACK_CURRENT);
 }
