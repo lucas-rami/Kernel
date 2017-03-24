@@ -10,10 +10,9 @@
 #include <syscall.h>
 
 int main() {
-  int tid = gettid();
   int cnt = 0;
   int pid = fork();
-  lprintf("Running thread with ID %d\n", tid);
+  lprintf("Running thread with ID %d\n", gettid());
   while (1) {
     if (cnt % 3000000 == 0){
       if (pid == 0) {
@@ -21,7 +20,7 @@ int main() {
       } else {
         lprintf("Parent process\n");
       }
-      lprintf("tid : %d", tid);
+      lprintf("tid : %d", gettid());
       cnt = 0;
     }
     ++cnt;

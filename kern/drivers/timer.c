@@ -18,6 +18,7 @@
 #include <timer.h>
 #include <interrupts.h>
 #include "prechecks.h"
+#include <scheduler.h>
 
 #define REQUIRED_FREQUENCY 0.01
 #define ONE_LSB_MASK 0xFF
@@ -52,6 +53,8 @@ void timer_c_handler()
 
 	// acknowledge the most recent interrupt to the PIC
 	outb( INT_CTL_PORT, INT_ACK_CURRENT );
+
+	make_runnable_and_switch();
 }
 
 /** @brief Initializes the timer and registers its handler with the IDT

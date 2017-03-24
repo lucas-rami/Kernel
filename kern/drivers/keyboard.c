@@ -65,22 +65,10 @@ void keyboard_c_handler(void) {
   //
   // // Store it in the static buf
   // enqueue( character );
-
+  
   // Ack the PIC
   outb(INT_CTL_PORT, INT_ACK_CURRENT);
-  ++character;
-
-
-  static int i = 0;
-
-  lprintf("Handler");
-  ++i;
-
-  if (i % 2 == 0) {
-    lprintf("Context Switch !");
-    make_runnable_and_switch();
-  }
-
+  (void)character;
 }
 
 /** @brief The API provided to the user to read the characters that were
