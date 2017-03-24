@@ -24,12 +24,13 @@ void context_switch(tcb_t* to) {
 
   assert(kernel.current_thread != NULL && to != NULL);
 
-  kernel.current_thread = to;
+  tcb_t * me = kernel.current_thread;
+
   // Context switch to the other thread
   context_switch_asm(&kernel.current_thread->esp, to->esp);
 
   // Update the running thread state and the kernel state
-  init_thread(kernel.current_thread);
+  init_thread(me);
 
 }
 
