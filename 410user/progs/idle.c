@@ -9,16 +9,16 @@
 #include <simics.h>
 #include <syscall.h>
 
-int main()
-{
-    lprintf("Running thread with ID %d\n", gettid());
-    /*int pid = fork();
-    if (pid == 0) {
-      lprintf("Child process\n");
-      while(1) {
-      }
+int main() {
+  int tid = gettid();
+  int cnt = 0;
+  lprintf("Running thread with ID %d\n", tid);
+  while (1) {
+    if (cnt % 3000000 == 0){
+      lprintf("tid : %d", tid);
+      cnt = 0;
     }
-    lprintf("Parent process\n");
-    */while (1) {
-    }
+    ++cnt;
+  }
+  return 0;
 }

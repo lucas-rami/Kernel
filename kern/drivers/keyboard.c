@@ -60,20 +60,27 @@ int keyboard_init(void) {
  *   @return void
  **/
 void keyboard_c_handler(void) {
-  // // Read the byte from the port
-  // uint8_t character = ( int )inb( KEYBOARD_PORT );
+  // Read the byte from the port
+  uint8_t character = ( int )inb( KEYBOARD_PORT );
   //
   // // Store it in the static buf
   // enqueue( character );
-  static int i = 0;
-  lprintf("Keyboard handler !");
 
-  if ((i % 2) == 0) {
-    make_runnable_and_switch();
-  }
-  i++;
   // Ack the PIC
   outb(INT_CTL_PORT, INT_ACK_CURRENT);
+  ++character;
+
+
+  static int i = 0;
+
+  lprintf("Handler");
+  ++i;
+
+  if (i % 2 == 0) {
+    lprintf("Context Switch !");
+    make_runnable_and_switch();
+  }
+
 }
 
 /** @brief The API provided to the user to read the characters that were
