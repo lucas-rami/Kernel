@@ -211,7 +211,7 @@ tcb_t *create_new_tcb(const pcb_t *pcb, uint32_t esp0, uint32_t cr3) {
   mutex_lock(&kernel.mutex);
   new_tcb->tid = kernel.thread_id;
   if (++kernel.thread_id < 0) {
-    kernel.task_id = 1;
+    kernel.thread_id = 1;
   }
   mutex_unlock(&kernel.mutex);
 
