@@ -74,13 +74,13 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
     }
   }
 
-  if ((entrypoint = create_task_from_executable(FIRST_TASK)) == 0) {
+/*  if ((entrypoint = create_task_from_executable(FIRST_TASK)) == 0) {
     lprintf("Failed to create user task\n");
     while (1) {
       continue;
     }
   }
-
+*/
   // Enable virtual memory
   vm_enable();
 

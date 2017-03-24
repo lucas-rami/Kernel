@@ -92,7 +92,7 @@ int kern_fork(unsigned int *esp) {
   add_runnable_thread(new_tcb);
   mutex_unlock(&kernel.mutex);
 
-  enable_interrupts();
+  // enable_interrupts();
   return new_pcb->tid;
 }
 
