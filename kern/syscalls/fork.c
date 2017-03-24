@@ -14,6 +14,7 @@
 #include <syscalls/fork_helper.h>
 #include <context_switch.h>
 #include <scheduler.h>
+#include <asm.h>
 
 #include <simics.h>
 
@@ -25,6 +26,7 @@ static unsigned int * copy_memory_regions();
 // TODO: doc
 int kern_fork(unsigned int *esp) {
 
+  //lprintf("kern_fork: Called\n");
   // NOTE: Reject call if more than one thread in the task ?
   // TODO: Need to register software exception handler
 
@@ -35,10 +37,13 @@ int kern_fork(unsigned int *esp) {
     return -1;
   }
 
+  //lprintf("kern_fork: Kernel stack allocated. Calling copy memory regions\n");
   unsigned int * new_cr3 = copy_memory_regions();
 
+  //lprintf("Copied memory regions\n");
   uint32_t esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
 
+  //lprintf("kern_fork: Creating new PCB\n");
   // Create new PCB/TCB for the task and its root thread
   pcb_t *new_pcb = create_new_pcb();
   if (new_pcb == NULL) {
@@ -48,6 +53,7 @@ int kern_fork(unsigned int *esp) {
     return -1;
   }
 
+  //lprintf("kern_fork: Creating new TCB\n");
   tcb_t *new_tcb = create_new_tcb(new_pcb, esp0, (uint32_t)new_cr3);
   if (new_tcb == NULL) {
     lprintf("fork(): TCB initialization failed");
@@ -80,12 +86,14 @@ int kern_fork(unsigned int *esp) {
   *stack_addr = (unsigned int) init_thread;
   stack_addr -= NB_REGISTERS_POPA;
 
+  new_tcb->esp = (uint32_t) stack_addr;
   // Make the thread runnable
   mutex_lock(&kernel.mutex);
   add_runnable_thread(new_tcb);
   mutex_unlock(&kernel.mutex);
 
-  return 0;
+  enable_interrupts();
+  return new_pcb->tid;
 }
 
 int kern_thread_fork() {
@@ -95,25 +103,29 @@ int kern_thread_fork() {
 
 // TODO: doc
 static unsigned int * copy_memory_regions() {
+  //lprintf("copy_memory_regions: Called\n");
   char *buffer = malloc(PAGE_SIZE);
   if (buffer == NULL) {
     lprintf("copy_memory_regions(): Unable to allocate buffer");
     return NULL;
   }
 
+  //lprintf("copy_memory_regions: Buffer malloced\n");
   unsigned int *orig_cr3 = (unsigned int *)get_cr3();
   unsigned int *new_cr3 = (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
 
   memset(new_cr3, 0, PAGE_SIZE);
 
+  //lprintf("copy_memory_regions: New page directory created\n");
   unsigned int nb_entries = PAGE_SIZE / SIZE_ENTRY_BYTES;
   unsigned int *orig_dir_entry, *new_dir_entry;
   for (orig_dir_entry = orig_cr3, new_dir_entry = new_cr3;
-       orig_dir_entry < new_cr3 + nb_entries;
+       orig_dir_entry < orig_cr3 + nb_entries;
        ++orig_dir_entry, ++new_dir_entry) {
 
     // If the page directory entry is present
     if (is_entry_present(orig_dir_entry)) {
+      //lprintf("copy_memory_regions: Page directory entry present\n");
 
       unsigned int *orig_page_table_addr = get_page_table_addr(orig_dir_entry);
       unsigned int *new_page_table_addr = create_page_table(new_dir_entry);
@@ -127,12 +139,15 @@ static unsigned int * copy_memory_regions() {
         // If the page table entry is present
         if (is_entry_present(orig_tab_entry)) {
 
+          //lprintf("copy_memory_regions: page table entry present\n");
           if ((unsigned int)get_frame_addr(orig_tab_entry) < USER_MEM_START) {
             // This is direct mapped kernel memory
+            //lprintf("copy_memory_regions: Kernel space\n");
             *(new_tab_entry) = *orig_tab_entry;
           } else {
             // This is user space memory, we have to allocate a new frame
 
+            //lprintf("copy_memory_regions: User space. Calling create_page_table_entry\n");
             // Create a new page table entry
             create_page_table_entry(new_tab_entry,
                                     get_entry_flags(orig_tab_entry));
@@ -146,13 +161,16 @@ static unsigned int * copy_memory_regions() {
             unsigned int *new_virtual_address =
                 get_virtual_address(new_dir_entry, new_tab_entry);
 
+            //lprintf("copy_memory_regions: Copying from old space to buffer\n");
             // Copy the frame content to the buffer
             memcpy(buffer, orig_virtual_address, PAGE_SIZE);
 
+            //lprintf("copy_memory_regions: Copying from buffer to new virtual space\n");
             // Copy the frame to the new task user spce
             set_cr3((uint32_t)new_cr3);
             memcpy(new_virtual_address, buffer, PAGE_SIZE);
             set_cr3((uint32_t)orig_cr3);
+            //lprintf("copy_memory_regions: Done copying frame\n");
           }
         }
       }
