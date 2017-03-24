@@ -74,20 +74,25 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
     }
   }
 
+  if ((entrypoint = create_task_from_executable(FIRST_TASK)) == 0) {
+    lprintf("Failed to create user task\n");
+    while (1) {
+      continue;
+    }
+  }
+
   // Enable virtual memory
   vm_enable();
 
   // Clear the console before running anything
   clear_console();
 
-  enable_interrupts();
-
   lprintf("Interupts enabled - VM enabled - Ready to run some programs !");
 
   run_idle(kernel.idle_thread->esp);
 
   // We never get here
-  
+
   while (1) {
     continue;
   }

@@ -22,15 +22,14 @@
  */
 void context_switch(tcb_t* to) {
 
-  lprintf("Context switch called\n");
   assert(kernel.current_thread != NULL && to != NULL);
 
+  kernel.current_thread = to;
   // Context switch to the other thread
   context_switch_asm(&kernel.current_thread->esp, to->esp);
 
-  lprintf("Context switch asm returned\n");
   // Update the running thread state and the kernel state
-  init_thread(to);
+  init_thread(kernel.current_thread);
 
 }
 
