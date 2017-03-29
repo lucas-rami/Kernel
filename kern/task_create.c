@@ -75,7 +75,6 @@ int create_task_from_executable(const char *task_name, int is_exec, char **argve
     return -1;
   }
 
-<<<<<<< HEAD
   uint32_t esp0, stack_top;
   pcb_t *new_pcb = NULL;
   tcb_t *new_tcb = NULL;
@@ -113,17 +112,12 @@ int create_task_from_executable(const char *task_name, int is_exec, char **argve
   eflags |= EFL_IOPL_RING3;  // Set privilege level to 3
   eflags |= EFL_IF;          // Enable interrupts
 
-  // Craft the kernel stack for first context switch to this thread
-  uint32_t esp_kernel =
-      init_new_task(esp0, eflags, stack_top, elf.e_entry, new_tcb,
-                    (uintptr_t)init_thread, (uintptr_t)run_first_thread);
-
-  new_tcb->esp = esp_kernel;
   unsigned int * stack_addr = (unsigned int *) esp0;
+
   --stack_addr;
   *stack_addr = eflags;
   --stack_addr;
-  *stack_addr = ESP;
+  *stack_addr = stack_top;
   --stack_addr;
   *stack_addr = elf.e_entry;
   --stack_addr;
