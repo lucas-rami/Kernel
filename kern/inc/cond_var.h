@@ -8,7 +8,7 @@
 
 #include <dynamic_queue.h>
 
-/** A structure of a condition variable
+/** @brief A structure representing a condition variable
  */
 typedef struct cond {
 

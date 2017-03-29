@@ -25,6 +25,10 @@ int bitmap_init(bitmap_t *map, int length) {
   if (map->arr == NULL) {
     return -1;
   }
+  if (mutex_init(&map->mp) < 0) {
+    free(map->arr);
+    return -1;
+  }
   memset(map->arr, BITMAP_UNALLOCATED, sizeof(uint8_t) * length);
   return 0;
 }
@@ -40,9 +44,12 @@ int get_bit(bitmap_t *map, int index) {
   if (!map) {
     return -1;
   }
+
+  mutex_lock(&map->mp);
   int actual_index = (index / BITS_IN_UINT8_T);
   int bit_pos = (index % BITS_IN_UINT8_T);
   int ret = map->arr[actual_index] & (1 << (BITS_IN_UINT8_T - bit_pos - 1));
+  mutex_unlock(&map->mp);  
   return ret;
 }
 
@@ -57,9 +64,13 @@ int set_bit(bitmap_t *map, int index) {
   if (!map) {
     return -1;
   }
+
+  mutex_lock(&map->mp);  
   int actual_index = (index / BITS_IN_UINT8_T);
   int bit_pos = (index % BITS_IN_UINT8_T);
-  map->arr[actual_index] |= (BITMAP_ALLOCATED << (BITS_IN_UINT8_T - bit_pos - 1));
+  map->arr[actual_index] |= 
+                        (BITMAP_ALLOCATED << (BITS_IN_UINT8_T - bit_pos - 1));
+  mutex_unlock(&map->mp);    
   return 0;
 }
 
@@ -74,8 +85,12 @@ int unset_bit(bitmap_t *map, int index) {
   if (!map) {
     return -1;
   }
+
+  mutex_lock(&map->mp);  
   int actual_index = (index / BITS_IN_UINT8_T);
   int bit_pos = (index % BITS_IN_UINT8_T);
-  map->arr[actual_index] &= (~BITMAP_ALLOCATED << (BITS_IN_UINT8_T - bit_pos - 1));
+  map->arr[actual_index] &= 
+                        (~BITMAP_ALLOCATED << (BITS_IN_UINT8_T - bit_pos - 1));
+  mutex_unlock(&map->mp);    
   return 0;
 }
