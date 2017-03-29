@@ -14,6 +14,8 @@
 
 #define KERNEL_INIT_FALSE 0
 #define KERNEL_INIT_TRUE 1
+#define CPU_IDLE_FALSE 0
+#define CPU_IDLE_TRUE 1
 
 typedef struct kernel {
 
@@ -37,6 +39,12 @@ typedef struct kernel {
    * kernel_init()  */
   static_queue_t runnable_threads;
 
+  /* @brief Idle thread (ran when there is nothing to run) */
+  tcb_t *idle_thread;
+
+  /* @brief Indicates wether the CPU is currently running the idle thread */
+  int cpu_idle;
+
   /** @brief Mutex used to ensure atomicity when changing the kernel state */
   mutex_t mutex;
 
@@ -54,9 +62,10 @@ typedef struct kernel {
 kernel_t kernel;
 
 int kernel_init();
-pcb_t* create_new_pcb();
-tcb_t* create_new_tcb(const pcb_t* pcb, uint32_t esp0, uint32_t cr3);
+pcb_t *create_new_pcb();
+tcb_t *create_new_tcb(const pcb_t *pcb, uint32_t esp0, uint32_t cr3);
 
+tcb_t* create_idle_thread();
 
 unsigned int hash_function_pcb(void *pcb, unsigned int nb_buckets);
 int find_pcb(void *pcb, void *tid);

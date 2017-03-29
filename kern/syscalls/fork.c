@@ -10,17 +10,21 @@
 #include <malloc.h>
 #include <page.h>
 #include <string.h>
-#include <virtual_memory.h>
 #include <syscalls/fork_helper.h>
 #include <context_switch.h>
 #include <scheduler.h>
+#include <asm.h>
+
+/* VM system */
+#include <virtual_memory.h>
+#include <virtual_memory_helper.h>
+#include <virtual_memory_defines.h>
 
 #include <simics.h>
 
-#define SIZE_ENTRY_BYTES 4
 #define NB_REGISTERS_POPA 8
 
-static unsigned int * copy_memory_regions();
+static unsigned int * copy_memory_regions(void);
 
 // TODO: doc
 int kern_fork(unsigned int *esp) {
@@ -44,7 +48,7 @@ int kern_fork(unsigned int *esp) {
   if (new_pcb == NULL) {
     lprintf("fork(): PCB initialization failed");
     free(stack_kernel);
-    // TODO: free copy of memory regions
+    free_address_space(new_cr3, KERNEL_AND_USER_SPACE);
     return -1;
   }
 
@@ -53,7 +57,7 @@ int kern_fork(unsigned int *esp) {
     lprintf("fork(): TCB initialization failed");
     free(stack_kernel);
     hash_table_remove_element(&kernel.pcbs, new_pcb);
-    // TODO: free copy of memory regions
+    free_address_space(new_cr3, KERNEL_AND_USER_SPACE);
     return -1;
   }
 
@@ -80,12 +84,14 @@ int kern_fork(unsigned int *esp) {
   *stack_addr = (unsigned int) init_thread;
   stack_addr -= NB_REGISTERS_POPA;
 
+  new_tcb->esp = (uint32_t) stack_addr;
   // Make the thread runnable
   mutex_lock(&kernel.mutex);
   add_runnable_thread(new_tcb);
   mutex_unlock(&kernel.mutex);
 
-  return 0;
+  // enable_interrupts();
+  return new_pcb->tid;
 }
 
 int kern_thread_fork() {
@@ -95,6 +101,7 @@ int kern_thread_fork() {
 
 // TODO: doc
 static unsigned int * copy_memory_regions() {
+
   char *buffer = malloc(PAGE_SIZE);
   if (buffer == NULL) {
     lprintf("copy_memory_regions(): Unable to allocate buffer");
@@ -109,14 +116,15 @@ static unsigned int * copy_memory_regions() {
   unsigned int nb_entries = PAGE_SIZE / SIZE_ENTRY_BYTES;
   unsigned int *orig_dir_entry, *new_dir_entry;
   for (orig_dir_entry = orig_cr3, new_dir_entry = new_cr3;
-       orig_dir_entry < new_cr3 + nb_entries;
+       orig_dir_entry < orig_cr3 + nb_entries;
        ++orig_dir_entry, ++new_dir_entry) {
 
     // If the page directory entry is present
     if (is_entry_present(orig_dir_entry)) {
 
       unsigned int *orig_page_table_addr = get_page_table_addr(orig_dir_entry);
-      unsigned int *new_page_table_addr = create_page_table(new_dir_entry);
+      unsigned int *new_page_table_addr = 
+                      create_page_table(new_dir_entry, PAGE_TABLE_FLAGS);
 
       unsigned int *orig_tab_entry, *new_tab_entry;
       for (orig_tab_entry = orig_page_table_addr,
@@ -131,7 +139,7 @@ static unsigned int * copy_memory_regions() {
             // This is direct mapped kernel memory
             *(new_tab_entry) = *orig_tab_entry;
           } else {
-            // This is user space memory, we have to allocate a new frame
+            // This is user space memory, we have to allocated a new frame
 
             // Create a new page table entry
             create_page_table_entry(new_tab_entry,

@@ -36,7 +36,7 @@ int idt_syscall_install() {
   int nb_syscalls = sizeof(syscalls) / sizeof(uintptr_t);
   int i;
   for (i = 0; i < nb_syscalls; ++i) {
-    if (register_syscall_handler((uint8_t)TRAP_GATE_IDENTIFIER, syscalls[i],
+    if (register_syscall_handler((uint32_t)TRAP_GATE_IDENTIFIER, syscalls[i],
                                  idt_indexes[i]) < 0) {
       lprintf("Failed to register handler %u in IDT",
               (unsigned int)idt_indexes[i]);
@@ -49,15 +49,20 @@ int idt_syscall_install() {
 
 /** @brief Register an handler in the IDT for a software interrupt
  *
+ *  @param gate_type    Type of the interrupt gate
+ *  @param handler_addr Address of the handler function
+ *  @param idt_index    Gate index in the IDT
+ *
  *  @return 0 on success, a negative number on error
  */
-int register_syscall_handler(uint8_t gate_type, uintptr_t handler_addr,
+int register_syscall_handler(uint32_t gate_type, uintptr_t handler_addr,
                              uint32_t idt_index) {
 
   if (gate_type != TRAP_GATE_IDENTIFIER &&
       gate_type != INTERRUPT_GATE_IDENTIFIER) {
     lprintf("Invalid argument to register_syscall_handler(): Gate type is "
             "neither TRAP nor INTERRUPT");
+    return -1;
   }
 
   return register_handler(handler_addr, gate_type, idt_index,

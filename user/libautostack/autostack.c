@@ -23,7 +23,7 @@
  *  @return void
  */
 void install_autostack(void *stack_high, void *stack_low) {
-
+/*
   // Initialize the global state
   task.stack_lowest = stack_low;
   task.stack_highest = stack_high;
@@ -34,4 +34,5 @@ void install_autostack(void *stack_high, void *stack_low) {
     // Can't register the handler
     assert(0);
   }
+*/
 }

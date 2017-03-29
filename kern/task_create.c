@@ -29,6 +29,10 @@
 #define TRUE 1
 #define FALSE 0
 
+// Number of registers poped during a popa instruction
+#define NB_REGISTERS_POPA 8
+
+
 // TODO: doc
 int create_task_from_executable(const char *task_name, int is_exec, char **argvec, int count) {
 
@@ -71,6 +75,7 @@ int create_task_from_executable(const char *task_name, int is_exec, char **argve
     return -1;
   }
 
+<<<<<<< HEAD
   uint32_t esp0, stack_top;
   pcb_t *new_pcb = NULL;
   tcb_t *new_tcb = NULL;
@@ -114,6 +119,23 @@ int create_task_from_executable(const char *task_name, int is_exec, char **argve
                     (uintptr_t)init_thread, (uintptr_t)run_first_thread);
 
   new_tcb->esp = esp_kernel;
+  unsigned int * stack_addr = (unsigned int *) esp0;
+  --stack_addr;
+  *stack_addr = eflags;
+  --stack_addr;
+  *stack_addr = ESP;
+  --stack_addr;
+  *stack_addr = elf.e_entry;
+  --stack_addr;
+  *stack_addr = (unsigned int) new_tcb;
+  --stack_addr;
+  *stack_addr = (unsigned int) run_first_thread;
+  --stack_addr;
+  *stack_addr = (unsigned int) init_thread;
+  stack_addr -= NB_REGISTERS_POPA;
+
+  // Save stack pointer value in TCB
+  new_tcb->esp = (uint32_t) stack_addr;
 
   // Make the thread runnable
   mutex_lock(&kernel.mutex);

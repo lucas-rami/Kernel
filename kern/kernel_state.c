@@ -5,14 +5,29 @@
  */
 
 #include <assert.h>
+#include <cond_var.h>
 #include <kernel_state.h>
 #include <stdlib.h>
+#include <page.h>
+#include <asm.h>
 
 /* Debugging */
 #include <simics.h>
 
 #define QUEUE_SIZE 32
 #define NB_BUCKETS 8
+
+static void idle() {
+  lprintf("Idle task running");
+  enable_interrupts();
+  while (1) {
+    continue;
+  }
+}
+
+// Conditional variable for malloc wrappers
+extern cond_t cond_malloc;
+extern mutex_t mutex_malloc;
 
 /** @brief Initialize the kernel state
  *
@@ -22,8 +37,22 @@ int kernel_init() {
 
   // Set various fields of the state to their initial value
   kernel.current_thread = NULL;
-  kernel.task_id = 1337;
-  kernel.thread_id = 1337;
+  kernel.task_id = 1;
+  kernel.thread_id = 1;
+  kernel.cpu_idle = CPU_IDLE_TRUE;
+
+  // Initialize the mutex for the functions in malloc_wrappers.c
+  if (mutex_init(&mutex_malloc) < 0) {
+    lprintf("kernel_init(): Failed to initialize mutex for malloc_wrappers.c");
+    return -1;
+  }
+
+  // Initialize the condition variable for the functions in malloc_wrappers.c
+  if (cond_init(&cond_malloc) < 0) {
+    lprintf("kernel_init(): Failed to initialize conditional variable for "
+            "malloc_wrappers.c");
+    return -1;
+  }
 
   // Initialize the queue for runnable threads
   if (static_queue_init(&kernel.runnable_threads, QUEUE_SIZE) < 0) {
@@ -35,23 +64,87 @@ int kernel_init() {
   if (hash_table_init(&kernel.pcbs, NB_BUCKETS, find_pcb, hash_function_pcb) <
       0) {
     lprintf("kernel_init(): Failed to initialize hash table for PCBs");
+    return -1;
   }
 
   // Initialize the TCBs hash table
   if (hash_table_init(&kernel.tcbs, NB_BUCKETS, find_tcb, hash_function_tcb) <
       0) {
     lprintf("kernel_init(): Failed to initialize hash table for TCBs");
+    return -1;
   }
 
+  // Initialize the kernel mutex
   if (mutex_init(&kernel.mutex) < 0) {
     lprintf("kernel_init(): Failed to initialize mutex");
     return -1;
   }
 
+  // Configure the idle task
+  kernel.idle_thread = create_idle_thread();
+  if (kernel.idle_thread == NULL) {
+    lprintf("kernel_init(): Failed to create idle thread");
+  }
+  kernel.current_thread = kernel.idle_thread;
+
   // Mark the kernel state as initialized
   kernel.init = KERNEL_INIT_TRUE;
 
   return 0;
+}
+
+tcb_t *create_idle_thread() {
+
+  // Allocate space for the new PCB
+  pcb_t *new_pcb = malloc(sizeof(pcb_t));
+
+  // Initialize the mutex on this PCB
+  if (mutex_init(&new_pcb->mutex) < 0) {
+    lprintf("create_idle_thread(): Failed to initialize PCB mutex");
+    free(new_pcb);
+    return NULL;
+  }
+
+  // Set various fields to their initial value
+  new_pcb->return_status = 0;
+  new_pcb->task_state = TASK_RUNNING;
+  new_pcb->tid = 0; // Fine since no other task is allowed to have this tid
+
+  // Allocate space for the new PCB
+  tcb_t *new_tcb = malloc(sizeof(tcb_t));
+
+  // Initialize the mutex on this PCB
+  if (mutex_init(&new_tcb->mutex) < 0) {
+    lprintf("create_idle_thread(): Failed to initialize TCB mutex");
+    free(new_pcb);
+    free(new_tcb);
+    return NULL;
+  }
+
+  // Set various fields to their initial value
+  new_tcb->task = new_pcb;
+  new_tcb->thread_state = THR_RUNNING;
+  new_tcb->descheduled = THR_DESCHEDULED_FALSE;
+  new_tcb->tid = 0; // Fine since no other thread is allowed to have this tid
+
+  // Allocate a kernel stack for the root thread
+  void *stack_kernel = malloc(PAGE_SIZE);
+  if (stack_kernel == NULL) {
+    lprintf("create_idle_thread(): Failed to allocate kernel stack");
+    return NULL;
+  }
+
+  new_tcb->esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
+  unsigned int * stack_addr = (unsigned int *) new_tcb->esp0;
+  --stack_addr;
+  *stack_addr = (unsigned int) idle;
+  new_tcb->esp = (unsigned int) stack_addr;
+
+  // NOTE: I don't think that we really care about cr3 since this thread will
+  // always stay in kernel space
+
+  return new_tcb;
+
 }
 
 // TODO: doc
@@ -118,7 +211,7 @@ tcb_t *create_new_tcb(const pcb_t *pcb, uint32_t esp0, uint32_t cr3) {
   mutex_lock(&kernel.mutex);
   new_tcb->tid = kernel.thread_id;
   if (++kernel.thread_id < 0) {
-    kernel.task_id = 1;
+    kernel.thread_id = 1;
   }
   mutex_unlock(&kernel.mutex);
 

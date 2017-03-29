@@ -20,14 +20,16 @@
  *  @author Anirudh Kanjani
  */
 
-#include <interrupts.h>
-#include <keyhelp.h>
-#include <asm.h>
-#include <keyboard.h>
-#include <queue.h>
 #include "keyboard_asm.h"
-#include <seg.h>
+#include <asm.h>
 #include <interrupt_defines.h>
+#include <interrupts.h>
+#include <keyboard.h>
+#include <keyhelp.h>
+#include <queue.h>
+#include <scheduler.h>
+#include <seg.h>
+#include <simics.h>
 #include <stdio.h>
 
 /** @brief keyboard initialization function
@@ -39,10 +41,10 @@
  *
  *   @return A negative error code on error, or 0 on success
  **/
-int keyboard_init( void )
-{
-	return register_handler( (uintptr_t) keyboard_interrupt_handler, TRAP_GATE, 
-		KEY_IDT_ENTRY, KERNEL_PRIVILEGE_LEVEL, SEGSEL_KERNEL_CS );
+int keyboard_init(void) {
+  return register_handler((uintptr_t)keyboard_interrupt_handler, TRAP_GATE,
+                          KEY_IDT_ENTRY, KERNEL_PRIVILEGE_LEVEL,
+                          SEGSEL_KERNEL_CS);
 }
 
 /** @brief The keyboard's C interrupt handler function
@@ -57,16 +59,16 @@ int keyboard_init( void )
  *
  *   @return void
  **/
-void keyboard_c_handler( void )
-{
-	// Read the byte from the port
-	uint8_t character = ( int )inb( KEYBOARD_PORT );
-
-	// Store it in the static buf
-	enqueue( character );
-
-	// Ack the PIC
-	outb( INT_CTL_PORT, INT_ACK_CURRENT );
+void keyboard_c_handler(void) {
+  // Read the byte from the port
+  uint8_t character = ( int )inb( KEYBOARD_PORT );
+  //
+  // // Store it in the static buf
+  // enqueue( character );
+  
+  // Ack the PIC
+  outb(INT_CTL_PORT, INT_ACK_CURRENT);
+  (void)character;
 }
 
 /** @brief The API provided to the user to read the characters that were
@@ -84,22 +86,21 @@ void keyboard_c_handler( void )
  *
  *   @return A negative error code on error, or the character read on success
  **/
-int readchar( void )
-{
-	while( 1 ) {
-		int ch = dequeue();
-		if ( ch < 0 ) {
-			// Dequeue error. The queue is empty
-			break;
-		}
-		kh_type aug_char = process_scancode( ch );
-		if ( KH_HASDATA( aug_char ) ) {
-			// has a valid character
-			if ( !KH_ISMAKE( aug_char ) ) {
-				// key is released
-				return KH_GETCHAR( aug_char );
-			}
-		}
-	}
-	return -1;
+int readchar(void) {
+  while (1) {
+    int ch = dequeue();
+    if (ch < 0) {
+      // Dequeue error. The queue is empty
+      break;
+    }
+    kh_type aug_char = process_scancode(ch);
+    if (KH_HASDATA(aug_char)) {
+      // has a valid character
+      if (!KH_ISMAKE(aug_char)) {
+        // key is released
+        return KH_GETCHAR(aug_char);
+      }
+    }
+  }
+  return -1;
 }
