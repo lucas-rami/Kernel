@@ -99,10 +99,10 @@ KERNEL_OBJS = kernel_state.o hash_table.o linked_list.o mutex.o kernel.o loader.
 KERNEL_OBJS += drivers/console.o drivers/keyboard.o drivers/keyboard_asm.o drivers/prechecks.o drivers/timer.o drivers/timer_asm.o
 
 # Files in syscalls/
-KERNEL_OBJS += syscalls/gettid.o syscalls/scheduling_calls.o syscalls/fork.o
+KERNEL_OBJS += syscalls/gettid.o syscalls/scheduling_calls.o syscalls/fork.o syscalls/exec.o
 
 # Files in syscalls/wrappers/
-KERNEL_OBJS += syscalls/wrappers/gettid.o syscalls/wrappers/scheduling_calls.o syscalls/wrappers/fork.o syscalls/wrappers/syscalls_helper.o
+KERNEL_OBJS += syscalls/wrappers/gettid.o syscalls/wrappers/scheduling_calls.o syscalls/wrappers/fork.o syscalls/wrappers/syscalls_helper.o syscalls/wrappers/exec.o
 
 ###########################################################################
 # WARNING: Do not put **test** programs into the REQPROGS variables.  Your

@@ -30,7 +30,7 @@
 #include <kernel_state.h>
 #include <static_queue.h>
 
-#define FIRST_TASK "idle"
+#define FIRST_TASK "knife"
 
 void tick(unsigned int numTicks);
 
@@ -64,7 +64,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
 
     // Create the initial task and load everything into memory
     uint32_t entrypoint;
-    if ( (entrypoint = create_task_from_executable(FIRST_TASK)) == 0 ) {
+    if ( (entrypoint = create_task_from_executable(FIRST_TASK, FALSE, NULL, 0)) == 0 ) {
       lprintf("Failed to create user task\n");
       while (1) {
         continue;
@@ -74,6 +74,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
     // Enable virtual memory
     vm_enable();
 
+    lprintf("The entrypoint is %d\n", (int)entrypoint);
     // Enable interrupts
     enable_interrupts();
 

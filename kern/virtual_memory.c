@@ -46,6 +46,8 @@
 
 #define ENTRY_SIZE_LOG2 2
 #define PAGE_SIZE_LOG2 12
+#define TRUE 1
+#define FALSE 0
 
 unsigned int num_user_frames;
 
@@ -89,7 +91,7 @@ unsigned int *setup_vm(const simple_elf_t *elf_info) {
 
   // Add stack area as well.
   if (load_every_segment(elf_info) < 0) {
-    // TODO: free
+    // TODO: free all the frames
     return NULL;
   }
 
@@ -185,26 +187,16 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
  */
 void *load_frame(unsigned int address, unsigned int type) {
 
-  // get base register in base_addr(unsigned int *)
-  unsigned int *base_addr = (unsigned int *)get_cr3();
-
-  unsigned int offset = (((unsigned int)address & PAGE_TABLE_DIRECTORY_MASK) >>
-                         PAGE_DIR_RIGHT_SHIFT);
-
-  unsigned int *page_directory_entry_addr = base_addr + offset;
+  unsigned int *page_directory_entry_addr = get_page_directory_addr(
+                                            (unsigned int*)address);
 
   // If there is no page table associated with this entry, create it
   if (!is_entry_present(page_directory_entry_addr)) {
     create_page_table(page_directory_entry_addr);
   }
 
-  // Access the page table
-  unsigned int *page_table_base_addr =
-      get_page_table_addr(page_directory_entry_addr);
-
-  offset =
-      (((unsigned int)address & PAGE_TABLE_MASK) >> PAGE_TABLE_RIGHT_SHIFT);
-  unsigned int *page_table_entry = page_table_base_addr + offset;
+  unsigned int *page_table_entry = get_page_table_addr_with_offset(
+                                   page_directory_entry_addr, address);
 
   // If there is no physical frame associated with this entry, create it
   if (!is_entry_present(page_table_entry)) {
@@ -223,7 +215,7 @@ void *load_frame(unsigned int address, unsigned int type) {
   }
 
   uint8_t *frame_base_addr = (uint8_t *)(*page_table_entry & PAGE_ADDR_MASK);
-  offset = ((unsigned int)address & FRAME_OFFSET_MASK);
+  unsigned int offset = ((unsigned int)address & FRAME_OFFSET_MASK);
 
   // TODO: This should be uint8_t *  and not unsinged int *, right?
   return (frame_base_addr + offset);
@@ -267,9 +259,20 @@ unsigned int *create_page_table_entry(unsigned int *page_table_entry_addr,
 }
 
 unsigned int *get_page_table_addr(unsigned int *page_directory_entry_addr) {
+  // Access the page table
   return (unsigned int *)(*page_directory_entry_addr & PAGE_ADDR_MASK);
 }
 
+unsigned int *get_page_table_addr_with_offset(
+             unsigned int *page_directory_entry_addr, unsigned int address) {
+  // Access the page table
+  unsigned int *page_table_base_addr = get_page_table_addr(
+                                       page_directory_entry_addr);
+  unsigned int offset =
+      ((address & PAGE_TABLE_MASK) >> PAGE_TABLE_RIGHT_SHIFT);
+
+  return page_table_base_addr + offset; 
+}
 unsigned int *get_frame_addr(unsigned int *page_table_entry_addr) {
   return (unsigned int *)(*page_table_entry_addr & PAGE_ADDR_MASK);
 }
@@ -303,4 +306,44 @@ unsigned int *get_virtual_address(unsigned int *page_directory_entry_addr,
 void vm_enable() {
   set_cr0(get_cr0() | PAGING_ENABLE_MASK);
   set_cr4(get_cr4() | PAGE_GLOBAL_ENABLE_MASK);
+}
+
+unsigned int *get_page_directory_addr(unsigned int *address) {
+  // get base register in base_addr(unsigned int *)
+  unsigned int *base_addr = (unsigned int *)get_cr3();
+
+  unsigned int offset = (((unsigned int)address & PAGE_TABLE_DIRECTORY_MASK) >>
+                         PAGE_DIR_RIGHT_SHIFT);
+
+  return base_addr + offset;
+}
+
+// Receives an address and validates that the string pointed to by it is in the 
+// address space of this task. Basically, ensure the page table entry is valid
+// from the starting address to the point where '\0' is written. If '\0' is 
+// encountered, it is valid. If we find that it needs another frame and there 
+// is no page table entry for that address, we return false(0) for invalid.
+int is_valid_string(char *addr) {
+  do {
+    unsigned int *page_directory_entry_addr = get_page_directory_addr((unsigned int*)addr);
+
+    // If there is no page table associated with this entry, return false
+    if (!is_entry_present(page_directory_entry_addr)) {
+      return FALSE;
+    }
+
+    unsigned int *page_table_entry = get_page_table_addr(page_directory_entry_addr);
+
+    // If there is no physical frame associated with this entry, return false
+    if (!is_entry_present(page_table_entry)) {
+      return FALSE;
+    }
+
+    unsigned int next_frame_boundary = ((unsigned int)addr / PAGE_SIZE) + 1;
+    while((unsigned int)addr < next_frame_boundary && *addr != '\0') {
+      addr++;
+    }
+  } while((*addr) != '\0');
+
+  return TRUE;
 }

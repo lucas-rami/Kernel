@@ -6,12 +6,9 @@
  *  @covers
  *  @status done
  */
-#include <simics.h>
-#include <syscall.h>
 
 int main()
 {
-    lprintf("Running thread with ID %d\n", gettid());
     while (1) {
     }
 }
