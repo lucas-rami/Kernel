@@ -34,7 +34,7 @@
 #include <cr.h>
 #include <eflags.h>
 
-#define FIRST_TASK "idle"
+#define FIRST_TASK "exec_basic"
 
 void tick(unsigned int numTicks);
 
@@ -65,15 +65,14 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
     lprintf("VM init failed\n");
   }
 
-  // Create the initial task and load everything into memory
+    // Create the initial task and load everything into memory
   uint32_t entrypoint;
-  if ((entrypoint = create_task_from_executable(FIRST_TASK)) == 0) {
+  if ( (entrypoint = create_task_from_executable(FIRST_TASK, FALSE, NULL, 0)) == 0 ) {
     lprintf("Failed to create user task\n");
     while (1) {
       continue;
     }
   }
-
 /*  if ((entrypoint = create_task_from_executable(FIRST_TASK)) == 0) {
     lprintf("Failed to create user task\n");
     while (1) {
@@ -87,6 +86,9 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
   // Clear the console before running anything
   clear_console();
 
+  lprintf("The entrypoint is %d\n", (int)entrypoint);
+    // Enable interrupts
+  enable_interrupts();
   lprintf("Interupts enabled - VM enabled - Ready to run some programs !");
 
   run_idle(kernel.idle_thread->esp);

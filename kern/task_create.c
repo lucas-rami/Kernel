@@ -19,19 +19,22 @@
 #include <syscall.h>
 #include <virtual_memory.h>
 #include <hash_table.h>
+#include <syscalls.h>
 
 // Debugging
 #include <simics.h>
 
 // NOTE: Temporary
 #define ESP 0xFFFFFFFF
+#define TRUE 1
+#define FALSE 0
 
 // Number of registers poped during a popa instruction
 #define NB_REGISTERS_POPA 8
 
 
 // TODO: doc
-int create_task_from_executable(const char *task_name) {
+int create_task_from_executable(const char *task_name, int is_exec, char **argvec, int count) {
 
   if (task_name == NULL) {
     lprintf("Invalid argument to function create_task_from_executable()ç");
@@ -54,38 +57,51 @@ int create_task_from_executable(const char *task_name) {
   }
 
   // Allocate a kernel stack for the root thread
-  void *stack_kernel = malloc(PAGE_SIZE);
-  if (stack_kernel == NULL) {
-    lprintf("Could not allocate kernel stack for task's root thread");
-    return -1;
-  }
+  void *stack_kernel = NULL;
+  if (is_exec == FALSE) {
+    stack_kernel = malloc(PAGE_SIZE);
+    if (stack_kernel == NULL) {
+      lprintf("Could not allocate kernel stack for task's root thread");
+      return -1;
+    }
+  } 
 
   // Setup virtual memory for this task
-  unsigned int *cr3;
+  unsigned int *cr3, *old_cr3;
+  old_cr3 = (unsigned int *)get_cr3();
   if ((cr3 = setup_vm(&elf)) == NULL) {
     lprintf("Task creation failed for task \"%s\"", task_name);
     free(stack_kernel);
     return -1;
   }
 
-  // Highest address of kernel stack
-  uint32_t esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
+  uint32_t esp0, stack_top;
+  pcb_t *new_pcb = NULL;
+  tcb_t *new_tcb = NULL;
+  if (is_exec == FALSE) {
+    esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
 
-  // Create new PCB for the task
-  pcb_t *new_pcb = create_new_pcb();
-  if (new_pcb == NULL) {
-    lprintf("create_task_from_executable(): PCB initialization failed");
-    free(stack_kernel);
-    return -1;
-  }
+   // Create new PCB/TCB for the task and its root thread
+    new_pcb = create_new_pcb();
+    if (new_pcb == NULL) {
+      lprintf("create_task_from_executable(): PCB initialization failed");
+      free(stack_kernel);
+      return -1;
+    }
 
-  // Create new TCB for task's root thread
-  tcb_t *new_tcb = create_new_tcb(new_pcb, esp0, (uint32_t)cr3);
-  if (new_tcb == NULL) {
-    lprintf("create_task_from_executable(): TCB initialization failed");
-    free(stack_kernel);
-    hash_table_remove_element(&kernel.pcbs, new_pcb);
-    return -1;
+    new_tcb = create_new_tcb(new_pcb, esp0, (uint32_t)cr3);
+    if (new_tcb == NULL) {
+      lprintf("create_task_from_executable(): TCB initialization failed");
+      free(stack_kernel);
+      hash_table_remove_element(&kernel.pcbs, new_pcb);
+      return -1;
+    }
+    stack_top = ESP;
+  } else {
+    esp0 = kernel.current_thread->esp0;
+    new_tcb = kernel.current_thread;
+    char *new_stack_addr = load_args_for_new_program(argvec, old_cr3, count);
+    stack_top = (uint32_t)new_stack_addr;
   }
 
   // Create EFLAGS for the user task
@@ -96,12 +112,12 @@ int create_task_from_executable(const char *task_name) {
   eflags |= EFL_IOPL_RING3;  // Set privilege level to 3
   eflags |= EFL_IF;          // Enable interrupts
 
-  // Craft the kernel stack for first context switch to this thread
   unsigned int * stack_addr = (unsigned int *) esp0;
+
   --stack_addr;
   *stack_addr = eflags;
   --stack_addr;
-  *stack_addr = ESP;
+  *stack_addr = stack_top;
   --stack_addr;
   *stack_addr = elf.e_entry;
   --stack_addr;
