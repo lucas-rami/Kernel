@@ -47,7 +47,7 @@
 #define ENTRY_SIZE_LOG2 2
 #define PAGE_SIZE_LOG2 12
 
-unsigned int num_user_frames;
+static unsigned int num_user_frames;
 
 /** @brief Initialize the virtual memory system
  *
@@ -176,7 +176,7 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
   return 0;
 }
 
-/** @brief Set up a page table entry and allocate an new frame for this entry
+/** @brief Set up a page table entry and allocate a new frame for this entry
  *
  *  @param address A virtual address
  *  @param type The address's type (e.g. code, data...)
@@ -231,7 +231,7 @@ void *load_frame(unsigned int address, unsigned int type) {
 
 /** @brief Find and allocate a free frame in memory
  *
- *  @return The frame's address is one free frame was found, NULL otherwise
+ *  @return The frame's address if one free frame was found, NULL otherwise
  */
 void *allocate_frame() {
   int i;
@@ -244,20 +244,43 @@ void *allocate_frame() {
   return NULL;
 }
 
+/** @brief Check if the given entry is valid (maps to something meaningful)
+ *
+ *  @param The entry's address
+ *
+ *  @return A positive integer if the entry is valid, 0 otherwise
+ */
 int is_entry_present(unsigned int *entry_addr) {
   return *entry_addr & PRESENT_BIT_MASK;
 }
 
-unsigned int *create_page_table(unsigned int *page_directory_entry_addr) {
+/** @brief Create a new page table (and a new entry in the page directory)
+ *
+ *  @param page_directory_entry_addr The address in the page directory where the
+ *    entry should be created
+ *  @param flags The flags that should be assigned to the new entry
+ *
+ *  @return The address of the newly created page table
+ */
+unsigned int *create_page_table(unsigned int *page_directory_entry_addr, 
+                                uint32_t flags) {                          
   unsigned int *page_table_entry_addr =
       (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
   memset(page_table_entry_addr, 0, PAGE_SIZE);
   *page_directory_entry_addr =
       ((unsigned int)page_table_entry_addr & PAGE_ADDR_MASK);
-  *page_directory_entry_addr |= PAGE_TABLE_DIRECTORY_FLAGS;
+  *page_directory_entry_addr |= flags;
   return page_table_entry_addr;
 }
 
+/** @brief Create a page table entry
+ *
+ *  @param page_table_entry_addr The address where the page entry should be 
+ *    created
+ *  @param flags The set of flags that should be assigned to the new entry
+ *
+ *  @return The address of the newly allocated frame
+ */
 unsigned int *create_page_table_entry(unsigned int *page_table_entry_addr,
                                       uint32_t flags) {
   unsigned int *physical_frame_addr = allocate_frame();
@@ -266,18 +289,44 @@ unsigned int *create_page_table_entry(unsigned int *page_table_entry_addr,
   return physical_frame_addr;
 }
 
+/** @brief Get the address of the page table stored in a page directory entry
+ *  
+ *  @param page_directory_entry_addr The page directory entry's address
+ *  
+ *  @return The page table's address
+ */
 unsigned int *get_page_table_addr(unsigned int *page_directory_entry_addr) {
   return (unsigned int *)(*page_directory_entry_addr & PAGE_ADDR_MASK);
 }
 
+/** @brief Get the address of the frame stored in a page table entry
+ *  
+ *  @param page_table_entry_addr The page table entry's address
+ *  
+ *  @return The frame's address
+ */
 unsigned int *get_frame_addr(unsigned int *page_table_entry_addr) {
   return (unsigned int *)(*page_table_entry_addr & PAGE_ADDR_MASK);
 }
 
+/** @brief Get the flags of an entry in a page table/directory
+ *  
+ *  @param enry_addr The entry's address
+ *  
+ *  @return The entry's flags
+ */
 uint32_t get_entry_flags(unsigned int *entry_addr) {
   return *entry_addr & PAGE_TABLE_FLAGS;
 }
 
+/** @brief Get the virtual address associated with a physical frame, given the
+ *  entries in the page directory/table that map to this frame
+ *
+ *  @param page_directory_entry_addr The address of the page directory's entry
+ *  @param page_table_entry_addr The address of the page table's entry
+ *  
+ *  @return The virtual address associated with the given entries
+ */
 unsigned int *get_virtual_address(unsigned int *page_directory_entry_addr,
                                   unsigned int *page_table_entry_addr) {
 
