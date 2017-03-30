@@ -16,11 +16,14 @@ unsigned int *create_page_table(unsigned int *page_directory_entry_addr,
                                 uint32_t flags);
 unsigned int *create_page_table_entry(unsigned int *page_table_entry_addr,
                                       uint32_t flags);
+
 unsigned int *get_page_table_addr(unsigned int *page_directory_entry_addr);
 unsigned int *get_frame_addr(unsigned int *page_table_entry_addr);
+unsigned int *get_page_directory_addr_with_offset(unsigned int address);
+unsigned int *get_page_table_addr_with_offset(
+                unsigned int *page_directory_entry_addr, unsigned int address);
 uint32_t get_entry_flags(unsigned int *entry_addr);
-
-unsigned int *get_virtual_address(unsigned int *page_directory_entry_addr,
+unsigned int get_virtual_address(unsigned int *page_directory_entry_addr,
                                   unsigned int *page_table_entry_addr);
 
 unsigned int* allocate_frame();

@@ -1,4 +1,5 @@
 #include <virtual_memory.h>
+#include <virtual_memory_helper.h>
 #include <syscalls.h>
 #include <stddef.h>
 #include <string.h>

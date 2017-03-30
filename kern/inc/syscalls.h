@@ -20,6 +20,10 @@ int kern_make_runnable(int tid);
 int kern_fork(unsigned int * esp);
 int kern_thread_fork(void);
 
+/* New/Remove pages calls */
+int kern_new_pages(void *base, int len);
+int kern_remove_pages(void *base);
+
 int kern_exec(char *execname, char **argvec);
 char *load_args_for_new_program(char **argvec, unsigned int *new_ptd, int count);
 #endif /* _SYSCALLS_H_ */

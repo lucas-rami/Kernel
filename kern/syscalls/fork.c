@@ -147,19 +147,19 @@ static unsigned int * copy_memory_regions() {
 
             // Get the virtual address associated with the frame in the original
             // task
-            unsigned int *orig_virtual_address =
+            unsigned int orig_virtual_address =
                 get_virtual_address(orig_dir_entry, orig_tab_entry);
 
             // Get the virtual address associated with the frame in the new task
-            unsigned int *new_virtual_address =
+            unsigned int new_virtual_address =
                 get_virtual_address(new_dir_entry, new_tab_entry);
 
             // Copy the frame content to the buffer
-            memcpy(buffer, orig_virtual_address, PAGE_SIZE);
+            memcpy(buffer, (unsigned int *)orig_virtual_address, PAGE_SIZE);
 
             // Copy the frame to the new task user spce
             set_cr3((uint32_t)new_cr3);
-            memcpy(new_virtual_address, buffer, PAGE_SIZE);
+            memcpy((unsigned int *)new_virtual_address, buffer, PAGE_SIZE);
             set_cr3((uint32_t)orig_cr3);
           }
         }
