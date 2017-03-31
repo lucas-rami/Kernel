@@ -239,7 +239,7 @@ int load_multiple_frames(unsigned int address, unsigned int nb_frames,
   unsigned int * start_dir_addr = page_directory_entry_addr,
                * start_table_addr = page_table_entry_addr;
 
-  while(1) {
+  while(nb_frames != 0) {
 
     if (is_entry_present(page_table_entry_addr)) {
       // Something is already occupying this virtual address, free everything
@@ -292,7 +292,10 @@ int load_multiple_frames(unsigned int address, unsigned int nb_frames,
     }
   } 
 
-  return -1;
+  // Normally we should never reach this point, when nb_frames == 0, the code
+  // returns before (in the loop)
+
+  return 0;
 }
 
 /** @brief Free all the physical frames pointed to by a given page directory
@@ -451,6 +454,71 @@ void free_frames_range(unsigned int *start_dir_entry,
     }
   }
   
+}
+
+/** @brief Check whether the memory starting at a particular address and on a
+ *    certain length lies withing the current task's address space
+ *
+ *  @param address  A virtual address (the starting address)
+ *  @param len      The length, in bytes, to check for validity
+ *
+ *  @return 0 if the buffer is valid, a negative number otherwise
+ */
+int is_buffer_valid(unsigned int address, unsigned int len) {
+
+  // Get page directory entry of starting address
+  unsigned int * page_dir_entry_addr = 
+              get_page_directory_addr_with_offset(address);
+
+  // Check that the entry is valid 
+  if (!is_entry_present(page_dir_entry_addr)) {
+    return -1;
+  }
+
+  // Get page table entry of starting address
+  unsigned int * page_table_entry_addr =
+              get_page_table_addr_with_offset(page_dir_entry_addr, address);
+
+  // Check that the entry is valid 
+  if (!is_entry_present(page_table_entry_addr)) {
+      return -1;
+  }
+
+  // Decrement length by the remaining amount of space in the frame 
+  len -= PAGE_SIZE - (address & PAGE_SIZE);
+
+  while (len > 0) {
+
+    // Go to next table entry
+    ++page_table_entry_addr;
+
+    if (!((unsigned int)page_table_entry_addr & PAGE_SIZE)) {
+      // If the entry was the last one in the page table,
+      // go to next page directory entry 
+      ++page_dir_entry_addr;
+      if (!((unsigned int)page_table_entry_addr & PAGE_SIZE) ||
+          !is_entry_present(page_dir_entry_addr)) {
+        // If the directory entry was the last one or the current one is invalid
+        // then the buffer is invalid
+        return -1;
+      }
+      // Get next page table 
+      page_table_entry_addr = get_page_table_addr(page_dir_entry_addr);
+    }
+  
+    // Check that the page table entry is valid
+    if (!is_entry_present(page_table_entry_addr)) {
+      return -1;
+    }
+
+    // Decrement remaining length
+    len -= PAGE_SIZE;
+
+  }
+
+  // Buffer is valid
+  return 0;
+
 }
 
 /** @brief Enable paging and the "Page Global Enable" bit in %cr4

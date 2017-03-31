@@ -99,6 +99,20 @@ unsigned int *get_frame_addr(unsigned int *page_table_entry_addr) {
   return (unsigned int *)(*page_table_entry_addr & PAGE_ADDR_MASK);
 }
 
+/** @brief Get the page directory entry for a particular virtual address
+ *
+ *  @param address A virtual address
+ *
+ *  @return The page directory entry which the virtual address maps to
+ */
+unsigned int *get_page_directory_addr_with_offset(unsigned int address) {
+  // get base register in base_addr(unsigned int *)
+  unsigned int *base_addr = (unsigned int *)get_cr3();
+
+  unsigned int offset = ((address & PAGE_TABLE_DIRECTORY_MASK) >>
+                         PAGE_DIR_RIGHT_SHIFT);
+  return base_addr + offset;
+}
 /** @brief Get the entry related to a particular virtual address in a page table
  *
  *  @param page_directory_entry_addr  The page directory entry pointing to the
@@ -118,21 +132,6 @@ unsigned int *get_page_table_addr_with_offset(
   return page_table_base_addr + offset; 
 }
 
-/** @brief Get the page directory entry for a particular virtual address
- *
- *  @param address A virtual address
- *
- *  @return The page directory entry which the virtual address maps to
- */
-unsigned int *get_page_directory_addr_with_offset(unsigned int address) {
-  // get base register in base_addr(unsigned int *)
-  unsigned int *base_addr = (unsigned int *)get_cr3();
-
-  unsigned int offset = ((address & PAGE_TABLE_DIRECTORY_MASK) >>
-                         PAGE_DIR_RIGHT_SHIFT);
-
-  return base_addr + offset;
-}
 
 /** @brief Get the flags of an entry in a page table/directory
  *  

@@ -24,6 +24,7 @@ void free_frames_range(unsigned int *start_dir_entry,
                       unsigned int *end_dir_entry,
                       unsigned int *end_table_entry);
 
+int is_buffer_valid(unsigned int address, unsigned int len);
 int is_valid_string(char *addr);
 
 void vm_enable();

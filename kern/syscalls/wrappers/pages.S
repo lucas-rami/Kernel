@@ -19,7 +19,7 @@ new_pages:
 
   call restore_state_and_iret
 
-remove_pages
+remove_pages:
 
   call save_state
 
