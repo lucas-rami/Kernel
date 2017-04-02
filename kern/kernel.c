@@ -34,7 +34,7 @@
 #include <cr.h>
 #include <eflags.h>
 
-#define FIRST_TASK "exec_basic"
+#define FIRST_TASK "knife"
 
 void tick(unsigned int numTicks);
 
@@ -81,7 +81,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
   }
 */
   // Enable virtual memory
-  vm_enable();
+  // vm_enable();
 
   // Clear the console before running anything
   clear_console();

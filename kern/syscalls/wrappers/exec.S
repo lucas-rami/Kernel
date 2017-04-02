@@ -1,14 +1,21 @@
 .global exec
+.global switch_esp
 
 exec:
 
   call save_state
 
-  movl %edx, 4(%esi)   // Get first parameter
+  movl 4(%esi), %edx   // Get first parameter
   pushl %edx           // Pass it as a parameter to fork
-  movl %edx, (%esi)    // Get second parameter
+  movl (%esi), %edx    // Get second parameter
   pushl %edx
   call kern_exec
   addl $8, %esp
 
   call restore_state_and_iret
+
+switch_esp:
+  movl 4(%esp), %edx
+  movl %edx, %esp
+  call enable_interrupts
+  ret

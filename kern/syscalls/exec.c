@@ -7,6 +7,8 @@
 #include <task_create.h>
 #include <malloc.h>
 #include <simics.h>
+#include <scheduler.h>
+#include <asm.h>
 
 #define ERR_INVALID_ARGS -1
 // TODO: What should this value be? How about max no of args
@@ -18,19 +20,28 @@
 
 int kern_exec(char *execname, char **argvec) {
   // Validate all arguments
+  //lprintf("Kern exec. ");
+  //MAGIC_BREAK;
+  // lprintf("and the string is %s", esi_reg, *esi_reg);
+  // TODO: Should be done after validation
   if (is_valid_string(execname) == FALSE) {
+    lprintf("Execname not valid");
     return ERR_INVALID_ARGS;
   }
+  lprintf("Execname has been validated");
   int i = 0;
   while (argvec[i] != NULL) {
     if (is_valid_string(argvec[i]) == FALSE || strlen(argvec[i]) > ARGS_MAX_SIZE) {
+      lprintf("Invalid args");
       return ERR_INVALID_ARGS;
     }
     i++;
   }
 
   // unsigned int *prev_page_table_dir = (unsigned int *)get_cr3();
+  disable_interrupts();
   create_task_from_executable(execname, TRUE, argvec, i);
+  lprintf("Exec should work now");
   // setup_vm sets cr3 to the new page table dir
   // unsigned int *new_page_table_dir = get_cr3();
   // TODO: Do we really need to set the cr3 value in setup vm?
@@ -38,6 +49,10 @@ int kern_exec(char *execname, char **argvec) {
   // char *new_stack_addr = load_args_for_new_program(argvec, new_page_table_dir, i);
   kernel.current_thread->cr3 = (uint32_t)get_cr3();
   // run_next_thread();
+  lprintf("EXEC. The current tcb is %p and the esp is %p", kernel.current_thread, (char*)kernel.current_thread->esp);
+  // make_runnable_and_switch();
+  switch_esp(kernel.current_thread->esp);
+  lprintf("This shouldnt be printed");
   return 0;
   // Copy the arguments to the new memory space
   // Make the stack for the main thread with proper args
@@ -98,8 +113,9 @@ char *load_args_for_new_program(char **argvec, unsigned int *old_ptd, int count/
   *(int *)stack_addr = (count/* + 1*/);
   lprintf("The count of args is %d", *(int *)stack_addr);
   // char **argv = *((int *)stack_addr + i);
+  char **printstr = *(char ***)(stack_addr + sizeof(int));
   for (i = 0; i < count; i++) {
-    lprintf("Arg num %d, val %s", i, *((char **)stack_addr + i));
+    lprintf("Arg num %d, val %s", i, *(printstr + i));
   }
   // set_cr3(old_ptd);
 

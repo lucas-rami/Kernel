@@ -15,7 +15,7 @@
  *
  *  @return void
  */
-void context_switch_asm(uint32_t *addr_from_esp, uint32_t to_esp);
+void context_switch_asm(uint32_t *addr_from_esp, uint32_t *to_esp);
 
 /** @brief Run the first thread in a newly created task
  *

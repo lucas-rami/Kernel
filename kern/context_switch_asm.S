@@ -19,7 +19,7 @@ context_switch_asm:
 
   pusha               // Push general purpose registers on stack
   movl %esp, (%ecx)   // Update the 'esp' field in invoking thread's TCB
-  movl %edx, %esp     // Restore stack pointer of scheduled thread
+  movl (%edx), %esp     // Restore stack pointer of scheduled thread
   popa                // Pop general purpose registers from stack
   ret                 // Return from procedure as another thread
 

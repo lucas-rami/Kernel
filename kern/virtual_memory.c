@@ -24,11 +24,14 @@
 /* Debugging */
 #include <simics.h>
 
+#include <limits.h>
 /* Hold the number of user frames in the system */
 unsigned int num_user_frames;
 /* Bitmap holding the set of (un)allocated frames */ 
 bitmap_t free_map;
 
+#define FIRST_TASK "knife"
+// unsigned int *kernel_ptd;
 /** @brief Initialize the virtual memory system
  *
  *  @return 0 on success, a negative number on error
@@ -41,8 +44,16 @@ int vm_init() {
   int size = (num_user_frames / BITS_IN_UINT8_T) + 1;
 
   bitmap_init(&free_map, size);
+/*
+  kernel_ptd = (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
+  // memset(kernel_ptd, 0, PAGE_SIZE);
 
-  return 0;
+  // Load kernel section
+  int i, max = machine_phys_frames();
+  for (i = 0; i < max; i += PAGE_SIZE) {
+    load_frame(i, SECTION_KERNEL, kernel_ptd);
+  }
+*/  return 0;
 }
 
 /** @brief Setup the virtual memory for a single task
@@ -58,20 +69,25 @@ unsigned int *setup_vm(const simple_elf_t *elf_info) {
       (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
   memset(page_table_directory, 0, PAGE_SIZE);
 
-  // set cr3 to this value;
-  set_cr3((uint32_t)page_table_directory);
-
   // Load kernel section
   int i;
   for (i = 0; i < USER_MEM_START; i += PAGE_SIZE) {
-    load_frame(i, SECTION_KERNEL);
+    load_frame(i, SECTION_KERNEL, page_table_directory);
   }
 
+  if (!strcmp(elf_info->e_fname, FIRST_TASK)) {
+    set_cr3((uint32_t)page_table_directory);
+    vm_enable();
+  }
+  lprintf("Loading of kernel frames done\n");
   // Add stack area as well.
-  if (load_every_segment(elf_info) < 0) {
+  if (load_every_segment(elf_info, page_table_directory) < 0) {
     // TODO: free all the frames
     return NULL;
   }
+
+  // set cr3 to this value;
+  set_cr3((uint32_t)page_table_directory);
 
   return page_table_directory;
 }
@@ -83,15 +99,16 @@ unsigned int *setup_vm(const simple_elf_t *elf_info) {
  *
  *  @return 0 on success, a negative number on error
  */
-int load_every_segment(const simple_elf_t *elf) {
+int load_every_segment(const simple_elf_t *elf, unsigned int *cr3) {
   load_segment(elf->e_fname, elf->e_txtoff, elf->e_txtlen, elf->e_txtstart,
-               SECTION_TXT);
+               SECTION_TXT, cr3);
   load_segment(elf->e_fname, elf->e_datoff, elf->e_datlen, elf->e_datstart,
-               SECTION_DATA);
+               SECTION_DATA, cr3);
   load_segment(elf->e_fname, elf->e_rodatoff, elf->e_rodatlen,
-               elf->e_rodatstart, SECTION_RODATA);
-  load_segment(elf->e_fname, 0, elf->e_bsslen, elf->e_bssstart, SECTION_BSS);
-  load_segment(NULL, 0, STACK_SIZE, STACK_START_ADDR, SECTION_STACK);
+               elf->e_rodatstart, SECTION_RODATA, cr3);
+  load_segment(elf->e_fname, 0, elf->e_bsslen, elf->e_bssstart, SECTION_BSS,
+               cr3);
+  load_segment(NULL, 0, STACK_SIZE, STACK_START_ADDR, SECTION_STACK, cr3);
   // Initialize the global variables and bss to zero once they are allocated
   // space for
   return 0;
@@ -108,17 +125,23 @@ int load_every_segment(const simple_elf_t *elf) {
  *  @return 0 on success, a negative number on error
  */
 int load_segment(const char *fname, unsigned long offset, unsigned long size,
-                 unsigned long start_addr, int type) {
+                 unsigned long start_addr, int type, unsigned int *page_table_directory) {
 
   // get page table base register
   // assume it is base_addr
-
+  uint32_t old_cr3 = get_cr3();
   char *buf;
   if (type != SECTION_STACK && type != SECTION_BSS) {
     buf = (char *)malloc(sizeof(char) * size);
+    if (buf == NULL) {
+      lprintf("NULL buf");
+      return -1;
+    }
+    lprintf("Getbytes is being called\n");
     if (getbytes(fname, offset, size, buf) < 0) {
       return -1;
     }
+    lprintf("Getbytes is retured\n");
   }
   unsigned int curr_offset = 0, remaining_size = size, addr = start_addr;
   int max_size = PAGE_SIZE;
@@ -128,9 +151,10 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
       max_size = remaining_size;
     }
     frame_addr = NULL;
-    frame_addr = load_frame(addr, type);
+    frame_addr = load_frame(addr, type, page_table_directory);
 
     if (frame_addr == NULL) {
+      lprintf("Error\n");
       return -1;
     }
     int temp_offset = ((unsigned int)frame_addr % PAGE_SIZE);
@@ -138,11 +162,15 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
                                       ? (PAGE_SIZE - temp_offset)
                                       : max_size;
 
-    if (type != SECTION_STACK && type != SECTION_BSS) {
-      memcpy((frame_addr), buf + curr_offset, size_allocated);
-    }
+    set_cr3((uint32_t)page_table_directory);
     if (type == SECTION_BSS) {
-      memset(frame_addr, 0, size_allocated);
+      lprintf("Memset");
+      memset((char*)addr, 0, size_allocated);
+      lprintf("Memset end");
+    } else if (type != SECTION_STACK && type != SECTION_BSS) {
+      lprintf("Memcpy. frame addr = %p, buf + curr_offset = %p, buf = %p, size %d", frame_addr, buf + curr_offset, buf, size_allocated);
+      memcpy((char*)addr, buf + curr_offset, size_allocated);
+      lprintf("Memcpy end");
     }
     remaining_size -= size_allocated;
     curr_offset += size_allocated;
@@ -152,7 +180,7 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
   if (type != SECTION_STACK && type != SECTION_BSS) {
     free(buf);
   }
-
+  set_cr3(old_cr3);
   return 0;
 }
 
@@ -165,24 +193,29 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
  *
  *  @return 0 The physical address associated with the virtual one
  */
-void *load_frame(unsigned int address, unsigned int type) {
+void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3) {
 
+  // lprintf("Load frame %p", (void*)address);
   unsigned int *page_directory_entry_addr = get_page_directory_addr(
-                                            (unsigned int*)address);
+                                            (unsigned int*)address, cr3);
 
+  // lprintf("The page directory entry address is %p", page_directory_entry_addr);
   // If there is no page table associated with this entry, create it
   if (!is_entry_present(page_directory_entry_addr)) {
+    // lprintf("New page table created.");
     create_page_table(page_directory_entry_addr, PAGE_TABLE_FLAGS);
   }
 
   unsigned int *page_table_entry = get_page_table_addr_with_offset(
                                    page_directory_entry_addr, address);
 
+  // lprintf("Page table address is %p", page_table_entry);
   // If there is no physical frame associated with this entry, allocate it
   if (!is_entry_present(page_table_entry)) {
     if (type != SECTION_KERNEL) {
       unsigned int *physical_frame_addr = allocate_frame();
       *page_table_entry = ((unsigned int)physical_frame_addr & PAGE_ADDR_MASK);
+      // lprintf("New frame allocated. %p", physical_frame_addr);
       // TODO: Set appropriate flag based on the type passed
       // NOTE: When this is done, we should use create_page_table_entry() to
       // allocate the frame
@@ -196,6 +229,7 @@ void *load_frame(unsigned int address, unsigned int type) {
 
   uint8_t *frame_base_addr = (uint8_t *)(*page_table_entry & PAGE_ADDR_MASK);
   unsigned int offset = ((unsigned int)address & FRAME_OFFSET_MASK);
+  // lprintf("Returning from load frame for %p", (void*)address);
 
   // TODO: This should be uint8_t *  and not unsigned int *, right?
   return (frame_base_addr + offset);
@@ -332,10 +366,7 @@ void vm_enable() {
   set_cr4(get_cr4() | PAGE_GLOBAL_ENABLE_MASK);
 }
 
-unsigned int *get_page_directory_addr(unsigned int *address) {
-  // get base register in base_addr(unsigned int *)
-  unsigned int *base_addr = (unsigned int *)get_cr3();
-
+unsigned int *get_page_directory_addr(unsigned int *address, unsigned int *base_addr) {
   unsigned int offset = (((unsigned int)address & PAGE_TABLE_DIRECTORY_MASK) >>
                          PAGE_DIR_RIGHT_SHIFT);
 
@@ -348,11 +379,14 @@ unsigned int *get_page_directory_addr(unsigned int *address) {
 // encountered, it is valid. If we find that it needs another frame and there 
 // is no page table entry for that address, we return false(0) for invalid.
 int is_valid_string(char *addr) {
+  unsigned int *base_addr = (unsigned int*)get_cr3();
   do {
-    unsigned int *page_directory_entry_addr = get_page_directory_addr((unsigned int*)addr);
+    lprintf("Checking the memory address %p", addr);
+    unsigned int *page_directory_entry_addr = get_page_directory_addr((unsigned int*)addr, base_addr);
 
     // If there is no page table associated with this entry, return false
     if (!is_entry_present(page_directory_entry_addr)) {
+      lprintf("page_directory_entry_addr not present");
       return FALSE;
     }
 
@@ -360,10 +394,11 @@ int is_valid_string(char *addr) {
 
     // If there is no physical frame associated with this entry, return false
     if (!is_entry_present(page_table_entry)) {
+      lprintf("page_table_entry_addr not present");
       return FALSE;
     }
 
-    unsigned int next_frame_boundary = ((unsigned int)addr / PAGE_SIZE) + 1;
+    unsigned int next_frame_boundary = (((unsigned int)addr / PAGE_SIZE) + 1) * PAGE_SIZE;
     while((unsigned int)addr < next_frame_boundary && *addr != '\0') {
       addr++;
     }

@@ -35,6 +35,7 @@
 
 // TODO: doc
 int create_task_from_executable(const char *task_name, int is_exec, char **argvec, int count) {
+  // MAGIC_BREAK;
 
   if (task_name == NULL) {
     lprintf("Invalid argument to function create_task_from_executable()ç");
@@ -47,6 +48,7 @@ int create_task_from_executable(const char *task_name, int is_exec, char **argve
     return -1;
   }
 
+  lprintf("Sanity checks done");
   // Hold information about the ELF header
   simple_elf_t elf;
 
@@ -56,15 +58,18 @@ int create_task_from_executable(const char *task_name, int is_exec, char **argve
     return -1;
   }
 
+  lprintf("ELF loaded");
   // Allocate a kernel stack for the root thread
   void *stack_kernel = NULL;
-  if (is_exec == FALSE) {
+  //if (is_exec == FALSE) {
+    lprintf("Allocatig stack kernel");
     stack_kernel = malloc(PAGE_SIZE);
     if (stack_kernel == NULL) {
       lprintf("Could not allocate kernel stack for task's root thread");
       return -1;
     }
-  } 
+    lprintf("Allocatig stack kernel done");
+  //} 
 
   // Setup virtual memory for this task
   unsigned int *cr3, *old_cr3;
@@ -74,6 +79,8 @@ int create_task_from_executable(const char *task_name, int is_exec, char **argve
     free(stack_kernel);
     return -1;
   }
+
+  lprintf("Setting up vm done");
 
   uint32_t esp0, stack_top;
   pcb_t *new_pcb = NULL;
@@ -98,8 +105,13 @@ int create_task_from_executable(const char *task_name, int is_exec, char **argve
     }
     stack_top = ESP;
   } else {
-    esp0 = kernel.current_thread->esp0;
+    /*esp0 = kernel.current_thread->esp0;
+    if (esp0 % PAGE_SIZE != 0) {
+      esp0 = (esp0/PAGE_SIZE + 1) * PAGE_SIZE;
+    }*/
+    esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
     new_tcb = kernel.current_thread;
+    new_tcb->esp0 = esp0;
     char *new_stack_addr = load_args_for_new_program(argvec, old_cr3, count);
     stack_top = (uint32_t)new_stack_addr;
   }
@@ -126,11 +138,12 @@ int create_task_from_executable(const char *task_name, int is_exec, char **argve
   *stack_addr = (unsigned int) run_first_thread;
   --stack_addr;
   *stack_addr = (unsigned int) init_thread;
-  stack_addr -= NB_REGISTERS_POPA;
-
+  if (is_exec == FALSE) {
+    stack_addr -= NB_REGISTERS_POPA;
+  }
   // Save stack pointer value in TCB
   new_tcb->esp = (uint32_t) stack_addr;
-
+  lprintf("The stack pointer for new_tcb %p is %p", new_tcb, (char*)new_tcb->esp);
   // Make the thread runnable
   mutex_lock(&kernel.mutex);
   add_runnable_thread(new_tcb);

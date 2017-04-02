@@ -34,6 +34,11 @@ int main() {
     while(1) {
       slow();
       lprintf("child: %d", gettid());
+      char *name = "exec_basic_helper";
+      char *args[] = {name, 0};
+      if (exec(name,args) < 0) {
+        lprintf("Exec error");
+      }
     }
   else
     while(1) {
