@@ -1,3 +1,12 @@
+/** @file exec.c
+ *  @brief This file contains the definition for the kern_exec() system call.
+ *   It also has the definition of the load_args_for_new_program function
+ *   which copies the argument vector and the strings from the address space
+ *   of the first program to the program passed as a parameter to exec
+ *
+ *  @author akanjani, lramire1
+ */
+
 #include <virtual_memory.h>
 #include <virtual_memory_helper.h>
 #include <syscalls.h>
@@ -10,6 +19,7 @@
 #include <simics.h>
 #include <scheduler.h>
 #include <asm.h>
+#include "exec_helper.h"
 
 #define ERR_INVALID_ARGS -1
 // TODO: What should this value be? How about max no of args
@@ -19,20 +29,43 @@
 #define TRUE 1
 #define FALSE 0
 
+/** @brief The C function that handles the exec system call.
+ *   Replaces the program currently running in the invoking task with the 
+ *   program stored in the file named execname. The number of strings in 
+ *   the vector and the vector itself will be transported into the memory
+ *   of the new program where they will serve as the first and second 
+ *   arguments of the the new program’s main(), respectively. Before the 
+ *   new program begins, %EIP will be set to the “entry point” (the first 
+ *   instruction of the main() wrapper, as advertised by the ELF linker).
+ *   The kernel does as much validation as possible of the exec() request 
+ *   before deallocating the old program’s resources.
+ *
+ *   After a successful exec() the thread that begins execution of the new 
+ *   program has no software exception handler registered.
+ *
+ *  @param execname A string specifying the name of the program to be loaded
+ *  @param argvec   An array of strings to be passed as an argument to the 
+ *                  main() wrapper of the new program
+ *
+ *  @return int On success, this system call does not return to the invoking 
+ *              program, since it is no longer running. If something goes 
+ *              wrong, an integer error code less than zero will be returned.
+ */
 int kern_exec(char *execname, char **argvec) {
   // Validate all arguments
-  //lprintf("Kern exec. ");
-  //MAGIC_BREAK;
-  // lprintf("and the string is %s", esi_reg, *esi_reg);
-  // TODO: Should be done after validation
   if (is_valid_string(execname) == FALSE) {
     lprintf("Execname not valid");
     return ERR_INVALID_ARGS;
   }
-  lprintf("Execname has been validated");
+
+  if (execname != argvec[0]) {
+    // execname doesn't match the first parameter to argvec. Some things
+    // might fail. Hence, returning error now
+    return -1;
+  }
+
   int i = 0;
   while (argvec[i] != NULL) {
-    lprintf("%s", argvec[i]);
     if (is_valid_string(argvec[i]) == FALSE || strlen(argvec[i]) > ARGS_MAX_SIZE) {
       lprintf("Invalid args");
       return ERR_INVALID_ARGS;
@@ -40,29 +73,23 @@ int kern_exec(char *execname, char **argvec) {
     i++;
   }
 
-  // unsigned int *prev_page_table_dir = (unsigned int *)get_cr3();
-  disable_interrupts();
   create_task_from_executable(execname, TRUE, argvec, i);
-  lprintf("Exec should work now");
-  // setup_vm sets cr3 to the new page table dir
-  // unsigned int *new_page_table_dir = get_cr3();
-  // TODO: Do we really need to set the cr3 value in setup vm?
-  // set_cr3((uint32_t)prev_page_table_dir);
-  // char *new_stack_addr = load_args_for_new_program(argvec, new_page_table_dir, i);
+  /*if (create_task_from_executable(execname, TRUE, argvec, i) < 0) {
+    // Error creating the new task
+    return -1;
+  }
+*/
+  // Overwrite the cr3 value with the new one
   kernel.current_thread->cr3 = (uint32_t)get_cr3();
-  // run_next_thread();
-  lprintf("EXEC. The current tcb is %p and the esp is %p", kernel.current_thread, (char*)kernel.current_thread->esp);
-  // make_runnable_and_switch();
+
+  // The setup of the second program is complete. Time to switch to it and 
+  // start execution.
   switch_esp(kernel.current_thread->esp);
-  lprintf("This shouldnt be printed");
+
+  // SHOULD NEVER RETURN HERE
+  // assert(0);
+  lprintf("EXEC RETURNED TO THE CALLING PROGRAM. FATAL ERROR");
   return 0;
-  // Copy the arguments to the new memory space
-  // Make the stack for the main thread with proper args
-  // First argument should be the count of the strings in argvec
-  // Second should be an array of strings(the pointers should be valid in this new
-  // address space
-  // Third and fourth arguments should be the stack high and low for this program
-  // TODO: Make sure that argvec[0] is the same as execname
   // TODO: Think of a reasonable limit on the number of args in argvec
   // On success, switch to the second thread after deallocating space for the 
   // first task 
@@ -72,38 +99,40 @@ int kern_exec(char *execname, char **argvec) {
   // that happen
 }
 
-char *load_args_for_new_program(char **argvec, unsigned int *old_ptd, int count/*, char *execname*/) {
+/** @brief Transports the number of strings in the argvec and the vector itself
+ *   into the memory of the new program where they will serve as the first and 
+ *   second arguments of the the new program’s main(), respectively. 
+ *
+ *  @param argvec  A null-terminated vector of null-terminated string arguments
+ *  @param old_ptd The cr3 value of the invoking thread
+ *  @param count   The number of strings in argvec
+ *
+ *  @return char* A pointer to the top of the stack of the new program
+ */
+char *load_args_for_new_program(char **argvec, unsigned int *old_ptd, int count) {
   unsigned int *new_ptd = (unsigned int *)get_cr3();
   char *stack_addr = (char *)STACK_TOP;
   char *buf = malloc(sizeof(char) * (ARGS_MAX_SIZE + 1));
-  char **args_addr = malloc(sizeof(char*) * (count/* + 1*/));
+  char **args_addr = malloc(sizeof(char*) * (count));
   int i = 0, len;
   
-  /*len = strlen(execname);
-  memcpy(buf, execname, len + 1);
-  stack_addr -= (len + 1);
-  args_addr[0] = stack_addr;
-  set_cr3(new_ptd);
-  memcpy(stack_addr, buf, len + 1);
-  set_cr3(old_ptd);
-  */
   set_cr3((uint32_t)old_ptd);
   while (argvec[i] != NULL) {
     // TODO: Is this a TOCTOU problem?
     len = strlen(argvec[i]);
     memcpy(buf, argvec[i], len + 1);
     stack_addr -= (len + 1);
-    args_addr[i/* + 1*/] = stack_addr;
+    args_addr[i] = stack_addr;
     set_cr3((uint32_t)new_ptd);
     memcpy(stack_addr, buf, len + 1);
     set_cr3((uint32_t)old_ptd);
     i++;
   }
-  // args_addr[i] = NULL;
-  stack_addr -= (sizeof(char*) * (count/* + 1*/));
+
+  stack_addr -= (sizeof(char*) * (count));
   char *start_of_argv = stack_addr;
   set_cr3((uint32_t)new_ptd);
-  memcpy(stack_addr, args_addr, (sizeof(char*) * (count/* + 1*/)));
+  memcpy(stack_addr, args_addr, (sizeof(char*) * (count)));
   unsigned int ptr_size = sizeof(void*);
   stack_addr -= ptr_size;
   *(char **)stack_addr = (char*)STACK_START_ADDR;
@@ -112,15 +141,14 @@ char *load_args_for_new_program(char **argvec, unsigned int *old_ptd, int count/
   stack_addr -= ptr_size;
   *(char **)stack_addr = start_of_argv;
   stack_addr -= sizeof(int);
-  *(int *)stack_addr = (count/* + 1*/);
-  lprintf("The value ar stack addr %p is %d. The value of second argument at addr %p is %p", (int *)stack_addr, *(int *)stack_addr, (char**)(stack_addr - sizeof(int)), *(char**)(stack_addr + sizeof(int)));
-  lprintf("The count of args is %d", *(int *)stack_addr);
-  // char **argv = *((int *)stack_addr + i);
+  *(int *)stack_addr = (count);
+
+  /*
   char **printstr = *(char ***)(stack_addr + sizeof(int));
   for (i = 0; i < count; i++) {
     lprintf("Arg num %d, val %s", i, *(printstr + i));
   }
-  // set_cr3(old_ptd);
+  */
 
   return (stack_addr - sizeof(uint32_t));
 }

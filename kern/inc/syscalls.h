@@ -28,7 +28,8 @@ int kern_remove_pages(void *base);
 int readline(int len, char *buf);
 int print(int len, char *buf);
 
+/* Exec calls */
 int kern_exec(char *execname, char **argvec);
 char *load_args_for_new_program(char **argvec, unsigned int *new_ptd, int count);
-void switch_esp(unsigned int esp);
+
 #endif /* _SYSCALLS_H_ */
