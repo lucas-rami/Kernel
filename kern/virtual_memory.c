@@ -30,7 +30,7 @@ unsigned int num_user_frames;
 /* Bitmap holding the set of (un)allocated frames */ 
 bitmap_t free_map;
 
-#define FIRST_TASK "knife"
+#define FIRST_TASK "coolness"
 // unsigned int *kernel_ptd;
 /** @brief Initialize the virtual memory system
  *
@@ -381,17 +381,20 @@ unsigned int *get_page_directory_addr(unsigned int *address, unsigned int *base_
 int is_valid_string(char *addr) {
   unsigned int *base_addr = (unsigned int*)get_cr3();
   do {
-    lprintf("Checking the memory address %p", addr);
+    lprintf("Checking the memory address %p. The value is %c", addr, *addr);
     unsigned int *page_directory_entry_addr = get_page_directory_addr((unsigned int*)addr, base_addr);
 
+    lprintf("The page directory entry addr is %p, The val is %p", page_directory_entry_addr, *(char**)page_directory_entry_addr);
     // If there is no page table associated with this entry, return false
     if (!is_entry_present(page_directory_entry_addr)) {
       lprintf("page_directory_entry_addr not present");
       return FALSE;
     }
 
-    unsigned int *page_table_entry = get_page_table_addr(page_directory_entry_addr);
+    unsigned int *page_table_entry = get_page_table_addr_with_offset(
+                                   page_directory_entry_addr, (unsigned int)addr);
 
+    lprintf("The page table entry addr is %p, The val is %p", page_table_entry, *(char**)page_table_entry);
     // If there is no physical frame associated with this entry, return false
     if (!is_entry_present(page_table_entry)) {
       lprintf("page_table_entry_addr not present");
@@ -399,7 +402,9 @@ int is_valid_string(char *addr) {
     }
 
     unsigned int next_frame_boundary = (((unsigned int)addr / PAGE_SIZE) + 1) * PAGE_SIZE;
-    while((unsigned int)addr < next_frame_boundary && *addr != '\0') {
+    lprintf("addr %p, next_frame_boundary %p, Val %c", addr, (char*)next_frame_boundary, *addr);
+    while(((unsigned int)addr <= next_frame_boundary-1) && (*addr != '\0')) {
+      lprintf("Inside while");
       addr++;
     }
   } while((*addr) != '\0');

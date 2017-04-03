@@ -34,7 +34,7 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the 410user/progs
 # directory.
 #
-410TESTS = exec_basic exec_basic_helper knife peon merchant
+410TESTS = exec_basic exec_basic_helper knife peon merchant coolness
 
 ###########################################################################
 # Test programs you have written which you wish to run

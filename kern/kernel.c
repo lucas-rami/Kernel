@@ -34,7 +34,7 @@
 #include <cr.h>
 #include <eflags.h>
 
-#define FIRST_TASK "knife"
+#define FIRST_TASK "coolness"
 
 void tick(unsigned int numTicks);
 

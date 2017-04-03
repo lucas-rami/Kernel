@@ -114,6 +114,7 @@ int create_task_from_executable(const char *task_name, int is_exec, char **argve
     new_tcb->esp0 = esp0;
     char *new_stack_addr = load_args_for_new_program(argvec, old_cr3, count);
     stack_top = (uint32_t)new_stack_addr;
+    lprintf("The stack top is %p", new_stack_addr);
   }
 
   // Create EFLAGS for the user task

@@ -31,6 +31,7 @@ int kern_exec(char *execname, char **argvec) {
   lprintf("Execname has been validated");
   int i = 0;
   while (argvec[i] != NULL) {
+    lprintf("%s", argvec[i]);
     if (is_valid_string(argvec[i]) == FALSE || strlen(argvec[i]) > ARGS_MAX_SIZE) {
       lprintf("Invalid args");
       return ERR_INVALID_ARGS;
@@ -51,6 +52,7 @@ int kern_exec(char *execname, char **argvec) {
   // run_next_thread();
   lprintf("EXEC. The current tcb is %p and the esp is %p", kernel.current_thread, (char*)kernel.current_thread->esp);
   // make_runnable_and_switch();
+  MAGIC_BREAK;
   switch_esp(kernel.current_thread->esp);
   lprintf("This shouldnt be printed");
   return 0;
@@ -111,6 +113,7 @@ char *load_args_for_new_program(char **argvec, unsigned int *old_ptd, int count/
   *(char **)stack_addr = start_of_argv;
   stack_addr -= sizeof(int);
   *(int *)stack_addr = (count/* + 1*/);
+  lprintf("The value ar stack addr %p is %d. The value of second argument at addr %p is %p", (int *)stack_addr, *(int *)stack_addr, (char**)(stack_addr - sizeof(int)), *(char**)(stack_addr + sizeof(int)));
   lprintf("The count of args is %d", *(int *)stack_addr);
   // char **argv = *((int *)stack_addr + i);
   char **printstr = *(char ***)(stack_addr + sizeof(int));
@@ -119,6 +122,6 @@ char *load_args_for_new_program(char **argvec, unsigned int *old_ptd, int count/
   }
   // set_cr3(old_ptd);
 
-  return stack_addr;
+  return (stack_addr - sizeof(uint32_t));
 }
   
