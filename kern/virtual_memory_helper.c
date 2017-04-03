@@ -100,6 +100,21 @@ unsigned int *get_frame_addr(unsigned int *page_table_entry_addr) {
 }
 
 /** @brief Get the page directory entry for a particular virtual address
+ *   with the given cr3 value
+ *
+ *  @param address A virtual address
+ *  @param base_addr The base address to the page directory fot this process
+ *
+ *  @return The page directory entry which the virtual address maps to
+ */
+unsigned int *get_page_directory_addr(unsigned int *address, unsigned int *base_addr) {
+  unsigned int offset = (((unsigned int)address & PAGE_TABLE_DIRECTORY_MASK) >>
+                         PAGE_DIR_RIGHT_SHIFT);
+
+  return base_addr + offset;
+}
+
+/** @brief Get the page directory entry for a particular virtual address
  *
  *  @param address A virtual address
  *

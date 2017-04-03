@@ -31,7 +31,7 @@ unsigned int num_user_frames;
 bitmap_t free_map;
 
 #define FIRST_TASK "coolness"
-// unsigned int *kernel_ptd;
+
 /** @brief Initialize the virtual memory system
  *
  *  @return 0 on success, a negative number on error
@@ -44,16 +44,7 @@ int vm_init() {
   int size = (num_user_frames / BITS_IN_UINT8_T) + 1;
 
   bitmap_init(&free_map, size);
-/*
-  kernel_ptd = (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
-  // memset(kernel_ptd, 0, PAGE_SIZE);
-
-  // Load kernel section
-  int i, max = machine_phys_frames();
-  for (i = 0; i < max; i += PAGE_SIZE) {
-    load_frame(i, SECTION_KERNEL, kernel_ptd);
-  }
-*/  return 0;
+  return 0;
 }
 
 /** @brief Setup the virtual memory for a single task
@@ -79,7 +70,6 @@ unsigned int *setup_vm(const simple_elf_t *elf_info) {
     set_cr3((uint32_t)page_table_directory);
     vm_enable();
   }
-  lprintf("Loading of kernel frames done\n");
   // Add stack area as well.
   if (load_every_segment(elf_info, page_table_directory) < 0) {
     // TODO: free all the frames
@@ -138,11 +128,9 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
       lprintf("NULL buf");
       return -1;
     }
-    lprintf("Getbytes is being called\n");
     if (getbytes(fname, offset, size, buf) < 0) {
       return -1;
     }
-    lprintf("Getbytes is retured\n");
   }
   unsigned int curr_offset = 0, remaining_size = size, addr = start_addr;
   int max_size = PAGE_SIZE;
@@ -165,12 +153,9 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
 
     set_cr3((uint32_t)page_table_directory);
     if (type == SECTION_BSS) {
-      lprintf("Memset");
       memset((char*)addr, 0, size_allocated);
-      lprintf("Memset end");
     } else if (type != SECTION_STACK && type != SECTION_BSS) {
       memcpy((char*)addr, buf + curr_offset, size_allocated);
-      lprintf("Memcpy end");
     }
     remaining_size -= size_allocated;
     curr_offset += size_allocated;
@@ -195,27 +180,22 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
  */
 void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3) {
 
-  // lprintf("Load frame %p", (void*)address);
   unsigned int *page_directory_entry_addr = get_page_directory_addr(
                                             (unsigned int*)address, cr3);
 
-  // lprintf("The page directory entry address is %p", page_directory_entry_addr);
   // If there is no page table associated with this entry, create it
   if (!is_entry_present(page_directory_entry_addr)) {
-    // lprintf("New page table created.");
     create_page_table(page_directory_entry_addr, PAGE_TABLE_FLAGS);
   }
 
   unsigned int *page_table_entry = 
         get_page_table_addr_with_offset(page_directory_entry_addr, address);
 
-  // lprintf("Page table address is %p", page_table_entry);
   // If there is no physical frame associated with this entry, allocate it
   if (!is_entry_present(page_table_entry)) {
     if (type != SECTION_KERNEL) {
       unsigned int *physical_frame_addr = allocate_frame();
       *page_table_entry = ((unsigned int)physical_frame_addr & PAGE_ADDR_MASK);
-      // lprintf("New frame allocated. %p", physical_frame_addr);
       // TODO: Set appropriate flag based on the type passed
       // NOTE: When this is done, we should use create_page_table_entry() to
       // allocate the frame
@@ -229,7 +209,6 @@ void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3) {
 
   uint8_t *frame_base_addr = (uint8_t *)(*page_table_entry & PAGE_ADDR_MASK);
   unsigned int offset = ((unsigned int)address & FRAME_OFFSET_MASK);
-  // lprintf("Returning from load frame for %p", (void*)address);
 
   // TODO: This should be uint8_t *  and not unsigned int *, right?
   return (frame_base_addr + offset);
@@ -564,27 +543,19 @@ void vm_enable() {
   set_cr4(get_cr4() | PAGE_GLOBAL_ENABLE_MASK);
 }
 
-unsigned int *get_page_directory_addr(unsigned int *address, unsigned int *base_addr) {
-  unsigned int offset = (((unsigned int)address & PAGE_TABLE_DIRECTORY_MASK) >>
-                         PAGE_DIR_RIGHT_SHIFT);
-
-  return base_addr + offset;
-}
-
-// Receives an address and validates that the string pointed to by it is in the 
-// address space of this task. Basically, ensure the page table entry is valid
-// from the starting address to the point where '\0' is written. If '\0' is 
-// encountered, it is valid. If we find that it needs another frame and there 
-// is no page table entry for that address, we return false(0) for invalid.
+/** @brief Check whether the string starting at a particular address
+ *   lies withing the current task's address space
+ *
+ *  @param addr     A virtual address (the starting address)
+ *
+ *  @return FALSE(0) if the buffer is invalid, TRUE(1) otherwise
+ */
 int is_valid_string(char *addr) {
   unsigned int *base_addr = (unsigned int*)get_cr3();
   do {
-    lprintf("Checking the memory address %p. The value is %c", addr, *addr);
     unsigned int *page_directory_entry_addr = get_page_directory_addr(
                                               (unsigned int*)addr, base_addr);
 
-    lprintf("The page directory entry addr is %p, The val is %p", 
-            page_directory_entry_addr, *(char**)page_directory_entry_addr);
     // If there is no page table associated with this entry, return false
     if (!is_entry_present(page_directory_entry_addr)) {
       lprintf("page_directory_entry_addr not present");
@@ -595,8 +566,6 @@ int is_valid_string(char *addr) {
                                      page_directory_entry_addr,
                                      (unsigned int)addr);
 
-    lprintf("The page table entry addr is %p, The val is %p", 
-            page_table_entry, *(char**)page_table_entry);
     // If there is no physical frame associated with this entry, return false
     if (!is_entry_present(page_table_entry)) {
       lprintf("page_table_entry_addr not present");
@@ -605,10 +574,7 @@ int is_valid_string(char *addr) {
 
     unsigned int next_frame_boundary = 
                       (((unsigned int)addr / PAGE_SIZE) + 1) * PAGE_SIZE;
-    lprintf("addr %p, next_frame_boundary %p, Val %c", addr, 
-            (char*)next_frame_boundary, *addr);
     while(((unsigned int)addr <= next_frame_boundary-1) && (*addr != '\0')) {
-      lprintf("Inside while");
       addr++;
     }
   } while((*addr) != '\0');

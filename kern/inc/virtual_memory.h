@@ -27,7 +27,6 @@ void free_frames_range(unsigned int *start_dir_entry,
 int is_buffer_valid(unsigned int address, unsigned int len);
 int is_valid_string(char *addr);
 
-unsigned int *get_page_directory_addr(unsigned int *address, unsigned int *base);
 void vm_enable();
 
 #endif /* _VIRTUAL_MEMORY_H_ */
