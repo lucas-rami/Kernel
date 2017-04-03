@@ -3,8 +3,6 @@
  *  @author akanjani, lramire1
  */
 
-#include <seg.h>
-
 .global gettid
 
 gettid:

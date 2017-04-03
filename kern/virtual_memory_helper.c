@@ -9,6 +9,7 @@
 #include <string.h>
 #include <bitmap.h>
 #include <common_kern.h>
+#include <cr.h>
 
 /* VM system */
 #include <virtual_memory.h>
@@ -98,6 +99,40 @@ unsigned int *get_frame_addr(unsigned int *page_table_entry_addr) {
   return (unsigned int *)(*page_table_entry_addr & PAGE_ADDR_MASK);
 }
 
+/** @brief Get the page directory entry for a particular virtual address
+ *
+ *  @param address A virtual address
+ *
+ *  @return The page directory entry which the virtual address maps to
+ */
+unsigned int *get_page_directory_addr_with_offset(unsigned int address) {
+  // get base register in base_addr(unsigned int *)
+  unsigned int *base_addr = (unsigned int *)get_cr3();
+
+  unsigned int offset = ((address & PAGE_TABLE_DIRECTORY_MASK) >>
+                         PAGE_DIR_RIGHT_SHIFT);
+  return base_addr + offset;
+}
+/** @brief Get the entry related to a particular virtual address in a page table
+ *
+ *  @param page_directory_entry_addr  The page directory entry pointing to the
+ *    page table
+ *  @param address                    A virtual address
+ *
+ *  @return The page table entry related to the virtual address
+ */
+unsigned int *get_page_table_addr_with_offset(
+             unsigned int *page_directory_entry_addr, unsigned int address) {
+  // Access the page table
+  unsigned int *page_table_base_addr = get_page_table_addr(
+                                       page_directory_entry_addr);
+  unsigned int offset =
+      ((address & PAGE_TABLE_MASK) >> PAGE_TABLE_RIGHT_SHIFT);
+
+  return page_table_base_addr + offset; 
+}
+
+
 /** @brief Get the flags of an entry in a page table/directory
  *  
  *  @param enry_addr The entry's address
@@ -111,12 +146,12 @@ uint32_t get_entry_flags(unsigned int *entry_addr) {
 /** @brief Get the virtual address associated with a physical frame, given the
  *  entries in the page directory/table that map to this frame
  *
- *  @param page_directory_entry_addr The address of the page directory's entry
- *  @param page_table_entry_addr The address of the page table's entry
+ *  @param page_directory_entry_addr The address of the page directory entry
+ *  @param page_table_entry_addr The address of the page table entry
  *  
  *  @return The virtual address associated with the given entries
  */
-unsigned int *get_virtual_address(unsigned int *page_directory_entry_addr,
+unsigned int get_virtual_address(unsigned int *page_directory_entry_addr,
                                   unsigned int *page_table_entry_addr) {
 
   unsigned int virtual_address = 0;
@@ -131,7 +166,7 @@ unsigned int *get_virtual_address(unsigned int *page_directory_entry_addr,
   virtual_address |= page_dir_index << PAGE_DIR_RIGHT_SHIFT;
   virtual_address |= page_tab_index << PAGE_SIZE_LOG2;
 
-  return (unsigned int *) virtual_address;
+  return virtual_address;
 }
 
 

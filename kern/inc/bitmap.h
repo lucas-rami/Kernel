@@ -12,10 +12,21 @@
 #define BITS_IN_UINT8_T 8
 
 #include <stdint.h>
+#include <mutex.h>
 
+/** @brief A structure representing a bitmap
+ */
 typedef struct {
+
+  /* @brief An array storing the actual bitmap */
   uint8_t *arr;
+  
+  /* @brief The bitmap's size, in bytes*/
   int size;
+  
+  /* @brief A mutex to make the bitmap implememtation thread-safe */
+  mutex_t mp;
+
 } bitmap_t;
 
 int bitmap_init(bitmap_t *map, int size);

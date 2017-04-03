@@ -1,4 +1,5 @@
 #include <virtual_memory.h>
+#include <virtual_memory_helper.h>
 #include <syscalls.h>
 #include <stddef.h>
 #include <string.h>
@@ -52,7 +53,6 @@ int kern_exec(char *execname, char **argvec) {
   // run_next_thread();
   lprintf("EXEC. The current tcb is %p and the esp is %p", kernel.current_thread, (char*)kernel.current_thread->esp);
   // make_runnable_and_switch();
-  MAGIC_BREAK;
   switch_esp(kernel.current_thread->esp);
   lprintf("This shouldnt be printed");
   return 0;
