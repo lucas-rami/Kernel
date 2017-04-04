@@ -26,12 +26,9 @@ void context_switch(tcb_t* to) {
 
   tcb_t *me = kernel.current_thread;
 
-  lprintf("The current tcb %p and the esp is %p", me, (char *)me->esp);
-  tcb_t *prev = kernel.current_thread;
   // Context switch to the other thread
   context_switch_asm(&kernel.current_thread->esp, &to->esp);
 
-  lprintf("CONTEXT SWITCH. The tcb %p and the esp is %p", prev, (char *)prev->esp);
   // Update the running thread state and the kernel state
   init_thread(me);
 
@@ -48,8 +45,6 @@ void context_switch(tcb_t* to) {
 void init_thread(tcb_t* to) {
 
   // Update the kernel state
-  lprintf("The current thread is %p and the to is %p", kernel.current_thread, to);
-  // MAGIC_BREAK;
   kernel.current_thread = to;
 
   // Update the thread's state

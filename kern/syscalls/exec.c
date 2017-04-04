@@ -54,7 +54,6 @@
  */
 int kern_exec(char *execname, char **argvec) {
 
-  lprintf("EXEC!!!");
   // Validate all arguments
   if (is_valid_string(execname) == FALSE) {
     lprintf("Execname not valid");
@@ -69,14 +68,15 @@ int kern_exec(char *execname, char **argvec) {
 
   int i = 0;
   while (argvec[i] != NULL) {
-    if (is_valid_string(argvec[i]) == FALSE || strlen(argvec[i]) > ARGS_MAX_SIZE) {
+    if (is_valid_string(argvec[i]) == FALSE || strlen(argvec[i]) > 
+         ARGS_MAX_SIZE) {
       lprintf("Invalid args");
       return ERR_INVALID_ARGS;
     }
     i++;
   }
 
-  // unsigned int *old_cr3 = (unsigned int*)get_cr3();
+  unsigned int *old_cr3 = (unsigned int*)get_cr3();
 
   if (create_task_from_executable(execname, TRUE, argvec, i) == 0) {
     // Error creating the new task
@@ -86,12 +86,12 @@ int kern_exec(char *execname, char **argvec) {
   // Overwrite the cr3 value with the new one
   kernel.current_thread->cr3 = (uint32_t)get_cr3();
 
-  // lprintf("The previous cr3 was %p and the current one is %p", old_cr3, (unsigned int*)get_cr3());
-  // free_address_space(old_cr3, KERNEL_AND_USER_SPACE);
+  // TODO: Why is this needed?
+  disable_interrupts();
+  free_address_space(old_cr3, KERNEL_AND_USER_SPACE);
 
   // The setup of the second program is complete. Time to switch to it and 
   // start execution.
-  //MAGIC_BREAK;
   switch_esp(kernel.current_thread->esp);
 
   // SHOULD NEVER RETURN HERE
@@ -99,11 +99,12 @@ int kern_exec(char *execname, char **argvec) {
   lprintf("EXEC RETURNED TO THE CALLING PROGRAM. FATAL ERROR");
   return 0;
   // TODO: Think of a reasonable limit on the number of args in argvec
-  // On success, switch to the second thread after deallocating space for the 
-  // first task 
-  // On failure, clean up whatever space we have allocated for this new task
-  // and return a negative value
-  // No software exception handler should be registered. Do something to make
+  // TODO: On failure, clean up whatever space we have allocated for this 
+  // new task
+  // and return a negative value. Should be handled in task_create
+  // TODO: Garbage collect the kernel stack
+  // TODO: No software exception handler should be registered. Do something to 
+  // make
   // that happen
 }
 
@@ -117,7 +118,8 @@ int kern_exec(char *execname, char **argvec) {
  *
  *  @return char* A pointer to the top of the stack of the new program
  */
-char *load_args_for_new_program(char **argvec, unsigned int *old_ptd, int count) {
+char *load_args_for_new_program(char **argvec, unsigned int *old_ptd, 
+    int count) {
   unsigned int *new_ptd = (unsigned int *)get_cr3();
   char *stack_addr = (char *)STACK_TOP;
   char *buf = malloc(sizeof(char) * (ARGS_MAX_SIZE + 1));
@@ -150,13 +152,6 @@ char *load_args_for_new_program(char **argvec, unsigned int *old_ptd, int count)
   *(char **)stack_addr = start_of_argv;
   stack_addr -= sizeof(int);
   *(int *)stack_addr = (count);
-
-  /*
-  char **printstr = *(char ***)(stack_addr + sizeof(int));
-  for (i = 0; i < count; i++) {
-    lprintf("Arg num %d, val %s", i, *(printstr + i));
-  }
-  */
 
   return (stack_addr - sizeof(uint32_t));
 }

@@ -34,8 +34,6 @@
 #include <cr.h>
 #include <eflags.h>
 
-#define FIRST_TASK "knife"
-
 void tick(unsigned int numTicks);
 
 /** @brief Kernel entrypoint.

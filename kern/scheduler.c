@@ -26,16 +26,11 @@
  */
 void run_next_thread() {
 
-  //lprintf("Run next thread() called\n");
   // Check if the kernel state is initialized
   assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
 
   tcb_t *next_tcb = static_queue_dequeue(&kernel.runnable_threads);
 
-  lprintf("run_next_thread. TCB %p and esp %p", next_tcb, (char*)next_tcb->esp);
-  lprintf("run_next_thread. Current TCB %p and esp %p", kernel.current_thread, (char*)kernel.current_thread->esp);
-  // MAGIC_BREAK;
-  //lprintf("Run next thread() called. Dequed thread with tid %d\n", next_tcb->tid);
   if (next_tcb != NULL) {
     kernel.cpu_idle = CPU_IDLE_FALSE;
 
@@ -45,7 +40,6 @@ void run_next_thread() {
       return;
     }
   */
-    //lprintf("run_next_thread(): Running new thread !");
 
     context_switch(next_tcb);
   } else {
@@ -56,8 +50,7 @@ void run_next_thread() {
       enable_interrupts();
       return;
     }
-
-*/    //lprintf("run_next_thread(): Nothing to run, idling now...");
+*/
 
     kernel.cpu_idle = CPU_IDLE_TRUE;
     context_switch(kernel.idle_thread);
@@ -71,7 +64,6 @@ void run_next_thread() {
  */
 void make_runnable_and_switch() {
 
-  //lprintf("Make runnable and switch() called\n");
   assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
 
   disable_interrupts();
@@ -85,7 +77,6 @@ void make_runnable_and_switch() {
   }
   kernel.current_thread->thread_state = THR_RUNNABLE;
 
-  //lprintf("Calling run next thread\n");
   run_next_thread();
 }
 
