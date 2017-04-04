@@ -71,7 +71,8 @@ unsigned int *setup_vm(const simple_elf_t *elf_info) {
   }
   // Add stack area as well.
   if (load_every_segment(elf_info, page_table_directory) < 0) {
-    // TODO: free all the frames
+    // TODO: test this
+    free_address_space(page_table_directory, KERNEL_AND_USER_SPACE);
     return NULL;
   }
 
@@ -89,15 +90,26 @@ unsigned int *setup_vm(const simple_elf_t *elf_info) {
  *  @return 0 on success, a negative number on error
  */
 int load_every_segment(const simple_elf_t *elf, unsigned int *cr3) {
-  load_segment(elf->e_fname, elf->e_txtoff, elf->e_txtlen, elf->e_txtstart,
-               SECTION_TXT, cr3);
-  load_segment(elf->e_fname, elf->e_datoff, elf->e_datlen, elf->e_datstart,
-               SECTION_DATA, cr3);
-  load_segment(elf->e_fname, elf->e_rodatoff, elf->e_rodatlen,
-               elf->e_rodatstart, SECTION_RODATA, cr3);
-  load_segment(elf->e_fname, 0, elf->e_bsslen, elf->e_bssstart, SECTION_BSS,
-               cr3);
-  load_segment(NULL, 0, STACK_SIZE, STACK_START_ADDR, SECTION_STACK, cr3);
+  if (load_segment(elf->e_fname, elf->e_txtoff, elf->e_txtlen, elf->e_txtstart,
+               SECTION_TXT, cr3) < 0) {
+    return -1;
+  }
+  if (load_segment(elf->e_fname, elf->e_datoff, elf->e_datlen, elf->e_datstart,
+               SECTION_DATA, cr3) < 0) {
+    return -1;
+  }
+  if (load_segment(elf->e_fname, elf->e_rodatoff, elf->e_rodatlen,
+      elf->e_rodatstart, SECTION_RODATA, cr3) < 0) {
+    return -1;
+  }
+  if (load_segment(elf->e_fname, 0, elf->e_bsslen, elf->e_bssstart, SECTION_BSS,
+      cr3) < 0) {
+    return -1;
+  }
+  if (load_segment(NULL, 0, STACK_SIZE, STACK_START_ADDR, SECTION_STACK, cr3)
+       < 0) {
+    return -1;
+  }
   // Initialize the global variables and bss to zero once they are allocated
   // space for
   return 0;
@@ -199,6 +211,13 @@ void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3) {
       // NOTE: When this is done, we should use create_page_table_entry() to
       // allocate the frame
       *page_table_entry |= PAGE_TABLE_FLAGS;
+      
+      // TODO: Zero out frames if allocated through a different function
+      // Zero out every frame
+      uint32_t old_cr3 = get_cr3();
+      set_cr3((uint32_t)cr3);
+      memset((char*)((address/PAGE_SIZE) * PAGE_SIZE), 0, PAGE_SIZE);
+      set_cr3(old_cr3);
     } else {
       *page_table_entry = address & PAGE_ADDR_MASK;
       // TODO: Make it kernel accessible only
@@ -348,7 +367,7 @@ int free_address_space(unsigned int *page_directory_addr,
       if (free_page_table(get_page_table_addr(page_directory_entry_addr), 
           free_kernel_space) == 0) {
         // If the page table has been freed, invalidate the page dir. entry
-        // set_entry_invalid(page_directory_entry_addr);
+        set_entry_invalid(page_directory_entry_addr);
       } else {
         something_remaining = 1;
       }
@@ -409,7 +428,7 @@ int free_page_table(unsigned int *page_table_addr, int free_kernel_space) {
       }
 
       // Invalidate the entry
-      // set_entry_invalid(page_table_entry_addr);
+      set_entry_invalid(page_table_entry_addr);
     }
   }
 
