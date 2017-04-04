@@ -31,11 +31,23 @@ int kern_fork(unsigned int *esp) {
 
   // NOTE: Reject call if more than one thread in the task ?
   // TODO: Need to register software exception handler
+  // TODO: Args validation??
+
+  mutex_lock(&kernel.mutex);
+  if (kernel.current_thread->num_of_frames_requested <= kernel.free_frame_count) {
+    kernel.free_frame_count -= kernel.current_thread->num_of_frames_requested;
+  } else {
+    lprintf("Can't fork as no frames left");
+    mutex_unlock(&kernel.mutex);
+    return -1;
+  }
+  mutex_unlock(&kernel.mutex);
 
   // Allocate a kernel stack for the new task
   void *stack_kernel = malloc(PAGE_SIZE);
   if (stack_kernel == NULL) {
     lprintf("fork(): Could not allocate kernel stack for task's root thread");
+    // TODO: Increase the kernel free frame count
     return -1;
   }
 
@@ -49,6 +61,7 @@ int kern_fork(unsigned int *esp) {
     lprintf("fork(): PCB initialization failed");
     free(stack_kernel);
     free_address_space(new_cr3, KERNEL_AND_USER_SPACE);
+    // TODO: Increase the kernel free frame count
     return -1;
   }
 
@@ -58,6 +71,7 @@ int kern_fork(unsigned int *esp) {
     free(stack_kernel);
     hash_table_remove_element(&kernel.pcbs, new_pcb);
     free_address_space(new_cr3, KERNEL_AND_USER_SPACE);
+    // TODO: Increase the kernel free frame count
     return -1;
   }
 

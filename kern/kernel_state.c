@@ -165,6 +165,7 @@ pcb_t *create_new_pcb() {
   // Set various fields to their initial value
   new_pcb->return_status = 0;
   new_pcb->task_state = TASK_RUNNING;
+  new_pcb->num_of_frames_requested = 0;
 
   // Assign a unique id to the PCB
   mutex_lock(&kernel.mutex);
@@ -206,7 +207,10 @@ tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3) {
   new_tcb->esp = 0; // NOTE: should be modified when the stack is crafted
   new_tcb->esp0 = esp0;
   new_tcb->cr3 = cr3;
+  new_tcb->num_of_frames_requested = 0;
 
+  // TODO: Change this into an atomic op.
+  // No need for a mutex
   // Assign a unique id to the TCB
   mutex_lock(&kernel.mutex);
   new_tcb->tid = kernel.thread_id;

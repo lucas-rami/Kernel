@@ -76,12 +76,11 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
     return 0;
   }
 
-/*
-  if (frames_needed_by_program(&elf) > kernel.free_frame_count) {
+  unsigned num_frames_requested;
+  if ((num_frames_requested = request_frames_needed_by_program(&elf)) == 0) {
     lprintf("The program %s needs more memory than is available", task_name);
     return 0;
   }
-*/
 
   // Allocate a kernel stack for the root thread
   void *stack_kernel = NULL;
@@ -98,6 +97,7 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
   if ((cr3 = setup_vm(&elf)) == NULL) {
     lprintf("Task creation failed for task \"%s\"", task_name);
     free(stack_kernel);
+    // TODO: Increase the kernel free frame count
     return 0;
   }
 
@@ -108,11 +108,12 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
     // Doing this for the first user task of the system
     esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
 
-   // Create new PCB/TCB for the task and its root thread
+    // Create new PCB/TCB for the task and its root thread
     new_pcb = create_new_pcb();
     if (new_pcb == NULL) {
       lprintf("create_task_from_executable(): PCB initialization failed");
       free(stack_kernel);
+      // TODO: Increase the kernel free frame count
       return 0;
     }
 
@@ -121,6 +122,7 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
       lprintf("create_task_from_executable(): TCB initialization failed");
       free(stack_kernel);
       hash_table_remove_element(&kernel.pcbs, new_pcb);
+      // TODO: Increase the kernel free frame count
       return 0;
     }
     stack_top = ESP;
@@ -131,6 +133,10 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
     char *new_stack_addr = load_args_for_new_program(argvec, old_cr3, count);
     stack_top = (uint32_t)new_stack_addr;
   }
+
+  // TODO: lock?
+  new_tcb->num_of_frames_requested += num_frames_requested;
+  new_tcb->task->num_of_frames_requested += num_frames_requested;
 
   // Create EFLAGS for the user task
   uint32_t eflags = get_eflags();
@@ -171,8 +177,61 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
   return elf.e_entry;
 }
 
-/*
-unsigned int frames_needed_by_program(simple_elf_t *elf) {
-  
+
+unsigned int request_frames_needed_by_program(simple_elf_t *elf) {
+  if (elf == NULL) {
+    lprintf("frames_needed_by_program(): Invalid argument");
+    return 0;
+  }
+  unsigned int reduce_count = 0;
+  unsigned long textstart = elf->e_txtstart;
+  unsigned long textend = textstart + elf->e_txtlen;
+  unsigned long rodatastart = elf->e_rodatstart;
+  unsigned long rodataend = rodatastart + elf->e_rodatlen;
+  unsigned long datastart = elf->e_datstart;
+  unsigned long dataend = datastart + elf->e_datlen;
+  unsigned long bssstart = elf->e_bssstart;
+  unsigned long bssend = bssstart + elf->e_bsslen;
+  if ((textstart/PAGE_SIZE) == (rodatastart/PAGE_SIZE)) {
+    // Both the sections will map to the first same frame
+    reduce_count++;
+  } else if ((textend/PAGE_SIZE) == 
+             (rodatastart/PAGE_SIZE) ||
+             (textstart/PAGE_SIZE) == 
+             (rodataend/PAGE_SIZE)) {
+    reduce_count++;
+  }
+
+  if ((datastart/PAGE_SIZE) == (bssstart/PAGE_SIZE)) {
+    // Both the sections will map to the first same frame
+    reduce_count++;
+  } else if ((dataend/PAGE_SIZE) == 
+             (bssstart/PAGE_SIZE) ||
+             (datastart/PAGE_SIZE) == 
+             (bssend/PAGE_SIZE)) {
+    reduce_count++;
+  }
+
+  unsigned int total_frames_reqd = 0;
+  total_frames_reqd += (textend/PAGE_SIZE) + 1 - (textstart/PAGE_SIZE);
+  total_frames_reqd += (rodataend/PAGE_SIZE) + 1 - (rodatastart/PAGE_SIZE);
+  total_frames_reqd += (dataend/PAGE_SIZE) + 1 - (datastart/PAGE_SIZE);
+  total_frames_reqd += (bssend/PAGE_SIZE) + 1 - (bssstart/PAGE_SIZE);
+
+  lprintf("The number of frames reqd are %u", total_frames_reqd - reduce_count + 1);
+  // Adding 1 frame for the stack
+  total_frames_reqd++;
+  total_frames_reqd -= reduce_count;
+
+  mutex_lock(&kernel.mutex);
+  if (total_frames_reqd <= kernel.free_frame_count) {
+    kernel.free_frame_count -= total_frames_reqd;
+  } else {
+    mutex_unlock(&kernel.mutex);
+    return 0;
+  }
+  mutex_unlock(&kernel.mutex);
+  // TODO: Test the code when two sections overlap
+  return total_frames_reqd;
 }
-*/
+
