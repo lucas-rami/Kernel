@@ -49,6 +49,9 @@ typedef struct kernel {
   /** @brief Mutex used to ensure atomicity when changing the kernel state */
   mutex_t mutex;
 
+  /** @brief Count of the number of frames available(not used or requested for) */
+  unsigned int free_frame_count;
+
   /* ------------------------- */
 
   /** @brief Hash table holding all the PCBs */
@@ -64,7 +67,7 @@ kernel_t kernel;
 
 int kernel_init();
 pcb_t *create_new_pcb();
-tcb_t *create_new_tcb(const pcb_t *pcb, uint32_t esp0, uint32_t cr3);
+tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3);
 
 tcb_t* create_idle_thread();
 

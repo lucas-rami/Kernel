@@ -23,7 +23,7 @@
 typedef struct tcb {
 
   /* @brief The PCB of the task containing this thread */
-  const pcb_t *task;
+  pcb_t *task;
 
   /* @brief The thread's kernel issued TID */
   int tid;
@@ -44,6 +44,10 @@ typedef struct tcb {
 
   /* @brief Hold the value of %esp0 for this thread when context switching */
   uint32_t esp0;
+
+  /* @brief Holds the number of frames requested by this thread(includes 
+   *  the ones that have not been allocated yet as well */
+  uint32_t num_of_frames_requested;
 
   /** @brief Mutex used to ensure atomicity when changing the thread state */
   mutex_t mutex;

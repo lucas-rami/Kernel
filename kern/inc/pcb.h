@@ -7,6 +7,7 @@
 #define _PCB_H_
 
 #include <mutex.h>
+#include <stdint.h>
 
 #define TASK_RUNNING 0
 #define TASK_ZOMBIE 1
@@ -21,6 +22,10 @@ typedef struct pcb {
 
   /* @brief Task's current state: may be one of [RUNNING, ZOMBIE] */
   int task_state;
+
+  /* @brief Holds the number of frames requested by this process(includes 
+   *  the ones that have not been allocated yet as well */
+  uint32_t num_of_frames_requested;
 
   /** @brief Mutex used to ensure atomicity when changing the task state */
   mutex_t mutex;

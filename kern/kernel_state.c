@@ -185,7 +185,7 @@ pcb_t *create_new_pcb() {
 }
 
 // TODO: doc
-tcb_t *create_new_tcb(const pcb_t *pcb, uint32_t esp0, uint32_t cr3) {
+tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3) {
 
   assert(kernel.init == KERNEL_INIT_TRUE && pcb != NULL);
 

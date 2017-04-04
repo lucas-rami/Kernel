@@ -53,7 +53,8 @@
  *  @return unsigned int The starting instruction pointer of the program 
  *                       that is being loaded on success, 0 otherwise
  */
-unsigned int create_task_from_executable(const char *task_name, int is_exec, char **argvec, int count) {
+unsigned int create_task_from_executable(const char *task_name, int is_exec,
+    char **argvec, int count) {
 
   if (task_name == NULL) {
     lprintf("Invalid argument to function create_task_from_executable()ç");
@@ -74,6 +75,13 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec, cha
     lprintf("ELF header is invalid for task \"%s\"", task_name);
     return 0;
   }
+
+/*
+  if (frames_needed_by_program(&elf) > kernel.free_frame_count) {
+    lprintf("The program %s needs more memory than is available", task_name);
+    return 0;
+  }
+*/
 
   // Allocate a kernel stack for the root thread
   void *stack_kernel = NULL;
@@ -162,3 +170,9 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec, cha
 
   return elf.e_entry;
 }
+
+/*
+unsigned int frames_needed_by_program(simple_elf_t *elf) {
+  
+}
+*/

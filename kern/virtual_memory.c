@@ -26,8 +26,10 @@
 #include <simics.h>
 
 #include <limits.h>
+
 /* Hold the number of user frames in the system */
 unsigned int num_user_frames;
+
 /* Bitmap holding the set of (un)allocated frames */ 
 bitmap_t free_map;
 
@@ -37,10 +39,13 @@ bitmap_t free_map;
  */
 int vm_init() {
 
-  // Figure out the number of user frames
+  // Figure out the number of usernumber of user frames
   num_user_frames = machine_phys_frames() - NUM_KERNEL_FRAMES;
 
-  int size = (num_user_frames / BITS_IN_UINT8_T) + 1;
+  // Initialize the free frame count to the number of user frames
+  kernel.free_frame_count = num_user_frames;
+
+  int size = (kernel.free_frame_count / BITS_IN_UINT8_T) + 1;
 
   bitmap_init(&free_map, size);
   return 0;
@@ -249,7 +254,7 @@ int load_multiple_frames(unsigned int address, unsigned int nb_frames,
                             unsigned int type) {
   
   // Check that the number of frames requested is valid
-  if (nb_frames <= 0 || nb_frames > num_user_frames) {
+  if (nb_frames <= 0 || nb_frames > kernel.free_frame_count) {
     lprintf("load_multiple_frames(): invalid number of frames");
     return -1;
   } 
