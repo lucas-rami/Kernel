@@ -20,6 +20,8 @@
 #include <virtual_memory.h>
 #include <hash_table.h>
 #include <syscalls.h>
+#include <virtual_memory_defines.h>
+#include <common_kern.h>
 
 // Debugging
 #include <simics.h>
@@ -118,6 +120,13 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec, cha
     new_tcb->esp0 = esp0;
     char *new_stack_addr = load_args_for_new_program(argvec, old_cr3, count);
     stack_top = (uint32_t)new_stack_addr;
+    unsigned int *curr_cr3 = (unsigned int *)get_cr3();
+    lprintf("The curr cr3 is %p and the old is %p", curr_cr3, old_cr3);
+    /*unsigned int i;
+    for (i = 0; i < USER_MEM_START; i+= PAGE_SIZE ) {
+      lprintf("The value at addr %p is %p", (char*)i, *(char**)i);
+    }*/
+    free_address_space(old_cr3, KERNEL_AND_USER_SPACE);
   }
 
   // Create EFLAGS for the user task
@@ -151,6 +160,7 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec, cha
   // Save stack pointer value in TCB
   new_tcb->esp = (uint32_t) stack_addr;
 
+  lprintf("The stack top is %p", stack_addr);
   // Make the thread runnable
   mutex_lock(&kernel.mutex);
   add_runnable_thread(new_tcb);

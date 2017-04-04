@@ -30,7 +30,7 @@ unsigned int num_user_frames;
 /* Bitmap holding the set of (un)allocated frames */ 
 bitmap_t free_map;
 
-#define FIRST_TASK "coolness"
+#define FIRST_TASK "knife"
 
 /** @brief Initialize the virtual memory system
  *
@@ -336,26 +336,37 @@ int free_address_space(unsigned int *page_directory_addr,
   unsigned int *page_directory_entry_addr;
   int something_remaining = 0;
   
+  // lprintf("The page directory address is %p", page_directory_addr);
   // Iterate over the page directory entries
   for (page_directory_entry_addr = page_directory_addr ;
        page_directory_entry_addr < page_directory_addr + nb_entries ;
        ++page_directory_entry_addr) {
 
+    // lprintf("page_directory_entry_addr is %p", page_directory_entry_addr);
+    // lprintf("page_directory_entry_addr %p", page_directory_entry_addr);
     // Check if the entry is present 
     if (is_entry_present(page_directory_entry_addr)) {
 
-      if (free_page_table(page_directory_entry_addr, free_kernel_space) == 0) {
+      // lprintf("page_directory_entry_addr is a valid entry %p", 
+      // page_directory_entry_addr);
+      if (free_page_table(get_page_table_addr(page_directory_entry_addr), 
+          free_kernel_space) == 0) {
         // If the page table has been freed, invalidate the page dir. entry
-        set_entry_invalid(page_directory_entry_addr);
+        // set_entry_invalid(page_directory_entry_addr);
       } else {
+        // lprintf("Something remaining for addr %p", page_directory_entry_addr);
         something_remaining = 1;
       }
     }
 
   }
+  // lprintf("free_address_space(): Done with all the page tables. Returning next");
   if (!something_remaining) {
     // If all entries have been invalidated, free the page directory from memory
+    // lprintf("Trying to free the page directory %p", page_directory_addr);
     sfree(page_directory_addr, PAGE_SIZE);
+    // lprintf("Returning from free address space");
+    // MAGIC_BREAK;
     return 0;
   }
 
@@ -383,6 +394,9 @@ int free_page_table(unsigned int *page_table_addr, int free_kernel_space) {
   unsigned int *page_table_entry_addr;  
   int something_remaining = 0;
 
+  // lprintf("Free page table called. Page table entry addr %p. The 
+  // stopping address should be %p", page_table_addr, page_table_addr 
+  // + nb_entries - 1);
   // Iterate over the page table entries
   for (page_table_entry_addr = page_table_addr ;
        page_table_entry_addr < page_table_addr + nb_entries ;
@@ -392,32 +406,40 @@ int free_page_table(unsigned int *page_table_addr, int free_kernel_space) {
     if (is_entry_present(page_table_entry_addr)) {
       unsigned int *frame_addr = get_frame_addr(page_table_entry_addr);
       
-      // Deallocate the frame if appropriate
-      if (free_kernel_space == KERNEL_AND_USER_SPACE ||
-          (unsigned int) frame_addr > USER_MEM_START) { 
+      if (free_kernel_space != KERNEL_AND_USER_SPACE &&
+          (unsigned int) frame_addr < USER_MEM_START) {
+        // lprintf("The kernel space will not be freed. %p", frame_addr);
+        something_remaining = 1;
+        continue;
+      }
+      // lprintf("frame addr %x user_mem_start %x", (unsigned int)frame_addr, 
+      // USER_MEM_START);
 
+      // Deallocate the frame if appropriate
+      if ((unsigned int)frame_addr >= USER_MEM_START) { 
         // Free the frame
         if (free_frame(frame_addr) < 0) {
+          // lprintf("Here");
           panic("free_page_table(): Failed to free frame");
         }
-
-        // Invalidate the entry
-        set_entry_invalid(page_table_entry_addr);
-
-      } else {
-        something_remaining = 1;
       }
+
+      // Invalidate the entry
+      // set_entry_invalid(page_table_entry_addr);
     }
   }
 
+  // lprintf("Free page table returning. Page table entry addr %p", 
+  // page_table_addr);
   if (!something_remaining) {
     // If all entries have been invalidated, free the page table from memory
+    // lprintf("Nothing is remaining for this page table. Freeing %p", 
+    // page_table_addr);
     sfree(page_table_addr, PAGE_SIZE);
     return 0;
   }
 
   return 1;
-
 }
 
 /** @brief Free all the frames allocated within a given range of virtual
@@ -446,7 +468,8 @@ void free_frames_range(unsigned int *start_dir_entry,
       unsigned int *frame_addr = get_frame_addr(start_table_entry);
     
       // Free the frame
-      if (free_frame(frame_addr) < 0) {
+      if ((unsigned int)frame_addr >= USER_MEM_START && free_frame(frame_addr) < 0) {
+        // lprintf("There");
         panic("free_frames_range(): Failed to free frame");
       }
 

@@ -209,7 +209,8 @@ unsigned int *allocate_frame() {
  */
 int free_frame(unsigned int* addr) {
   int frame_index = ((unsigned int)(addr) - USER_MEM_START) / PAGE_SIZE;
-  if (get_bit(&free_map, frame_index) != BITMAP_ALLOCATED) {
+  // lprintf("Free frame for addr %p. Frame index = %d", addr, frame_index);
+  if (!get_bit(&free_map, frame_index)) {
     lprintf("free_frame(): Trying to deallocate unallocated frame");
     return -1;
   }

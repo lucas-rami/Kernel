@@ -20,6 +20,7 @@
 #include <scheduler.h>
 #include <asm.h>
 #include "exec_helper.h"
+#include <virtual_memory_defines.h>
 
 #define ERR_INVALID_ARGS -1
 // TODO: What should this value be? How about max no of args
@@ -52,6 +53,8 @@
  *              wrong, an integer error code less than zero will be returned.
  */
 int kern_exec(char *execname, char **argvec) {
+
+  lprintf("EXEC!!!");
   // Validate all arguments
   if (is_valid_string(execname) == FALSE) {
     lprintf("Execname not valid");
@@ -73,17 +76,22 @@ int kern_exec(char *execname, char **argvec) {
     i++;
   }
 
-  create_task_from_executable(execname, TRUE, argvec, i);
-  /*if (create_task_from_executable(execname, TRUE, argvec, i) < 0) {
+  // unsigned int *old_cr3 = (unsigned int*)get_cr3();
+
+  if (create_task_from_executable(execname, TRUE, argvec, i) == 0) {
     // Error creating the new task
     return -1;
   }
-*/
+
   // Overwrite the cr3 value with the new one
   kernel.current_thread->cr3 = (uint32_t)get_cr3();
 
+  // lprintf("The previous cr3 was %p and the current one is %p", old_cr3, (unsigned int*)get_cr3());
+  // free_address_space(old_cr3, KERNEL_AND_USER_SPACE);
+
   // The setup of the second program is complete. Time to switch to it and 
   // start execution.
+  //MAGIC_BREAK;
   switch_esp(kernel.current_thread->esp);
 
   // SHOULD NEVER RETURN HERE

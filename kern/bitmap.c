@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <simics.h>
 
 /** @brief Initialize a bitmap
  *
@@ -50,6 +51,9 @@ int get_bit(bitmap_t *map, int index) {
   int bit_pos = (index % BITS_IN_UINT8_T);
   int ret = map->arr[actual_index] & (1 << (BITS_IN_UINT8_T - bit_pos - 1));
   mutex_unlock(&map->mp);  
+  if (index == 1) {
+    lprintf("The value of the arr is %d and the bit pos is %d. Returning %d", map->arr[actual_index], bit_pos, ret);
+  }
   return ret;
 }
 
@@ -90,7 +94,7 @@ int unset_bit(bitmap_t *map, int index) {
   int actual_index = (index / BITS_IN_UINT8_T);
   int bit_pos = (index % BITS_IN_UINT8_T);
   map->arr[actual_index] &= 
-                        (~BITMAP_ALLOCATED << (BITS_IN_UINT8_T - bit_pos - 1));
+                        (~(BITMAP_ALLOCATED << (BITS_IN_UINT8_T - bit_pos - 1)));
   mutex_unlock(&map->mp);    
   return 0;
 }
