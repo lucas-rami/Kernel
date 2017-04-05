@@ -1,6 +1,6 @@
 /** @file bitmap.c
  *  @brief This file contains the definitions of functions used to modify a
- *    bitmap
+ *    bitmap (the functions defined in this file are thread-safe)
  *  @author akanjani, lramire1
  */
 

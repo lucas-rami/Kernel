@@ -191,10 +191,6 @@ unsigned int get_virtual_address(unsigned int *page_directory_entry_addr,
  *  @return The frame's address if one free frame was found, NULL otherwise
  */
 unsigned int *allocate_frame() {
-  // TODO: Need a lock for this as well? 
-  // What if two threads find get_bit of the same frame as unallocated and 
-  // then write to the same frame?
-  // or make set_bit atomic somehow
   int i;
   for (i = 0; i < num_user_frames; i++) {
     if (get_bit(&free_map, i) == BITMAP_UNALLOCATED) {
@@ -213,7 +209,6 @@ unsigned int *allocate_frame() {
  *    allocated
  */
 int free_frame(unsigned int* addr) {
-  // TODO: Thread safe
   int frame_index = ((unsigned int)(addr) - USER_MEM_START) / PAGE_SIZE;
   if (!get_bit(&free_map, frame_index)) {
     lprintf("free_frame(): Trying to deallocate unallocated frame");

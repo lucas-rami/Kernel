@@ -36,6 +36,7 @@
 #define ENTRY_SIZE_LOG2 2
 #define PAGE_SIZE_LOG2 12
 #define SIZE_ENTRY_BYTES 4
+#define NB_ENTRY_PER_PAGE PAGE_SIZE / SIZE_ENTRY_BYTES
 
 /* Constants for free_address_space()/free_page_table() functions */
 #define KERNEL_AND_USER_SPACE 0

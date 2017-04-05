@@ -88,6 +88,8 @@ void block_and_switch() {
 
   assert(kernel.init == KERNEL_INIT_TRUE);
 
+  disable_interrupts();
+
   if (kernel.current_thread != NULL && kernel.cpu_idle == CPU_IDLE_FALSE) {
     kernel.current_thread->thread_state = THR_BLOCKED;
     kernel.current_thread->descheduled = THR_DESCHEDULED_TRUE;

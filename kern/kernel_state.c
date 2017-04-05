@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <page.h>
 #include <asm.h>
+#include <common_kern.h>
+#include <virtual_memory_defines.h>
 
 /* Debugging */
 #include <simics.h>
@@ -40,6 +42,7 @@ int kernel_init() {
   kernel.task_id = 1;
   kernel.thread_id = 1;
   kernel.cpu_idle = CPU_IDLE_TRUE;
+  kernel.free_frame_count = machine_phys_frames() - NUM_KERNEL_FRAMES;
 
   // Initialize the mutex for the functions in malloc_wrappers.c
   if (mutex_init(&mutex_malloc) < 0) {
@@ -125,6 +128,7 @@ tcb_t *create_idle_thread() {
   new_tcb->task = new_pcb;
   new_tcb->thread_state = THR_RUNNING;
   new_tcb->descheduled = THR_DESCHEDULED_FALSE;
+  new_pcb->num_of_frames_requested = 0;  
   new_tcb->tid = 0; // Fine since no other thread is allowed to have this tid
 
   // Allocate a kernel stack for the root thread

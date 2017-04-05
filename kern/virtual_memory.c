@@ -259,6 +259,8 @@ int load_multiple_frames(unsigned int address, unsigned int nb_frames,
     return -1;
   } 
 
+  unsigned int frames_remaining = nb_frames;
+
   // Get page directory entry address
   unsigned int *page_directory_entry_addr = 
         get_page_directory_addr_with_offset(address);
@@ -272,16 +274,12 @@ int load_multiple_frames(unsigned int address, unsigned int nb_frames,
   unsigned int *page_table_entry_addr = 
         get_page_table_addr_with_offset(page_directory_entry_addr, address);
 
-  unsigned int * start_dir_addr = page_directory_entry_addr,
-               * start_table_addr = page_table_entry_addr;
-
-  while(nb_frames != 0) {
+  while(frames_remaining != 0) {
 
     if (is_entry_present(page_table_entry_addr)) {
       // Something is already occupying this virtual address, free everything
       // previously allocated and return
-      free_frames_range(start_dir_addr, start_table_addr,
-                        page_directory_entry_addr, page_table_entry_addr);
+      free_frames_range(address, nb_frames - frames_remaining);
       return -1;
     } else {
 
@@ -300,8 +298,8 @@ int load_multiple_frames(unsigned int address, unsigned int nb_frames,
         *page_table_entry_addr |= PAGE_TABLE_FLAGS;
       }
 
-      if (--nb_frames == 0) {
-        // We have been able to allocate all frames, we can return
+      if (--frames_remaining == 0) {
+        // We were able to allocate all frames
         return 0; 
       }
 
@@ -315,8 +313,8 @@ int load_multiple_frames(unsigned int address, unsigned int nb_frames,
           // This was the last entry in the page directory, we cannot allocate
           // more frames beyond this address, free everything allocated up to
           // this point and return
-          free_frames_range(start_dir_addr, start_table_addr,
-                        page_directory_entry_addr, page_table_entry_addr);
+          free_frames_range(address, nb_frames - frames_remaining);
+          return -1;          
         } else {
           // If there is no page table associated with this entry, create it
           if (!is_entry_present(page_directory_entry_addr)) {
@@ -330,8 +328,8 @@ int load_multiple_frames(unsigned int address, unsigned int nb_frames,
     }
   } 
 
-  // Normally we should never reach this point, when nb_frames == 0, the code
-  // returns before (in the loop)
+  // Normally we should never reach this point, when frames_remaining == 0, 
+  // the code returns before (within the loop)
 
   return 0;
 }
@@ -446,53 +444,75 @@ int free_page_table(unsigned int *page_table_addr, int free_kernel_space) {
   return 1;
 }
 
-/** @brief Free all the frames allocated within a given range of virtual
- *    memory addresses 
+/** @brief Free a given number of frames starting from a virtual address
  *
- *  The range lower bound is inclusive and the upper bound is exclusive. 
+ *  The lower bound (frame mapped to by start_dir_address and 
+ *  start_table_address) is inclusive. If a frame in the given range is not
+ *  allocated when we try to free it, then the function continue its execution 
+ *  normally.
  *
- *  @param start_dir_entry    Starting page directory entry
- *  @param start_table_entry  Starting page table entry
- *  @param end_dir_entry      Ending page directory entry
- *  @param end_table_entry    Ending page table entry
+ *  @param address    A virtual address
+ *  @param nb_frames  The number of frames to free from the starting address     
  *
- *  @return void
+ *  @return 0 on success, a negative number on error (in which case no frames
+ *    were freed)
  */
-void free_frames_range(unsigned int *start_dir_entry, 
-                      unsigned int *start_table_entry,
-                      unsigned int *end_dir_entry,
-                      unsigned int *end_table_entry) {
+int free_frames_range(unsigned int address, unsigned int nb_frames) {
 
-  while (start_dir_entry != end_dir_entry &&
-          start_table_entry != end_table_entry) {
+  // Get page directory entry address
+  unsigned int *page_directory_entry_addr = 
+        get_page_directory_addr_with_offset(address);
+   
+  // If there is no page table associated with this entry, return with an error
+  if (!is_entry_present(page_directory_entry_addr)) {
+    return -1;
+  }
+  
+  // Get page table entry address
+  unsigned int *page_table_entry_addr = 
+        get_page_table_addr_with_offset(page_directory_entry_addr, address);
 
-    if (is_entry_present(start_table_entry)) {
+  int i;
+  for (i = 0 ; i < nb_frames ; ++i) {
 
-      // If the entry maps to a frame, free it
-      unsigned int *frame_addr = get_frame_addr(start_table_entry);
-    
-      // Free the frame
-      if ((unsigned int)frame_addr >= USER_MEM_START && free_frame(frame_addr) < 0) {
-        panic("free_frames_range(): Failed to free frame");
-      }
+    if (is_entry_present(page_table_entry_addr)) {
 
+      // If the entry is present, free the frame
+      free_frame(get_frame_addr(page_table_entry_addr));
+      
       // Invalidate the entry
-      set_entry_invalid(start_table_entry);
+      set_entry_invalid(page_table_entry_addr);
 
     }
 
     // Go to the next entry
-    ++start_table_entry;
-    if (!((unsigned int)start_table_entry & PAGE_SIZE)) {
+    ++page_table_entry_addr;
+    if (!((unsigned int)page_table_entry_addr & PAGE_SIZE)) {
       
       // Get the next entry in the page directory
-      ++start_dir_entry;
+      ++page_directory_entry_addr;
+      if (!((unsigned int)page_directory_entry_addr & PAGE_SIZE)) {
+        return -1;
+      }
       
       // Get the first entry in the new page table
-      start_table_entry = get_page_table_addr(start_dir_entry);
+      page_table_entry_addr = get_page_table_addr(page_directory_entry_addr);
     }
   }
   
+  return 0;
+
+}
+
+
+
+/** @brief Enable paging and the "Page Global Enable" bit in %cr4
+ *
+ *  @return void
+ */
+void vm_enable() {
+  set_cr0(get_cr0() | PAGING_ENABLE_MASK);
+  set_cr4(get_cr4() | PAGE_GLOBAL_ENABLE_MASK);
 }
 
 /** @brief Check whether the memory starting at a particular address and on a
@@ -558,15 +578,6 @@ int is_buffer_valid(unsigned int address, unsigned int len) {
   // Buffer is valid
   return 0;
 
-}
-
-/** @brief Enable paging and the "Page Global Enable" bit in %cr4
- *
- *  @return void
- */
-void vm_enable() {
-  set_cr0(get_cr0() | PAGING_ENABLE_MASK);
-  set_cr4(get_cr4() | PAGE_GLOBAL_ENABLE_MASK);
 }
 
 /** @brief Check whether the string starting at a particular address
