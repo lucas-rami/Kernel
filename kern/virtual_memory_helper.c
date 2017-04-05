@@ -203,7 +203,9 @@ unsigned int *allocate_frame() {
     }
   }
   // TODO: Make this atomic
+  mutex_lock(&kernel.mutex);
   kernel.free_frame_count--;
+  mutex_unlock(&kernel.mutex);
   kernel.current_thread->num_of_frames_requested++;
   kernel.current_thread->task->num_of_frames_requested++;
   
@@ -225,7 +227,9 @@ int free_frame(unsigned int* addr) {
     return -1;
   }
   unset_bit(&free_map, frame_index);
+  mutex_lock(&kernel.mutex);
   kernel.free_frame_count++;
+  mutex_unlock(&kernel.mutex);
   kernel.current_thread->num_of_frames_requested--;
   kernel.current_thread->task->num_of_frames_requested--;
 
