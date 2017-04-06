@@ -57,6 +57,9 @@ unsigned int *create_page_table(unsigned int *page_directory_entry_addr,
                                 uint32_t flags) {                          
   unsigned int *page_table_entry_addr =
       (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
+  if (page_table_entry_addr == NULL) {
+    return NULL;
+  }
   memset(page_table_entry_addr, 0, PAGE_SIZE);
   *page_directory_entry_addr =
       ((unsigned int)page_table_entry_addr & PAGE_ADDR_MASK);
@@ -215,5 +218,120 @@ int free_frame(unsigned int* addr) {
     return -1;
   }
   unset_bit(&free_map, frame_index);
+  return 0;
+}
+
+/** @brief Marks the page table entry for virtual address passed as a parameter
+ *   as requested by new_pages so that we can differentiate between a valid
+ *   and invalid page fault in the page fault handler
+ *
+ *  @param address The virtual address to be marked as requested
+ *
+ *  @return 0 on success, a negative number if the address is already allocated
+ *   
+ */
+int mark_address_requested(unsigned int address) {
+  unsigned int *page_directory_entry_addr = 
+      get_page_directory_addr_with_offset(address);
+  if (!is_entry_present(page_directory_entry_addr)) {
+    if (!create_page_table(page_directory_entry_addr, PAGE_TABLE_FLAGS)) {
+      return -1;
+    }
+  }
+
+  unsigned int *page_table_entry_addr =
+      get_page_table_addr_with_offset(page_directory_entry_addr, address);
+
+  if (is_entry_present(page_table_entry_addr)) {
+    // new_pages on an already allocated memory
+    return -1;
+  }
+
+  *page_table_entry_addr |= PAGE_TABLE_RESERVED_BITMASK;
+
+  return 0;
+}
+
+
+/** @brief Marks the page table entry for virtual address range passed as a 
+ *   paramater as requested by new_pages so that we can differentiate between 
+ *   a valid and invalid page fault in the page fault handler
+ *
+ *  @param address The starting virtual address of the range requested
+ *  @param len     The number of pages to be marked
+ *
+ *  @return 0 on success, a negative number if the address is already allocated
+ *   
+ */
+int mark_adrress_range_requested(unsigned int address, unsigned int count) {
+  if (address < USER_MEM_START) {
+    // Invalid args
+    return -1;
+  }
+  int i;
+  for(i = address; i < count; i++) {
+    if (mark_address_requested(i) < 0) {
+      // TODO: Reset all the previous page table entries marked as requested
+      lprintf("mark_adrress_range_requested(): mark_address_requested failed");
+      return -1;
+    }
+  }
+  return 0;
+}
+
+/** @brief Checks if the address of the page table entry passed has the 
+ *   requested bit set
+ *
+ *  @param addr The address of the page table entry 
+ *
+ *  @return int 0 if not requested, a non zero number otherwise
+ */
+int is_page_requested(unsigned int *addr) {
+  return *addr & PAGE_TABLE_RESERVED_BITMASK;
+}
+
+/** @brief Checks if the address passed as a parameter is already requested
+ *   for through new_pages or not. If yes, a new frame is allocated and 0
+ *   is returned. Otherwise, a negative value is returned 
+ *
+ *  @param address The virtual address for which we need to find if a frame is
+ *                 allocated or not
+ *
+ *  @return 0 on success, a negative number if the address is already allocated
+ *          or within the kernel memory region
+ */
+int allocate_frame_if_address_requested(unsigned int address) {
+  if (address < USER_MEM_START) {
+    return -1;
+  }
+  
+  unsigned int *page_directory_entry_addr = 
+      get_page_directory_addr_with_offset(address);
+  if (!is_entry_present(page_directory_entry_addr)) {
+    return -1;
+  }
+  
+  unsigned int *page_table_entry_addr =
+      get_page_table_addr_with_offset(page_directory_entry_addr, address);
+
+  if (is_entry_present(page_table_entry_addr)) {
+    // Should never be true.
+    lprintf("check_if_address_requested(): VALID PAGE ENTRY");
+    return -1;
+  }
+
+  if (is_page_requested(page_table_entry_addr)) {
+    if (create_page_table_entry(page_table_entry_addr, PAGE_TABLE_FLAGS) 
+        < 0) {
+      // Error while allocating a frame
+      // SHOULD NEVER HAPPEN
+      lprintf("check_if_address_requested(): create_page_table_entry failed");
+      return -1;
+    }
+  }
+
+  // Zero fill
+  memset((char*)address, 0, PAGE_SIZE);
+
   return 0;
 }

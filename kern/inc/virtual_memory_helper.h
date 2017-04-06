@@ -29,5 +29,9 @@ unsigned int get_virtual_address(unsigned int *page_directory_entry_addr,
 
 unsigned int* allocate_frame();
 int free_frame(unsigned int* addr);
+int mark_address_requested(unsigned int address);
+int mark_adrress_range_requested(unsigned int address, unsigned int len);
+int allocate_frame_if_address_requested(unsigned int address);
+int is_page_requested(unsigned int *addr);
 
 #endif /* _VIRTUAL_MEMORY_HELPER_H_ */

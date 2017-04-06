@@ -27,6 +27,8 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
 
   // TODO: register the triple (kernel.current_thread->pcb, base, nb_pages) in 
   // a datastructre 
+  // It can be a simple linked list with the head pointer stored in the 
+  // pcb of this task
 
   // Try to reserve nb_pages 
   mutex_lock(&kernel.mutex);
@@ -47,6 +49,12 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
   mutex_lock(&current_pcb->mutex);
   current_pcb->num_of_frames_requested += nb_pages;
   mutex_unlock(&current_pcb->mutex);
+
+  if (mark_adrress_range_requested((unsigned int)base, (unsigned int)nb_pages) < 0) {
+    // TODO: Undo all the above things
+    lprintf("reserve_frames_zfod(): mark_adrress_range_requested failed");
+    return -1;
+  }
 
   return 0;
 
@@ -95,6 +103,7 @@ int kern_new_pages(void *base, int len) {
   
   // Check that the space requested by the invoking thread is not already 
   // allocated
+  // Update: NOT REQUIRED. Will be checked in mark_adrress_range_requested
   if (check_range_free((unsigned int) base, nb_pages) < 0) {
     lprintf("kern_new_pages(): Requested space already allocated in part");        
     return -1;    
