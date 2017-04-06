@@ -6,7 +6,8 @@
 #ifndef _COND_VAR_H
 #define _COND_VAR_H
 
-#include <dynamic_queue.h>
+#include <generic_node.h>
+#include <mutex.h>
 
 /** @brief A structure representing a condition variable
  */
@@ -18,10 +19,12 @@ typedef struct cond {
    */
   int init;
 
-  /** @brief A generic_queue_t type member which is used to store the
-   *   the TIDs of all the thread waiting for this condition variable
-   */
-  generic_queue_t waiting_queue;
+  /** @brief The HEAD and TAIL elements of the waiting queue */
+  generic_node_t *waiting_head, *waiting_tail;
+
+  /** @brief Mutex to modify the waiting queue atomically */
+  mutex_t mp;
+
 } cond_t;
 
 int cond_init( cond_t *cv );
