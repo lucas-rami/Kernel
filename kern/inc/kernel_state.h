@@ -9,14 +9,14 @@
 
 #include <hash_table.h>
 #include <mutex.h>
-#include <static_queue.h>
+#include <generic_node.h>
 #include <tcb.h>
 
 #define KERNEL_INIT_FALSE 0
 #define KERNEL_INIT_TRUE 1
 #define CPU_IDLE_FALSE 0
 #define CPU_IDLE_TRUE 1
-#define FIRST_TASK "coolness"
+#define FIRST_TASK "fork_bomb"
 
 typedef struct kernel {
 
@@ -35,10 +35,10 @@ typedef struct kernel {
    * thread created, the value is incremented each time a thread is created */
   int thread_id;
 
-  /* @brief Queue containing the list of runnable threads, in the order
-   * that they should be run in. The queue should be initialized by calling
-   * kernel_init()  */
-  static_queue_t runnable_threads;
+  /* @brief HEAD and TAIL pointers for the queue of runnable threads
+   * TODO: should we move these fields in scheduler.c (and make them static) ? 
+   * We don't use them elsewhere... */
+  generic_node_t *runnable_head, *runnable_tail;
 
   /* @brief Idle thread (ran when there is nothing to run) */
   tcb_t *idle_thread;

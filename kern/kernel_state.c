@@ -43,6 +43,8 @@ int kernel_init() {
   kernel.thread_id = 1;
   kernel.cpu_idle = CPU_IDLE_TRUE;
   kernel.free_frame_count = machine_phys_frames() - NUM_KERNEL_FRAMES;
+  kernel.runnable_head = NULL;
+  kernel.runnable_tail = NULL;
 
   // Initialize the mutex for the functions in malloc_wrappers.c
   if (mutex_init(&mutex_malloc) < 0) {
@@ -54,12 +56,6 @@ int kernel_init() {
   if (cond_init(&cond_malloc) < 0) {
     lprintf("kernel_init(): Failed to initialize conditional variable for "
             "malloc_wrappers.c");
-    return -1;
-  }
-
-  // Initialize the queue for runnable threads
-  if (static_queue_init(&kernel.runnable_threads, QUEUE_SIZE) < 0) {
-    lprintf("kernel_init(): Failed to initialize runnable threads queue");
     return -1;
   }
 

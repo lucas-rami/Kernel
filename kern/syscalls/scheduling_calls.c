@@ -53,7 +53,7 @@ int kern_deschedule(int *reject) {
 
   if (r == 0) {
     kernel.current_thread->descheduled = THR_DESCHEDULED_TRUE;
-    block_and_switch();
+    block_and_switch(THR_DESCHEDULED_TRUE);
   } else {
     mutex_unlock(&kernel.current_thread->mutex);
     mutex_unlock(&kernel.mutex);

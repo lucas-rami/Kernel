@@ -71,21 +71,14 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
       continue;
     }
   }
-/*  if ((entrypoint = create_task_from_executable(FIRST_TASK)) == 0) {
-    lprintf("Failed to create user task\n");
-    while (1) {
-      continue;
-    }
-  }
-*/
-  // Enable virtual memory
+
+  // Enable virtual memory (no handled by setup_vm())
   // vm_enable();
 
   // Clear the console before running anything
   clear_console();
 
-  lprintf("The entrypoint is %d\n", (int)entrypoint);
-    // Enable interrupts
+  // Enable interrupts
   enable_interrupts();
   lprintf("Interupts enabled - VM enabled - Ready to run some programs !");
 

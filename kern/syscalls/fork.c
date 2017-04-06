@@ -31,7 +31,7 @@ int kern_fork(unsigned int *esp) {
 
   // NOTE: Reject call if more than one thread in the task ?
   // TODO: Need to register software exception handler
-  // TODO: Args validation??
+  // TODO: Args validation?? Should be OK, the argument is not given by the user 
 
   mutex_lock(&kernel.mutex);
   if (kernel.current_thread->num_of_frames_requested <= kernel.free_frame_count) {
@@ -105,7 +105,7 @@ int kern_fork(unsigned int *esp) {
   mutex_unlock(&kernel.mutex);
 
   // enable_interrupts();
-  return new_pcb->tid;
+  return new_tcb->tid;
 }
 
 int kern_thread_fork() {

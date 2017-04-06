@@ -8,53 +8,31 @@
 #include <context_switch.h>
 #include <kernel_state.h>
 #include <scheduler.h>
-#include <static_queue.h>
+#include <generic_node.h>
 #include <stdlib.h>
 #include <tcb.h>
+#include <page.h>
 
 #include <assert.h>
 #include <simics.h>
 
-/** @brief Run the next thread in the queue of runnable threads
+/** @brief Return the next thread to run from the queue of runnable threads
  *
- *  The function performs a context switch to the first thread present in
- *  the queue. If the queue is empty, then the "idle" task is ran.
- *
- *  @param current_tcb The invoking thread's tcb_t
- *
- *  @return void
+ *  @return The next thread's TCB
  */
-void run_next_thread() {
+tcb_t *next_thread() {
 
   // Check if the kernel state is initialized
   assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
 
-  tcb_t *next_tcb = static_queue_dequeue(&kernel.runnable_threads);
-
-  if (next_tcb != NULL) {
-    kernel.cpu_idle = CPU_IDLE_FALSE;
-
-  /*  if (next_tcb == kernel.current_thread) {
-      lprintf("run_next_thread(): Just avoided context switching to myself !");
-      enable_interrupts();
-      return;
-    }
-  */
-
-    context_switch(next_tcb);
-  } else {
-/*
-    if (kernel.cpu_idle) {
-      lprintf("run_next_thread(): Just avoided context switching to myself "
-              "(idle thread) !");
-      enable_interrupts();
-      return;
-    }
-*/
-
-    kernel.cpu_idle = CPU_IDLE_TRUE;
-    context_switch(kernel.idle_thread);
+  generic_node_t *next_thread = kernel.runnable_head;
+  if (next_thread == NULL) {
+    return kernel.idle_thread;
   }
+
+  kernel.runnable_head = next_thread->next;
+  return next_thread->value;
+
 }
 
 /** @brief Change the invoking thread's state to runnable and then context
@@ -66,36 +44,53 @@ void make_runnable_and_switch() {
 
   assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
 
+  generic_node_t new_tail = {kernel.current_thread, NULL};
+
   disable_interrupts();
 
-  if (kernel.cpu_idle == CPU_IDLE_FALSE) {
-    if (static_queue_enqueue(&kernel.runnable_threads, kernel.current_thread) <
-        0) {
-      panic("make_runnable_and_switch(): Failed to add thread to runnable "
-            "queue\n");
-    }
-  }
   kernel.current_thread->thread_state = THR_RUNNABLE;
 
-  run_next_thread();
+  if (kernel.cpu_idle == CPU_IDLE_TRUE) {
+    context_switch(next_thread());
+    return;
+  }
+
+  if(kernel.runnable_head != NULL) {
+    kernel.runnable_tail->next = &new_tail;
+    kernel.runnable_tail = &new_tail;
+  } else {
+    kernel.runnable_head = (kernel.runnable_tail = &new_tail);
+  }
+
+  context_switch(next_thread());
+  
 }
 
 /** @brief Block the invoking thread and then context switch to another thread
  *
+ *  @param is_descheduled Indicates whether the thread is being descheduled
+ *    because of a system call to deschedule()
+ *
  *  @return void
  */
-void block_and_switch() {
+void block_and_switch(int is_descheduled) {
 
-  assert(kernel.init == KERNEL_INIT_TRUE);
+  assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
+  assert(is_descheduled == THR_DESCHEDULED_TRUE ||
+          is_descheduled == THR_DESCHEDULED_FALSE);
 
   disable_interrupts();
 
-  if (kernel.current_thread != NULL && kernel.cpu_idle == CPU_IDLE_FALSE) {
-    kernel.current_thread->thread_state = THR_BLOCKED;
-    kernel.current_thread->descheduled = THR_DESCHEDULED_TRUE;
+  if (kernel.cpu_idle == CPU_IDLE_TRUE) {
+    context_switch(next_thread());
+    return;
   }
 
-  run_next_thread();
+  kernel.current_thread->thread_state = THR_BLOCKED;
+  kernel.current_thread->descheduled = is_descheduled;
+
+  context_switch(next_thread());
+
 }
 
 /** @brief Make a thread runnable
@@ -108,12 +103,29 @@ void add_runnable_thread(tcb_t *tcb) {
 
   assert(tcb != NULL && kernel.init == KERNEL_INIT_TRUE);
 
-  if (static_queue_enqueue(&kernel.runnable_threads, tcb) < 0) {
-    panic("add_runnable_thread(): Failed to add thread to runnable queue\n");
+  if (tcb == kernel.idle_thread) {
+    return;
   }
+
+  generic_node_t new_tail = {tcb, NULL};
+
+  disable_interrupts();
 
   tcb->thread_state = THR_RUNNABLE;
   tcb->descheduled = THR_DESCHEDULED_FALSE;
+
+  generic_node_t * node_addr = (generic_node_t *)(tcb->esp0 - PAGE_SIZE);
+  *(node_addr) = new_tail;
+  
+  if(kernel.runnable_head != NULL) {
+    kernel.runnable_tail->next = node_addr;
+    kernel.runnable_tail = node_addr;
+  } else {
+    kernel.runnable_head = (kernel.runnable_tail = node_addr);
+  }
+
+  enable_interrupts();
+
 }
 
 /** @brief Forces the kernel to run a particular thread
@@ -131,13 +143,8 @@ void force_next_thread(tcb_t *force_next_tcb) {
   assert(kernel.current_thread != NULL && force_next_tcb != NULL &&
          kernel.init == KERNEL_INIT_TRUE);
 
-  if (static_queue_remove(&kernel.runnable_threads, force_next_tcb) != 0) {
-    panic("force_next_thread(): Error when calling static_queue_remove()\n");
-  }
-
-  kernel.current_thread->thread_state = THR_RUNNABLE;
-
-  mutex_unlock(&kernel.current_thread->mutex);
-
+  disable_interrupts();
+  add_runnable_thread(kernel.current_thread);
   context_switch(force_next_tcb);
+
 }

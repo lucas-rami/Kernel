@@ -38,7 +38,7 @@ void context_switch(tcb_t* to) {
  *
  *  The function unlocks the kernel state mutex before returning.
  *
- *  @param to The TCB of the thread we are switching to
+ *  @param to The invoking thread TCB
  *
  *  @return void
  */
@@ -46,6 +46,7 @@ void init_thread(tcb_t* to) {
 
   // Update the kernel state
   kernel.current_thread = to;
+  kernel.cpu_idle = (to == kernel.idle_thread) ? CPU_IDLE_TRUE : CPU_IDLE_FALSE;
 
   // Update the thread's state
   to->thread_state = THR_RUNNING;
