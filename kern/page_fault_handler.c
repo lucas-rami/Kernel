@@ -9,8 +9,8 @@
 
 int page_fault_init(void)
 {
-	return register_handler( (uintptr_t) page_fault_handler, TRAP_GATE, 
-		PAGE_FAULT_IDT, KERNEL_PRIVILEGE_LEVEL, SEGSEL_KERNEL_CS );
+  return register_handler((uintptr_t)page_fault_handler, TRAP_GATE, 
+      PAGE_FAULT_IDT, USER_PRIVILEGE_LEVEL, SEGSEL_KERNEL_CS);
 }
 
 void page_fault_c_handler(void)

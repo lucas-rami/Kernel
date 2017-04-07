@@ -10,10 +10,10 @@ new_pages:
 
   call save_state
   
-  movl %edx, 4(%esi)   // Get first parameter
-  pushl %edx           // Pass it as a parameter to exec
-  movl %edx, (%esi)    // Get second parameter
-  pushl %edx           // Pass it as a parameter to exec
+  movl 4(%esi), %edx   // Get second parameter
+  pushl %edx           // Pass it as a parameter to new_pages
+  movl (%esi), %edx    // Get first parameter
+  pushl %edx           // Pass it as a parameter to new_pages
   call kern_new_pages
   addl $8, %esp
 

@@ -244,6 +244,7 @@ int mark_address_requested(unsigned int address) {
 
   if (is_entry_present(page_table_entry_addr)) {
     // new_pages on an already allocated memory
+    lprintf("mark_address_requested(): Entry already present");
     return -1;
   }
 
@@ -269,8 +270,8 @@ int mark_adrress_range_requested(unsigned int address, unsigned int count) {
     return -1;
   }
   int i;
-  for(i = address; i < count; i++) {
-    if (mark_address_requested(i) < 0) {
+  for(i = 0; i < count; i++) {
+    if (mark_address_requested(address + (i * PAGE_SIZE)) < 0) {
       // TODO: Reset all the previous page table entries marked as requested
       lprintf("mark_adrress_range_requested(): mark_address_requested failed");
       return -1;

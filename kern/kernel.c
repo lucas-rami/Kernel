@@ -29,6 +29,7 @@
 #include <static_queue.h>
 #include <task_create.h>
 #include <virtual_memory.h>
+#include <page_fault_handler.h>
 
 // tmp
 #include <cr.h>
@@ -56,6 +57,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
 
   // Initialize the IDT
   handler_install(tick);
+  page_fault_init();
   idt_syscall_install();
 
   // Virtual memory initialized
