@@ -62,6 +62,18 @@ typedef struct kernel {
 
 } kernel_t;
 
+/* @brief Hold information about an allocation made using new_pages() */
+typedef struct alloc {
+
+  /* @brief The base address for the allocation*/
+  void* base;
+
+  /* @brief The length for the allocation */
+  int len;
+
+} alloc_t;
+
+
 /* Hold the kernel state*/
 kernel_t kernel;
 
@@ -75,5 +87,6 @@ unsigned int hash_function_pcb(void *pcb, unsigned int nb_buckets);
 int find_pcb(void *pcb, void *tid);
 unsigned int hash_function_tcb(void *pcb, unsigned int nb_buckets);
 int find_tcb(void *pcb, void *tid);
+int find_alloc(void* alloc, void* base);
 
 #endif /* _KERNEL_STATE_H_ */

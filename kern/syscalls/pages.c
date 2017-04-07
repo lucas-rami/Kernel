@@ -8,27 +8,23 @@
 #include <common_kern.h>
 #include <kernel_state.h>
 #include <assert.h>
+#include <stdlib.h>
+#include <malloc.h>
 
 /* VM system */
 #include <virtual_memory.h>
 #include <virtual_memory_helper.h>
 #include <virtual_memory_defines.h>
 
+#include <assert.h>
+
 /* Debugging */
 #include <simics.h>
 
-static int check_range_free(unsigned int address, int nb_pages);
-
-/* Temporary */
 static int reserve_frames_zfod(void* base, int nb_pages);
 static void free_frames_zfod(void* base);
 
 static int reserve_frames_zfod(void* base, int nb_pages) {
-
-  // TODO: register the triple (kernel.current_thread->pcb, base, nb_pages) in 
-  // a datastructre 
-  // It can be a simple linked list with the head pointer stored in the 
-  // pcb of this task
 
   // Try to reserve nb_pages 
   mutex_lock(&kernel.mutex);
@@ -39,22 +35,42 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
   kernel.free_frame_count -= nb_pages;
   mutex_unlock(&kernel.mutex);
 
+  // Allocate space for new allocation structure
+  alloc_t * new_alloc = malloc(sizeof(alloc_t));
+  if (new_alloc == NULL) {
+    return -1;
+  }
+
+  // Mark the pages as requested
+  if (mark_adrress_range_requested((unsigned int)base, (unsigned int)nb_pages) < 0) {
+    mutex_lock(&kernel.mutex);
+    kernel.free_frame_count += nb_pages;  
+    mutex_unlock(&kernel.mutex);
+    free(new_alloc);
+    lprintf("reserve_frames_zfod(): mark_adrress_range_requested failed");
+    return -1;
+  }
+
+  // Register the allocation
+  pcb_t * current_pcb = kernel.current_thread->task;
+  if (linked_list_insert_node(&current_pcb->allocations, new_alloc) < 0) {
+    mutex_lock(&kernel.mutex);
+    kernel.free_frame_count += nb_pages;  
+    mutex_unlock(&kernel.mutex);
+    free(new_alloc);
+    lprintf("reserve_frames_zfod(): Registration of new allocation failed");
+    return -1;
+  }
+
   // Update the total number of frames requested by the invoking thread
   mutex_lock(&kernel.current_thread->mutex);
   kernel.current_thread->num_of_frames_requested += nb_pages;
   mutex_unlock(&kernel.current_thread->mutex);
 
-  // Update the total number of frames requested by the task
-  pcb_t * current_pcb = kernel.current_thread->task;
+  // Update the total number of frames requested by the invoking task
   mutex_lock(&current_pcb->mutex);
   current_pcb->num_of_frames_requested += nb_pages;
   mutex_unlock(&current_pcb->mutex);
-
-  if (mark_adrress_range_requested((unsigned int)base, (unsigned int)nb_pages) < 0) {
-    // TODO: Undo all the above things
-    lprintf("reserve_frames_zfod(): mark_adrress_range_requested failed");
-    return -1;
-  }
 
   return 0;
 
@@ -62,21 +78,21 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
 
 static void free_frames_zfod(void* base) {
 
-  // TODO: Lookup in the datastructure to see if we can find a matching entry
+  // Get the length from the linked list
+  alloc_t * alloc = 
+      linked_list_get_node(&kernel.current_thread->task->allocations, base);
 
-  // Temporary
-  int found_matching_entry = 0;
-  int nb_pages_entry = 0;
+  // This should never happen
+  assert(alloc != NULL);
 
-  if (!found_matching_entry) {
-    // Should not happen
-    panic("free_frames_zfod(): Unable to find matching entry in ZFOD");
-  }
+  int len = alloc->len;
+  free(alloc);
 
-  if (free_frames_range((unsigned int) base, nb_pages_entry) < 0) {
+  // Free the frames
+  if (free_frames_range((unsigned int) base, len) < 0) {
     panic("free_frames_zfod(): Unable to free the frames");    
   }
-
+  
 
 }
 
@@ -100,14 +116,6 @@ int kern_new_pages(void *base, int len) {
 
   // Number of pages that should be allocated
   int nb_pages = len / PAGE_SIZE;
-  
-  // Check that the space requested by the invoking thread is not already 
-  // allocated
-  // Update: NOT REQUIRED. Will be checked in mark_adrress_range_requested
-  if (check_range_free((unsigned int) base, nb_pages) < 0) {
-    lprintf("kern_new_pages(): Requested space already allocated in part");        
-    return -1;    
-  }
 
   // Reserve nb_pages of ZFOD space
   if (reserve_frames_zfod(base, nb_pages) < 0) {
@@ -143,7 +151,7 @@ int kern_remove_pages(void *base) {
  *
  *  @return 0 is the range is fress on the given number of pages, -1 otherwise
  */
-static int check_range_free(unsigned int address, int nb_pages) {
+/*static int check_range_free(unsigned int address, int nb_pages) {
 
   // Get page directory entry address
   unsigned int *page_directory_entry_addr = 
@@ -198,5 +206,5 @@ static int check_range_free(unsigned int address, int nb_pages) {
   }
   
   return 0;
-}
+}*/
 
