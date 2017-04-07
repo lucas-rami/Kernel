@@ -16,7 +16,7 @@
 #define KERNEL_INIT_TRUE 1
 #define CPU_IDLE_FALSE 0
 #define CPU_IDLE_TRUE 1
-#define FIRST_TASK "fork_bomb"
+#define FIRST_TASK "new_pages"
 
 typedef struct kernel {
 

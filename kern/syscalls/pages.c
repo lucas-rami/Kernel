@@ -100,6 +100,7 @@ static void free_frames_zfod(void* base) {
 // TODO
 int kern_new_pages(void *base, int len) {
 
+  lprintf("Base addr is %p, Length is %d", base, len);
   // Check that the 'len' argument is valid
   if (len <= 0 || len % PAGE_SIZE != 0) {
     lprintf("kern_new_pages(): Invalid len argument");
@@ -108,8 +109,7 @@ int kern_new_pages(void *base, int len) {
 
   // Check that the 'base' argument is valid
   if ((unsigned int)base < USER_MEM_START ||
-      (unsigned int)base > machine_phys_frames() * PAGE_SIZE ||
-      ((unsigned int)base & PAGE_SIZE) != 0) {
+      ((unsigned int)base % PAGE_SIZE) != 0) {
     lprintf("kern_new_pages(): Invalid base argument");        
     return -1;
   }
@@ -123,6 +123,7 @@ int kern_new_pages(void *base, int len) {
     return -1;
   }
 
+  lprintf("Returning success on new page");
   return 0;
    
 }
