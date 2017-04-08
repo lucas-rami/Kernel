@@ -22,6 +22,10 @@ typedef struct mutex {
   /** @brief An int which stores whether the miutex has been initialized or not
    */
   int init;
+
+  /* @brief Hold the tid of the thread holding the mutex*/
+  int tid_owner;
+
 } mutex_t;
 
 int mutex_init( mutex_t *mp );

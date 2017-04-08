@@ -12,6 +12,7 @@
 #include <asm.h>
 #include <common_kern.h>
 #include <virtual_memory_defines.h>
+#include <syscalls.h>
 
 /* Debugging */
 #include <simics.h>
@@ -163,6 +164,13 @@ pcb_t *create_new_pcb() {
     return NULL;
   }
 
+  // Initialize the allocations list
+  if (linked_list_init(&new_pcb->allocations, find_alloc) < 0) {
+    lprintf("create_new_pcb(): Failed to initialize linked list");
+    free(new_pcb);
+    return NULL;
+  }
+
   // Set various fields to their initial value
   new_pcb->return_status = 0;
   new_pcb->task_state = TASK_RUNNING;
@@ -283,6 +291,22 @@ int find_tcb(void *tcb, void *tid) {
   int *id = tid;
 
   if (t->tid == *id) {
+    return 1;
+  }
+  return 0;
+}
+
+/** @brief Find an allocation made by new_pages() by its base address
+ *
+ *  @param alloc An allocation made by new_pages()
+ *  @param base  A base address
+ *
+ *  @reutrn 1 if the allocation is the good one (the base addresses match), 
+ *    0 otherwise
+ */
+int find_alloc(void* alloc, void* base) {
+  alloc_t * allocation = alloc;
+  if (base == allocation->base) {
     return 1;
   }
   return 0;

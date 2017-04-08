@@ -8,6 +8,7 @@
 
 #include <mutex.h>
 #include <stdint.h>
+#include <linked_list.h>
 
 #define TASK_RUNNING 0
 #define TASK_ZOMBIE 1
@@ -26,6 +27,9 @@ typedef struct pcb {
   /* @brief Holds the number of frames requested by this process(includes 
    *  the ones that have not been allocated yet as well */
   uint32_t num_of_frames_requested;
+
+  /* @brief List of allocations made using new_pages() */
+  generic_linked_list_t allocations;
 
   /** @brief Mutex used to ensure atomicity when changing the task state */
   mutex_t mutex;
