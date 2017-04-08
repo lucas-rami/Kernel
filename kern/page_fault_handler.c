@@ -23,7 +23,6 @@ void page_fault_c_handler()
     return;
   }
   lprintf("The frame allocation was successfull");
-  MAGIC_BREAK;
   // Re run the instruction
 
   // Get the page table base register from the register cr3

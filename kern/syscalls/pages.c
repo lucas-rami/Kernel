@@ -15,7 +15,7 @@
 #include <virtual_memory.h>
 #include <virtual_memory_helper.h>
 #include <virtual_memory_defines.h>
-#include <assert.h>
+#include <cr.h>
 
 /* Panic */
 #include <assert.h>
@@ -180,6 +180,7 @@ static int free_frames_zfod(void* base) {
   // Free the frames
   free_frames_range((unsigned int) base, len);
   
+  set_cr3(get_cr3());
   return 0;
 
 }
