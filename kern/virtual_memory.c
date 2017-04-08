@@ -461,7 +461,7 @@ void free_frames_range(unsigned int address, unsigned int nb_frames) {
   // Make sure the address is page aligned
   address &= ~FRAME_OFFSET_MASK;
 
-  int i, cnt = 0;
+  int i;
   for (i = 0 ; i < nb_frames ; ++i, address += PAGE_SIZE) {
 
     // Get page directory entry address
@@ -482,14 +482,13 @@ void free_frames_range(unsigned int address, unsigned int nb_frames) {
         
         // Invalidate the entry
         set_entry_invalid(page_table_entry_addr);
-
-        ++cnt;        
-
-      }
+        
+      }      
     }
-  }
 
-  lprintf("free_frames_range(): Number of frames freed: %d", cnt);
+    // TODO: free page directory entry when all page table entries are invalid ?
+
+  }
 
 }
 

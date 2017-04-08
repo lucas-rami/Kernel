@@ -42,7 +42,8 @@ int is_entry_present(unsigned int *entry_addr) {
  *  @return void
  */
 void set_entry_invalid(unsigned int *entry_addr) {
-  *entry_addr &= ~PRESENT_BIT_MASK; 
+  *entry_addr &= ~PRESENT_BIT_MASK;
+  invalidate_tlb(*entry_addr & PAGE_ADDR_MASK);
 }
 
 /** @brief Create a new page table (and a new entry in the page directory)
@@ -330,6 +331,8 @@ int allocate_frame_if_address_requested(unsigned int address) {
       return -1;
     }
   }
+
+  lprintf("Allocating new frame @ %p", (void*) address);
 
   // Zero fill
   memset((char*)((unsigned int)address & ~FRAME_OFFSET_MASK), 0, PAGE_SIZE);
