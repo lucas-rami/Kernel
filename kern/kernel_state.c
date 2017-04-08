@@ -43,6 +43,7 @@ int kernel_init() {
   kernel.thread_id = 1;
   kernel.cpu_idle = CPU_IDLE_TRUE;
   kernel.free_frame_count = machine_phys_frames() - NUM_KERNEL_FRAMES;
+  lprintf("The number of free frames in the kernel is %u", kernel.free_frame_count);
   kernel.runnable_head = NULL;
   kernel.runnable_tail = NULL;
 

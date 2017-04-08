@@ -13,7 +13,7 @@ int page_fault_init(void)
       PAGE_FAULT_IDT, USER_PRIVILEGE_LEVEL, SEGSEL_KERNEL_CS);
 }
 
-void page_fault_c_handler(void)
+void page_fault_c_handler()
 {
   lprintf("Page fault handler called\n");
   if (allocate_frame_if_address_requested(get_cr2()) < 0) {
@@ -22,6 +22,8 @@ void page_fault_c_handler(void)
     lprintf("Valid page fault. We should throw an error");
     return;
   }
+  lprintf("The frame allocation was successfull");
+  MAGIC_BREAK;
   // Re run the instruction
 
   // Get the page table base register from the register cr3

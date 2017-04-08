@@ -43,6 +43,7 @@ int kern_fork(unsigned int *esp) {
   }
   mutex_unlock(&kernel.mutex);
 
+  lprintf("FORK!");
   // Allocate a kernel stack for the new task
   void *stack_kernel = malloc(PAGE_SIZE);
   if (stack_kernel == NULL) {
