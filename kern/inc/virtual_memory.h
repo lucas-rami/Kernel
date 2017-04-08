@@ -19,7 +19,7 @@ int load_multiple_frames(unsigned int address, unsigned int nb_frames,
                             unsigned int type);
 int free_address_space(unsigned int *page_table_addr, int free_kernel_space);
 int free_page_table(unsigned int *page_table_addr, int free_kernel_space);
-int free_frames_range(unsigned int address, unsigned int nb_frames);
+void free_frames_range(unsigned int address, unsigned int nb_frames);
 
 int is_buffer_valid(unsigned int address, unsigned int len);
 int is_valid_string(char *addr);

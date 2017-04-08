@@ -15,15 +15,94 @@
 #include <virtual_memory.h>
 #include <virtual_memory_helper.h>
 #include <virtual_memory_defines.h>
+#include <assert.h>
 
+/* Panic */
 #include <assert.h>
 
 /* Debugging */
 #include <simics.h>
 
+/* Prototypes for static functions in this file */
 static int reserve_frames_zfod(void* base, int nb_pages);
-static void free_frames_zfod(void* base);
+static int free_frames_zfod(void* base);
 
+/** @brief Allocates new memory to the invoking task, starting at base and 
+ *    extending for len bytes
+ *
+ *  new pages() will fail, returning a negative integer error code, if base is 
+ *  not page-aligned, if len is not a positive integral multiple of the system 
+ *  page size, if any portion of the region represents memory already in the 
+ *  task’s address space, if any portion of the region intersects a part of the 
+ *  address space reserved by the kernel, 1 or if the operating system has 
+ *  insufficient resources to satisfy the request.
+ *
+ *  @param base   The memory starting address
+ *  @param len    The allocation's length (in bytes)
+ *
+ *  @return 0 on success, a negative number on error
+ */
+int kern_new_pages(void *base, int len) {
+
+  lprintf("Base addr is %p, Length is %d", base, len);
+  // Check that the 'len' argument is valid
+  if (len <= 0 || len % PAGE_SIZE != 0) {
+    lprintf("kern_new_pages(): Invalid len argument");
+    return -1;
+  }
+
+  // Check that the 'base' argument is valid
+  if ((unsigned int)base < USER_MEM_START ||
+      ((unsigned int)base % PAGE_SIZE) != 0) {
+    lprintf("kern_new_pages(): Invalid base argument");        
+    return -1;
+  }
+
+  // Number of pages that should be allocated
+  int nb_pages = len / PAGE_SIZE;
+
+  // Reserve nb_pages of ZFOD space
+  if (reserve_frames_zfod(base, nb_pages) < 0) {
+    lprintf("kern_new_pages(): Failed to reserve ZFOD space");
+    return -1;
+  }
+
+  lprintf("kern_new_pages(): returning success on new page");
+
+  return 0;
+   
+}
+
+
+/** @brief Deallocates a specific memory region 
+ *
+ *  Deallocates the specified memory region, which must presently be allocated 
+ *  as the result of a previous call to new pages() which specified the same 
+ *  value of base.
+ *
+ *  @param base   The base address of the allocation
+ *
+ *  @return 0 on success, a negative number on error
+ */
+int kern_remove_pages(void *base) {
+  
+  // Check that the 'base' argument is valid
+  if ((unsigned int)base < USER_MEM_START ||
+      ((unsigned int)base & PAGE_SIZE) != 0) {
+    lprintf("kern_remove_pages(): Invalid base argument");        
+    return -1;
+  }
+
+  return free_frames_zfod(base);
+}
+
+/** @brief Reserve a particular number of ZFOD frames at a given address
+ *
+ *  @param base     The base address for allocation
+ *  @param nb_pages The number of pages to reserve
+ *
+ *  @return 0 on success, a negative number on error
+ */
 static int reserve_frames_zfod(void* base, int nb_pages) {
 
   // Try to reserve nb_pages 
@@ -40,6 +119,8 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
   if (new_alloc == NULL) {
     return -1;
   }
+  new_alloc->base = base;
+  new_alloc->len = nb_pages * PAGE_SIZE;
 
   // Mark the pages as requested
   if (mark_adrress_range_requested((unsigned int)base, (unsigned int)nb_pages) < 0) {
@@ -47,7 +128,7 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
     kernel.free_frame_count += nb_pages;  
     mutex_unlock(&kernel.mutex);
     free(new_alloc);
-    lprintf("reserve_frames_zfod(): mark_adrress_range_requested failed");
+    lprintf("reserve_frames_zfod(): mark_address_range_requested failed");
     return -1;
   }
 
@@ -76,73 +157,33 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
 
 }
 
-static void free_frames_zfod(void* base) {
+/** @brief Free a memory region previously reserves usign reserve_frames_zfod()
+ *
+ *  @param base   The base address that was use during reservation
+*
+ *  @return 0 on success, a negative number on error
+ */
+static int free_frames_zfod(void* base) {
 
-  // Get the length from the linked list
+  // Retrieve the allocation from the linked list
   alloc_t * alloc = 
-      linked_list_get_node(&kernel.current_thread->task->allocations, base);
+      linked_list_delete_node(&kernel.current_thread->task->allocations, base);
 
-  // This should never happen
-  assert(alloc != NULL);
+  if (alloc == NULL) {
+    lprintf("Allocation can't be found in linked list");
+    return -1;
+  }
 
   int len = alloc->len;
   free(alloc);
 
   // Free the frames
-  if (free_frames_range((unsigned int) base, len) < 0) {
-    panic("free_frames_zfod(): Unable to free the frames");    
-  }
+  free_frames_range((unsigned int) base, len);
   
-
-}
-
-
-// TODO
-int kern_new_pages(void *base, int len) {
-
-  lprintf("Base addr is %p, Length is %d", base, len);
-  // Check that the 'len' argument is valid
-  if (len <= 0 || len % PAGE_SIZE != 0) {
-    lprintf("kern_new_pages(): Invalid len argument");
-    return -1;
-  }
-
-  // Check that the 'base' argument is valid
-  if ((unsigned int)base < USER_MEM_START ||
-      ((unsigned int)base % PAGE_SIZE) != 0) {
-    lprintf("kern_new_pages(): Invalid base argument");        
-    return -1;
-  }
-
-  // Number of pages that should be allocated
-  int nb_pages = len / PAGE_SIZE;
-
-  // Reserve nb_pages of ZFOD space
-  if (reserve_frames_zfod(base, nb_pages) < 0) {
-    lprintf("kern_new_pages(): Failed to reserve ZFOD space");
-    return -1;
-  }
-
-  lprintf("Returning success on new page");
   return 0;
-   
+
 }
 
-
-int kern_remove_pages(void *base) {
-  
-  // Check that the 'base' argument is valid
-  if ((unsigned int)base < USER_MEM_START ||
-      (unsigned int)base > machine_phys_frames() * PAGE_SIZE ||
-      ((unsigned int)base & PAGE_SIZE) != 0) {
-    lprintf("kern_remove_pages(): Invalid base argument");        
-    return -1;
-  }
-
-  free_frames_zfod(base);
-
-  return 0;
-}
 
 /** @brief Checks that a certain number of pages are unallocated starting from
  *    a given virtual address

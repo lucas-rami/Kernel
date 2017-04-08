@@ -179,6 +179,9 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
   // Make the thread runnable
   add_runnable_thread(new_tcb);
 
+  // For debugging in Simics
+  sim_reg_process(cr3, task_name);
+
   return elf.e_entry;
 }
 

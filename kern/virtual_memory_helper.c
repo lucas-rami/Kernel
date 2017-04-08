@@ -332,7 +332,7 @@ int allocate_frame_if_address_requested(unsigned int address) {
   }
 
   // Zero fill
-  memset((char*)address, 0, PAGE_SIZE);
+  memset((char*)((unsigned int)address & ~FRAME_OFFSET_MASK), 0, PAGE_SIZE);
 
   return 0;
 }

@@ -454,28 +454,23 @@ int free_page_table(unsigned int *page_table_addr, int free_kernel_space) {
  *  @param address    A virtual address
  *  @param nb_frames  The number of frames to free from the starting address     
  *
- *  @return 0 on success, a negative number on error (in which case no frames
- *    were freed)
+ *  @return void
  */
-int free_frames_range(unsigned int address, unsigned int nb_frames) {
-
-  // Get page directory entry address
-  unsigned int *page_directory_entry_addr = 
-        get_page_directory_addr_with_offset(address);
-   
-  // If there is no page table associated with this entry, return with an error
-  if (!is_entry_present(page_directory_entry_addr)) {
-    return -1;
-  }
-  
-  // Get page table entry address
-  unsigned int *page_table_entry_addr = 
-        get_page_table_addr_with_offset(page_directory_entry_addr, address);
+void free_frames_range(unsigned int address, unsigned int nb_frames) {
 
   int i;
-  for (i = 0 ; i < nb_frames ; ++i) {
+  for (i = 0 ; i < nb_frames ; ++i, address += PAGE_SIZE) {
 
-    if (is_entry_present(page_table_entry_addr)) {
+    // Get page directory entry address
+    unsigned int *page_dir_entry_addr = 
+        get_page_directory_addr_with_offset(address);
+
+    if (is_entry_present(page_dir_entry_addr)) {
+
+      unsigned int *page_table_entry_addr =
+        get_page_table_addr_with_offset(page_dir_entry_addr, address);
+
+      if (is_entry_present(page_table_entry_addr)) {
 
       // If the entry is present, free the frame
       free_frame(get_frame_addr(page_table_entry_addr));
@@ -483,25 +478,9 @@ int free_frames_range(unsigned int address, unsigned int nb_frames) {
       // Invalidate the entry
       set_entry_invalid(page_table_entry_addr);
 
-    }
-
-    // Go to the next entry
-    ++page_table_entry_addr;
-    if (!((unsigned int)page_table_entry_addr & PAGE_SIZE)) {
-      
-      // Get the next entry in the page directory
-      ++page_directory_entry_addr;
-      if (!((unsigned int)page_directory_entry_addr & PAGE_SIZE)) {
-        return -1;
       }
-      
-      // Get the first entry in the new page table
-      page_table_entry_addr = get_page_table_addr(page_directory_entry_addr);
     }
   }
-  
-  return 0;
-
 }
 
 
