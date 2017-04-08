@@ -458,12 +458,17 @@ int free_page_table(unsigned int *page_table_addr, int free_kernel_space) {
  */
 void free_frames_range(unsigned int address, unsigned int nb_frames) {
 
-  int i;
+  // Make sure the address is page aligned
+  address &= ~FRAME_OFFSET_MASK;
+
+  int i, cnt = 0;
   for (i = 0 ; i < nb_frames ; ++i, address += PAGE_SIZE) {
 
     // Get page directory entry address
     unsigned int *page_dir_entry_addr = 
         get_page_directory_addr_with_offset(address);
+
+    // TODO: Make sure we do not free memory in kernel space ??
 
     if (is_entry_present(page_dir_entry_addr)) {
 
@@ -471,16 +476,21 @@ void free_frames_range(unsigned int address, unsigned int nb_frames) {
         get_page_table_addr_with_offset(page_dir_entry_addr, address);
 
       if (is_entry_present(page_table_entry_addr)) {
+        
+        // If the entry is present, free the frame
+        free_frame(get_frame_addr(page_table_entry_addr));
+        
+        // Invalidate the entry
+        set_entry_invalid(page_table_entry_addr);
 
-      // If the entry is present, free the frame
-      free_frame(get_frame_addr(page_table_entry_addr));
-      
-      // Invalidate the entry
-      set_entry_invalid(page_table_entry_addr);
+        ++cnt;        
 
       }
     }
   }
+
+  lprintf("free_frames_range(): Number of frames freed: %d", cnt);
+
 }
 
 
