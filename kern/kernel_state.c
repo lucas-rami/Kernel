@@ -217,6 +217,9 @@ tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3) {
   new_tcb->esp0 = esp0;
   new_tcb->cr3 = cr3;
   new_tcb->num_of_frames_requested = 0;
+  new_tcb->swexn_values.esp3 = NULL;
+  new_tcb->swexn_values.eip = NULL;
+  new_tcb->swexn_values.arg = NULL;
 
   // TODO: Change this into an atomic op.
   // No need for a mutex
