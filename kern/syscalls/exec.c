@@ -53,6 +53,7 @@
  *              wrong, an integer error code less than zero will be returned.
  */
 int kern_exec(char *execname, char **argvec) {
+  lprintf("exec");
 
   // Validate all arguments
   if (is_valid_string(execname) == FALSE) {

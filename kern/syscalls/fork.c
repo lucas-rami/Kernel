@@ -75,6 +75,14 @@ int kern_fork(unsigned int *esp) {
     // TODO: Increase the kernel free frame count
     return -1;
   }
+  new_pcb->original_thread_id = new_tcb->tid;
+  new_pcb->parent = kernel.current_thread->task;
+  
+
+  // Add the child to the running queue
+  mutex_lock(&kernel.current_thread->task->list_mutex);
+  queue_insert_node(&kernel.current_thread->task->running_children, new_pcb);
+  mutex_unlock(&kernel.current_thread->task->list_mutex);
 
   /* ------ Craft the kernel stack for the new task ------ */
 

@@ -205,7 +205,9 @@ unsigned int *allocate_frame() {
   return NULL;
 }
 
-/** @brief Free an allocated frame from memory
+/** @brief Free an allocated frame from memory. Only changes the free frame
+ *   count of the kernel. Functinos which call this function should take
+ *   care of the change in tcb and pcb.
  *
  *  @param addr The frame's address
  *
@@ -219,6 +221,9 @@ int free_frame(unsigned int* addr) {
     return -1;
   }
   unset_bit(&free_map, frame_index);
+  mutex_lock(&kernel.mutex);
+  kernel.free_frame_count++;
+  mutex_unlock(&kernel.mutex);
   return 0;
 }
 

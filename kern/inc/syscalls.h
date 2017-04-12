@@ -8,6 +8,7 @@
 #define _SYSCALLS_H_
 
 #include <stdint.h>
+#include <tcb.h>
 
 int kern_gettid();
 
@@ -31,5 +32,14 @@ int print(int len, char *buf);
 /* Exec calls */
 int kern_exec(char *execname, char **argvec);
 char *load_args_for_new_program(char **argvec, unsigned int *new_ptd, int count);
+
+/* swexn calls */
+int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg);
+
+/* wait call */
+int kern_wait(int *status_ptr);
+
+/* Vanish call */
+void kern_vanish(void);
 
 #endif /* _SYSCALLS_H_ */

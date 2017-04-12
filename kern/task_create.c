@@ -125,6 +125,7 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
       // TODO: Increase the kernel free frame count
       return 0;
     }
+    new_pcb->original_thread_id = new_tcb->tid;
     stack_top = ESP;
   } else {
     esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
@@ -132,11 +133,14 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
     new_tcb->esp0 = esp0;
     char *new_stack_addr = load_args_for_new_program(argvec, old_cr3, count);
     stack_top = (uint32_t)new_stack_addr;
+    // TODO: We are not actually freeing the frames right now. We need to 
+    // move this to kern_exec or free up the previous frames here
     // Exec can't fail now. Increment the kernel free frame count
     // by the number of frames requested by the current program
-    mutex_lock(&kernel.mutex);
+    /* mutex_lock(&kernel.mutex);
     kernel.free_frame_count += kernel.current_thread->num_of_frames_requested;
     mutex_unlock(&kernel.mutex);
+    */
   }
 
   // TODO: lock?

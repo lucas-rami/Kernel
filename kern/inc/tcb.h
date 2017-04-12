@@ -8,6 +8,7 @@
 
 #include <mutex.h>
 #include <pcb.h>
+#include <ureg.h>
 #include <stdint.h>
 
 /* Thread's lifecycle possible states */
@@ -19,6 +20,14 @@
 /* Constants for descheduled field */
 #define THR_DESCHEDULED_FALSE 0
 #define THR_DESCHEDULED_TRUE 1
+
+typedef void (*swexn_handler_t)(void *arg, ureg_t *ureg);
+
+typedef struct {
+  void *esp3;
+  swexn_handler_t eip;
+  void *arg;
+} swexn_struct_t;
 
 typedef struct tcb {
 
@@ -48,6 +57,15 @@ typedef struct tcb {
   /* @brief Holds the number of frames requested by this thread(includes 
    *  the ones that have not been allocated yet as well */
   uint32_t num_of_frames_requested;
+
+  /* @brief Holds the software exception handler information
+   */
+  swexn_struct_t swexn_values;
+
+  /* @brief A pointer to the pcb structure of the task which will be reaped
+   *  by this thread
+   */
+  pcb_t *reaped_task;
 
   /** @brief Mutex used to ensure atomicity when changing the thread state */
   mutex_t mutex;
