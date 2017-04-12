@@ -181,10 +181,9 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
   new_tcb->esp = (uint32_t) stack_addr;
 
   // Make the thread runnable
-  add_runnable_thread(new_tcb);
-
-  // For debugging in Simics
-  sim_reg_process(cr3, task_name);
+  if (is_exec != TRUE) {  
+    add_runnable_thread(new_tcb);
+  }
 
   return elf.e_entry;
 }
