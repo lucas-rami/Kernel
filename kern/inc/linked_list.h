@@ -39,5 +39,6 @@ int linked_list_init(generic_linked_list_t *list, int (*find)(void *, void *));
 int linked_list_insert_node(generic_linked_list_t *list, void *value);
 void *linked_list_delete_node(generic_linked_list_t *list, void *value);
 void *linked_list_get_node(generic_linked_list_t *list, void *value);
+void linked_list_delete_list(generic_linked_list_t *list);
 
 #endif /* _LINKED_LIST_H */

@@ -58,7 +58,14 @@ typedef struct tcb {
    *  the ones that have not been allocated yet as well */
   uint32_t num_of_frames_requested;
 
+  /* @brief Holds the software exception handler information
+   */
   swexn_struct_t swexn_values;
+
+  /* @brief A pointer to the pcb structure of the task which will be reaped
+   *  by this thread
+   */
+  pcb_t *reaped_task;
 
   /** @brief Mutex used to ensure atomicity when changing the thread state */
   mutex_t mutex;

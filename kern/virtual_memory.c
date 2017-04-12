@@ -81,9 +81,10 @@ unsigned int *setup_vm(const simple_elf_t *elf_info) {
     return NULL;
   }
 
+  // TODO: Make this atomic and reverse the changes if something goes bad
   // set cr3 to this value;
   set_cr3((uint32_t)page_table_directory);
-
+  kernel.current_thread->cr3 = (uint32_t)page_table_directory;
   return page_table_directory;
 }
 

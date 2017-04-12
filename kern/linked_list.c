@@ -173,3 +173,32 @@ void *linked_list_get_node(generic_linked_list_t *list, void *value) {
   mutex_unlock(&list->mp);
   return NULL;
 }
+
+/** @brief Deletes a linked list. Frees the value in every node and every node
+ *
+ *  @param list   A linked list
+ *
+ *  @return void
+ */
+void linked_list_delete_list(generic_linked_list_t *list) {
+
+  if (list == NULL) {
+    return;
+  }
+
+  mutex_lock(&list->mp);
+
+  generic_node_t *iterator = list->head;
+
+  while(iterator != NULL) {
+    generic_node_t *tmp = iterator->next;
+    free(iterator->value);
+    free(iterator);
+    iterator = tmp;
+  }
+
+  list->head = NULL;
+  list->tail = NULL;
+
+  mutex_unlock(&list->mp);
+}

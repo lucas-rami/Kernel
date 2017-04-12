@@ -164,9 +164,37 @@ pcb_t *create_new_pcb() {
     return NULL;
   }
 
+  // Initialize the list_mutex on this PCB
+  if (mutex_init(&new_pcb->list_mutex) < 0) {
+    lprintf("create_new_pcb(): Failed to initialize list_mutex");
+    free(new_pcb);
+    return NULL;
+  }
+
   // Initialize the allocations list
   if (linked_list_init(&new_pcb->allocations, find_alloc) < 0) {
     lprintf("create_new_pcb(): Failed to initialize linked list");
+    free(new_pcb);
+    return NULL;
+  }
+
+  // Initialize the running children queue
+  if (queue_init(&new_pcb->running_children) < 0) {
+    lprintf("create_new_pcb(): Failed to initialize running_children");
+    free(new_pcb);
+    return NULL;
+  }
+
+  // Initialize the zombie children queue
+  if (queue_init(&new_pcb->zombie_children) < 0) {
+    lprintf("create_new_pcb(): Failed to initialize zombie_children");
+    free(new_pcb);
+    return NULL;
+  }
+ 
+  // Initialize the waiting thread queue
+  if (queue_init(&new_pcb->waiting_threads) < 0) {
+    lprintf("create_new_pcb(): Failed to initialize waiting_threads");
     free(new_pcb);
     return NULL;
   }
@@ -175,6 +203,9 @@ pcb_t *create_new_pcb() {
   new_pcb->return_status = 0;
   new_pcb->task_state = TASK_RUNNING;
   new_pcb->num_of_frames_requested = 0;
+  new_pcb->num_of_threads = 1;
+  new_pcb->parent = NULL;
+  new_pcb->original_thread_id = 0;
 
   // Assign a unique id to the PCB
   mutex_lock(&kernel.mutex);

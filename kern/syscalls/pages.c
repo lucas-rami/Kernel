@@ -179,8 +179,15 @@ static int free_frames_zfod(void* base) {
 
   // Free the frames
   free_frames_range((unsigned int) base, len);
-  
-  set_cr3(get_cr3());
+
+  mutex_lock(&kernel.current_thread->mutex);
+  kernel.current_thread->num_of_frames_requested -= (len/PAGE_SIZE);
+  mutex_unlock(&kernel.current_thread->mutex);
+
+  mutex_lock(&kernel.current_thread->task->mutex);
+  kernel.current_thread->task->num_of_frames_requested -= (len/PAGE_SIZE);
+  mutex_unlock(&kernel.current_thread->task->mutex);
+  // set_cr3(get_cr3());
   return 0;
 
 }

@@ -11,12 +11,13 @@
 #include <mutex.h>
 #include <generic_node.h>
 #include <tcb.h>
+#include <pcb.h>
 
 #define KERNEL_INIT_FALSE 0
 #define KERNEL_INIT_TRUE 1
 #define CPU_IDLE_FALSE 0
 #define CPU_IDLE_TRUE 1
-#define FIRST_TASK "fork_bomb"
+#define FIRST_TASK "knife"
 
 typedef struct kernel {
 
@@ -51,6 +52,13 @@ typedef struct kernel {
 
   /** @brief Count of the number of frames available(not used or requested for) */
   unsigned int free_frame_count;
+
+  /* @brief INIT's page table base register value */
+  // TODO: Initialize this whe init is loaded
+  uint32_t init_cr3;
+
+  /* @brief INIT's pcb */
+  pcb_t *init_task;
 
   /* ------------------------- */
 
