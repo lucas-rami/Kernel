@@ -34,6 +34,7 @@ int kern_exec(char *execname, char **argvec);
 char *load_args_for_new_program(char **argvec, unsigned int *new_ptd, int count);
 
 /* swexn calls */
+int swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg);
 int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg);
 
 /* wait call */
@@ -42,4 +43,7 @@ int kern_wait(int *status_ptr);
 /* Vanish call */
 void kern_vanish(void);
 
+/* Helper function */
+char *get_esp();
+int create_stack_sw_exception(unsigned int cause, char *stack_ptr);
 #endif /* _SYSCALLS_H_ */
