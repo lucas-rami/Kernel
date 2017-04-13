@@ -34,7 +34,7 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the 410user/progs
 # directory.
 #
-410TESTS = exec_basic exec_basic_helper knife peon merchant coolness fork_bomb new_pages remove_pages_test1 remove_pages_test2 swexn_basic_test swexn_cookie_monster swexn_dispatch swexn_regs swexn_stands_for_swextensible swexn_uninstall_test minclone_mem
+410TESTS = exec_basic exec_basic_helper knife peon merchant coolness fork_bomb new_pages remove_pages_test1 remove_pages_test2 swexn_basic_test swexn_cookie_monster swexn_dispatch swexn_regs swexn_stands_for_swextensible swexn_uninstall_test stack_test1 minclone_mem
 
 ###########################################################################
 # Test programs you have written which you wish to run

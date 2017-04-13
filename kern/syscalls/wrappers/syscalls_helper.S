@@ -49,7 +49,8 @@ restore_state_and_iret_with_errcode:
   popl %es
   popl %fs
   popl %gs
-  movl %eax, 28(%esp)   // Replace the value of %eax on the stack
+  /* DO NOT COPY THE RETURN STATUS OF THE EXCEPTION HANDLER?? */
+  // movl %eax, 28(%esp)   // Replace the value of %eax on the stack
   popa                  // Pop general purpose registers
 
   addl $4, %esp         // Put back the stack pointer to where it was when the

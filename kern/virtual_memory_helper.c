@@ -336,6 +336,8 @@ int allocate_frame_if_address_requested(unsigned int address) {
       lprintf("check_if_address_requested(): create_page_table_entry failed");
       return -1;
     }
+  } else {
+    return -1;
   }
 
   // Zero fill

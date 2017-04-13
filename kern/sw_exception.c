@@ -30,7 +30,7 @@ int create_stack_sw_exception(unsigned int cause, char *stack_start) {
   memcpy(ureg_start + (14 * unsigned_int_size), stack_start, 6 * unsigned_int_size);
   lprintf("The value at stack_start is %p", (uint32_t*)*(unsigned int*)(stack_start));
   lprintf("The stack address during page fault handler is %p", (void *)(*(unsigned int *)(ureg_start + (18 * unsigned_int_size))));
-  MAGIC_BREAK;
+  // MAGIC_BREAK;
   stack_ptr = ureg_start - pointer_size;
   *(unsigned int **)stack_ptr = (unsigned int *)ureg_start;
   stack_ptr -= pointer_size;

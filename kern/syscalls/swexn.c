@@ -68,6 +68,6 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
   }
   */
   lprintf("Returning from kern_swexn");
-  MAGIC_BREAK;
+  // MAGIC_BREAK;
   return ret;
 } 

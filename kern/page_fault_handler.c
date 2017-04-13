@@ -16,8 +16,6 @@ int page_fault_init(void)
 
 void page_fault_c_handler(char *stack_ptr)
 {
-  // stack_ptr -= sizeof(void*);
-  lprintf("Page fault handler called\n");
   if (allocate_frame_if_address_requested(get_cr2()) < 0) {
     create_stack_sw_exception(SWEXN_CAUSE_PAGEFAULT, stack_ptr);
     lprintf("Valid page fault. We should throw an error");
