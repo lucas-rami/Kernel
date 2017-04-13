@@ -18,7 +18,8 @@ void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3);
 int load_multiple_frames(unsigned int address, unsigned int nb_frames, 
                             unsigned int type);
 int free_address_space(unsigned int *page_table_addr, int free_kernel_space);
-int free_page_table(unsigned int *page_table_addr, int free_kernel_space);
+int free_page_table(unsigned int * page_dir_entry_addr, 
+                    unsigned int *page_table_addr, int free_kernel_space);
 void free_frames_range(unsigned int address, unsigned int nb_frames);
 
 int is_buffer_valid(unsigned int address, unsigned int len);

@@ -81,6 +81,8 @@ void block_and_switch(int is_descheduled) {
 
   disable_interrupts();
 
+  mutex_unlock(&kernel.current_thread->mutex);
+
   if (kernel.cpu_idle == CPU_IDLE_TRUE) {
     context_switch(next_thread());
     return;
@@ -103,13 +105,15 @@ void add_runnable_thread(tcb_t *tcb) {
 
   assert(tcb != NULL && kernel.init == KERNEL_INIT_TRUE);
 
-  if (tcb == kernel.idle_thread) {
-    return;
-  }
-
   generic_node_t new_tail = {tcb, NULL};
 
   disable_interrupts();
+
+  // Should not happen
+  if (tcb == kernel.idle_thread) {
+    enable_interrupts();    
+    return;
+  }
 
   tcb->thread_state = THR_RUNNABLE;
   tcb->descheduled = THR_DESCHEDULED_FALSE;
@@ -143,8 +147,24 @@ void force_next_thread(tcb_t *force_next_tcb) {
   assert(kernel.current_thread != NULL && force_next_tcb != NULL &&
          kernel.init == KERNEL_INIT_TRUE);
 
-  disable_interrupts();
-  add_runnable_thread(kernel.current_thread);
+  generic_node_t new_tail = {kernel.current_thread, NULL};
+
+  disable_interrupts();    
+  mutex_unlock(&force_next_tcb->mutex);  
+
+  // Should not happen 
+  if (kernel.cpu_idle == CPU_IDLE_TRUE) {
+    context_switch(force_next_tcb);
+    return;
+  }
+
+  if(kernel.runnable_head != NULL) {
+    kernel.runnable_tail->next = &new_tail;
+    kernel.runnable_tail = &new_tail;
+  } else {
+    kernel.runnable_head = (kernel.runnable_tail = &new_tail);
+  }
+
   context_switch(force_next_tcb);
 
 }

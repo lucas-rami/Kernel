@@ -1,5 +1,6 @@
 .global invalidate_tlb
 
 invalidate_tlb:
-    invlpg 4(%esp)      // Invalidate the TLB entry
-    ret                 // Return from procedure
+    movl 4(%esp), %eax
+    invlpg (%eax)         // Invalidate the TLB entry
+    ret                   // Return from procedure

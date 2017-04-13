@@ -100,7 +100,9 @@ void mutex_lock(mutex_t *mp) {
   while((mp->prev + 1) != my_ticket) {
     // A thread which acquired the mutex earlier is running
     // Yield till it releases the lock
-    kern_yield(mp->tid_owner);
+    if (kern_yield(mp->tid_owner) < 0) {
+      kern_yield(-1);
+    }
   }
 
   // We own the mutex, make owner_tid our tid for yield()
