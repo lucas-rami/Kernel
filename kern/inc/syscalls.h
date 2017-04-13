@@ -18,8 +18,9 @@ int kern_deschedule(int *reject);
 int kern_make_runnable(int tid);
 
 /* Forking calls */
+int thread_fork();
 int kern_fork(unsigned int * esp);
-int kern_thread_fork(void);
+int kern_thread_fork(unsigned int * esp);
 
 /* New/Remove pages calls */
 int kern_new_pages(void *base, int len);

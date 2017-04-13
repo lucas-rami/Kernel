@@ -9,6 +9,6 @@
 
 #include <stdint.h>
 
-void fork_return_new_task();
+void fork_return_new_thread();
 
 #endif /* _FORK_HELPER_H_ */

@@ -29,6 +29,7 @@ int idt_syscall_install() {
   uintptr_t syscalls[] = {(uintptr_t)gettid, (uintptr_t)deschedule,
                           (uintptr_t)make_runnable, (uintptr_t)yield,
                           (uintptr_t)fork, (uintptr_t)exec, 
+                          (uintptr_t)thread_fork, 
                           (uintptr_t)new_pages, (uintptr_t)remove_pages,
                           (uintptr_t)readline, (uintptr_t)print,
                           (uintptr_t)swexn,
@@ -37,9 +38,9 @@ int idt_syscall_install() {
 
   // List of offsets in the IDT corresponding to syscalls
   uint32_t idt_indexes[] = {GETTID_INT, DESCHEDULE_INT, MAKE_RUNNABLE_INT,
-                            YIELD_INT, FORK_INT, EXEC_INT, NEW_PAGES_INT, 
-                            REMOVE_PAGES_INT, READLINE_INT, PRINT_INT,
-                            SWEXN_INT,
+                            YIELD_INT, FORK_INT, EXEC_INT, THREAD_FORK_INT,
+                            NEW_PAGES_INT, REMOVE_PAGES_INT, READLINE_INT, 
+                            PRINT_INT, SWEXN_INT,
                             VANISH_INT, WAIT_INT
                             };
 
