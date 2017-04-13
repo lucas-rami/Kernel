@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include "410_tests.h"
 #include <report.h>
-#include <syscall.h>
+#include <simics.h>
 
 DEF_TEST_NAME("fork_bomb:");
 
@@ -21,15 +21,21 @@ int main() {
     report_start(START_4EVER);
     TEST_PROG_ENGAGE(200);
 
-    int ret = 1;
+    int ret = 0;
+    int stop = 0;
 
-    while (ret != 0) {
+    while (ret == 0) {
         ret = fork();
-        if (ret == 0) lprintf("New thread's tid is %d", gettid());
+        if (ret < 0) {
+            lprintf("fork_bomb(): fork() returned an error");
+            while(1);
+        }
+        if (ret == 0) lprintf("Hello world, I am thread %d", gettid());
     }
 
-    while(1) {
-        continue;
-    }
+    deschedule(&stop);
+
+    lprintf("NOPE NOPE NOPE NOPE");
+    while(1);
 
 }

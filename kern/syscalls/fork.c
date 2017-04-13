@@ -14,6 +14,7 @@
 #include <context_switch.h>
 #include <scheduler.h>
 #include <asm.h>
+#include <syscalls.h>
 
 /* VM system */
 #include <virtual_memory.h>
@@ -35,6 +36,7 @@ int kern_fork(unsigned int *esp) {
 
   mutex_lock(&kernel.mutex);
   if (kernel.current_thread->num_of_frames_requested <= kernel.free_frame_count) {
+    // Shouldn't it be kernel.current_thread->task->num_of_frames_requested ?
     kernel.free_frame_count -= kernel.current_thread->num_of_frames_requested;
   } else {
     lprintf("Can't fork as no frames left");
@@ -43,7 +45,6 @@ int kern_fork(unsigned int *esp) {
   }
   mutex_unlock(&kernel.mutex);
 
-  lprintf("FORK!");
   // Allocate a kernel stack for the new task
   void *stack_kernel = malloc(PAGE_SIZE);
   if (stack_kernel == NULL) {
@@ -53,6 +54,12 @@ int kern_fork(unsigned int *esp) {
   }
 
   unsigned int * new_cr3 = copy_memory_regions();
+  if (new_cr3 == NULL) {
+    lprintf("fork(): Could not allocate memory regions");
+    // TODO: Increase the kernel free frame count
+    free(stack_kernel);    
+    return -1;
+  }
 
   uint32_t esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
 
@@ -108,12 +115,10 @@ int kern_fork(unsigned int *esp) {
   stack_addr -= NB_REGISTERS_POPA;
 
   new_tcb->esp = (uint32_t) stack_addr;
-  // Make the thread runnable
-  mutex_lock(&kernel.mutex);
-  add_runnable_thread(new_tcb);
-  mutex_unlock(&kernel.mutex);
 
-  // enable_interrupts();
+  // Make the thread runnable
+  add_runnable_thread(new_tcb);
+
   return new_tcb->tid;
 }
 
@@ -133,6 +138,10 @@ static unsigned int * copy_memory_regions() {
 
   unsigned int *orig_cr3 = (unsigned int *)get_cr3();
   unsigned int *new_cr3 = (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
+  if (new_cr3 == NULL) {
+    free(buffer);
+    return NULL;
+  }
 
   memset(new_cr3, 0, PAGE_SIZE);
 

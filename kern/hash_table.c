@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <mutex.h>
 
+/* Debugging */
+#include <simics.h>
+
 /** @brief Initialize the hash table
  *
  *  The function must be called once before any other function in this file,
@@ -73,6 +76,7 @@ int hash_table_add_element(generic_hash_table_t *hash_table, void *elem) {
 
   // Compute in which bucket the element will go
   unsigned int bucket = hash_table->hash_function(elem, hash_table->nb_buckets);
+  // lprintf("\tAdding into bucket %u (hash_table = %p, elem = %d, nb_buckets = %u)", bucket, hash_table, (int)elem, hash_table->nb_buckets);
   if (bucket < 0 || bucket >= hash_table->nb_buckets) {
     return -1;
   }
@@ -88,7 +92,7 @@ int hash_table_add_element(generic_hash_table_t *hash_table, void *elem) {
 /** @brief Remove an element in the hash table
  *
  *  @param hash_table   A hash table
- *  @param elem        The element to remove
+ *  @param elem         The element to remove
  *
  *  @return The deleted element's value if it was found in the list.
  *  NULL otherwise
@@ -102,6 +106,7 @@ void *hash_table_remove_element(generic_hash_table_t *hash_table, void *elem) {
 
   // Compute in which bucket the element could be
   unsigned int bucket = hash_table->hash_function(elem, hash_table->nb_buckets);
+  // lprintf("\tRemoving from bucket %u (hash_table = %p, elem = %d, nb_buckets = %u)", bucket, hash_table, (int)elem, hash_table->nb_buckets);
   if (bucket < 0 || bucket >= hash_table->nb_buckets) {
     return NULL;
   }
@@ -112,7 +117,7 @@ void *hash_table_remove_element(generic_hash_table_t *hash_table, void *elem) {
 /** @brief Get an element in the hash table
  *
  *  @param hash_table   A hash_table
- *  @param elem         The element to ger
+ *  @param elem         The element to get
  *
  *  @return The element if it was found in the hash table. NULL otherwise.
  */
@@ -125,6 +130,7 @@ void *hash_table_get_element(generic_hash_table_t *hash_table, void *elem) {
 
   // Compute in which bucket the element could be
   unsigned int bucket = hash_table->hash_function(elem, hash_table->nb_buckets);
+  // lprintf("\tGetting from bucket %u (hash_table = %p, elem = %d, nb_buckets = %u)", bucket, hash_table, (int)elem, hash_table->nb_buckets);
   if (bucket < 0 || bucket >= hash_table->nb_buckets) {
     return NULL;
   }

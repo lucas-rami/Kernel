@@ -67,8 +67,6 @@ int kern_new_pages(void *base, int len) {
     return -1;
   }
 
-  lprintf("kern_new_pages(): returning success on new page");
-
   return 0;
    
 }
@@ -120,17 +118,7 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
     return -1;
   }
   new_alloc->base = base;
-  new_alloc->len = nb_pages * PAGE_SIZE;
-
-  // Mark the pages as requested
-  if (mark_adrress_range_requested((unsigned int)base, (unsigned int)nb_pages) < 0) {
-    mutex_lock(&kernel.mutex);
-    kernel.free_frame_count += nb_pages;  
-    mutex_unlock(&kernel.mutex);
-    free(new_alloc);
-    lprintf("reserve_frames_zfod(): mark_address_range_requested failed");
-    return -1;
-  }
+  new_alloc->len = nb_pages;
 
   // Register the allocation
   pcb_t * current_pcb = kernel.current_thread->task;
@@ -140,6 +128,17 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
     mutex_unlock(&kernel.mutex);
     free(new_alloc);
     lprintf("reserve_frames_zfod(): Registration of new allocation failed");
+    return -1;
+  }
+
+  // Mark the pages as requested
+  if (mark_address_range_requested((unsigned int)base, (unsigned int)nb_pages) < 0) {
+    mutex_lock(&kernel.mutex);
+    kernel.free_frame_count += nb_pages;  
+    mutex_unlock(&kernel.mutex);
+    free(new_alloc);
+    linked_list_delete_node(&current_pcb->allocations, new_alloc);
+    lprintf("reserve_frames_zfod(): mark_address_range_requested failed");
     return -1;
   }
 
@@ -159,7 +158,7 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
 
 /** @brief Free a memory region previously reserves usign reserve_frames_zfod()
  *
- *  @param base   The base address that was use during reservation
+ *  @param base   The base address that was used during reservation
 *
  *  @return 0 on success, a negative number on error
  */
@@ -191,70 +190,3 @@ static int free_frames_zfod(void* base) {
   return 0;
 
 }
-
-
-/** @brief Checks that a certain number of pages are unallocated starting from
- *    a given virtual address
- *
- *  @param address    A virtual address
- *  @param nb_pages   The number of pages to check for
- *
- *  @return 0 is the range is fress on the given number of pages, -1 otherwise
- */
-/*static int check_range_free(unsigned int address, int nb_pages) {
-
-  // Get page directory entry address
-  unsigned int *page_directory_entry_addr = 
-        get_page_directory_addr_with_offset(address);
-
-  int first_entry = 0;
-
-  // If there is no page table associated with this entry, return with an error
-  while (!is_entry_present(page_directory_entry_addr)) {
-    
-    if (first_entry) {
-        unsigned int offset = (address & PAGE_TABLE_MASK) >> PAGE_TABLE_RIGHT_SHIFT;
-        nb_pages -= (NB_ENTRY_PER_PAGE - offset);
-        first_entry = 0;
-    } else {
-        nb_pages -= NB_ENTRY_PER_PAGE;
-    }
-
-    if (nb_pages <= 0) {
-      return 0;
-    }
-
-    // Get the next entry in the page directory
-    ++page_directory_entry_addr;
-    if (!((unsigned int)page_directory_entry_addr & PAGE_SIZE)) {
-      return -1;
-    }
-
-  }
-  
-
-  // If the page table still exists, it means that at least one frame that
-  // it maps to is allocated
-  if (nb_pages >= NB_ENTRY_PER_PAGE) {
-    return -1;
-  }
-
-  // Get page table address
-  unsigned int * page_table_entry_addr = 
-            get_page_table_addr(page_directory_entry_addr);
-
-  int i;
-
-  // Iterate over the entries
-  for (i = 0 ; i < nb_pages ; ++i) {
-    
-    if (is_entry_present(page_table_entry_addr)) {
-      return -1;
-    }
-    ++page_table_entry_addr;
-
-  }
-  
-  return 0;
-}*/
-

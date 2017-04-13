@@ -41,9 +41,10 @@ int is_entry_present(unsigned int *entry_addr) {
  *
  *  @return void
  */
-void set_entry_invalid(unsigned int *entry_addr) {
+void set_entry_invalid(unsigned int *entry_addr, unsigned int address) {
   *entry_addr &= ~PRESENT_BIT_MASK;
-  invalidate_tlb(*entry_addr & PAGE_ADDR_MASK);
+  *entry_addr &= ~PAGE_TABLE_RESERVED_BITMASK;
+  invalidate_tlb(address);
 }
 
 /** @brief Create a new page table (and a new entry in the page directory)
@@ -270,7 +271,7 @@ int mark_address_requested(unsigned int address) {
  *  @return 0 on success, a negative number if the address is already allocated
  *   
  */
-int mark_adrress_range_requested(unsigned int address, unsigned int count) {
+int mark_address_range_requested(unsigned int address, unsigned int count) {
   if (address < USER_MEM_START) {
     // Invalid args
     return -1;
@@ -279,7 +280,7 @@ int mark_adrress_range_requested(unsigned int address, unsigned int count) {
   for(i = 0; i < count; i++) {
     if (mark_address_requested(address + (i * PAGE_SIZE)) < 0) {
       // TODO: Reset all the previous page table entries marked as requested
-      lprintf("mark_adrress_range_requested(): mark_address_requested failed");
+      lprintf("mark_address_range_requested(): mark_address_requested failed");
       return -1;
     }
   }
@@ -336,8 +337,6 @@ int allocate_frame_if_address_requested(unsigned int address) {
       return -1;
     }
   }
-
-  lprintf("Allocating new frame @ %p", (void*) address);
 
   // Zero fill
   memset((char*)((unsigned int)address & ~FRAME_OFFSET_MASK), 0, PAGE_SIZE);

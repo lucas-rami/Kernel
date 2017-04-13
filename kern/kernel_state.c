@@ -291,13 +291,12 @@ unsigned int hash_function_pcb(void *pcb, unsigned int nb_buckets) {
  *
  *  @return 1 if the PCB is the good one (its tid is tid), 0 otherwise
  */
-int find_pcb(void *pcb, void *tid) {
-  pcb_t *p = pcb;
-  int *id = tid;
+int find_pcb(void *pcb1, void *pcb2) {
 
-  if (p->tid == *id) {
+  if (((pcb_t*)pcb1)->tid == ((pcb_t*)pcb2)->tid) {
     return 1;
   }
+  
   return 0;
 }
 
@@ -320,13 +319,12 @@ unsigned int hash_function_tcb(void *tcb, unsigned int nb_buckets) {
  *
  *  @return 1 if the TCB is the good one (its tid is tid), 0 otherwise
  */
-int find_tcb(void *tcb, void *tid) {
-  tcb_t *t = tcb;
-  int *id = tid;
-
-  if (t->tid == *id) {
+int find_tcb(void *tcb1, void *tcb2) {
+  
+  if (((tcb_t*)tcb1)->tid == ((tcb_t*)tcb2)->tid) {
     return 1;
   }
+  
   return 0;
 }
 

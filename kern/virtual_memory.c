@@ -40,10 +40,7 @@ bitmap_t free_map;
 int vm_init() {
 
   // Figure out the number of usernumber of user frames
-  num_user_frames = machine_phys_frames() - NUM_KERNEL_FRAMES;
-
-  // Initialize the free frame count to the number of user frames
-  kernel.free_frame_count = num_user_frames;
+  num_user_frames = kernel.free_frame_count;
 
   int size = (kernel.free_frame_count / BITS_IN_UINT8_T) + 1;
 
@@ -368,10 +365,12 @@ int free_address_space(unsigned int *page_directory_addr,
     // Check if the entry is present 
     if (is_entry_present(page_directory_entry_addr)) {
 
-      if (free_page_table(get_page_table_addr(page_directory_entry_addr), 
-          free_kernel_space) == 0) {
+      if (free_page_table(page_directory_entry_addr, 
+            get_page_table_addr(page_directory_entry_addr), 
+             free_kernel_space) == 0) {
         // If the page table has been freed, invalidate the page dir. entry
-        set_entry_invalid(page_directory_entry_addr);
+        set_entry_invalid(page_directory_entry_addr, get_virtual_address(
+          page_directory_addr, get_page_table_addr(page_directory_entry_addr)));
       } else {
         something_remaining = 1;
       }
@@ -393,16 +392,18 @@ int free_address_space(unsigned int *page_directory_addr,
  *  the page table itself is freed. 
  *  A task should not call this function with the address of one of its page 
  *  table and the 'free_kernel_space' parameter set to KERNEL_AND_USER_SPACE.
- *
- *  @param page_table_addr    The page table's address
- *  @param free_kernel_space  An integer indicating whether direct mapped kernel
- *    memory should be deallocated too
+ *  
+ *  @param page_dir_entry_addr  The page directory entry
+ *  @param page_table_addr      The page table's address
+ *  @param free_kernel_space    An integer indicating whether direct mapped 
+ *  kernel memory should be deallocated too
  *
  *  @return 0 if all the frames pointed to by the page have been deallocated
  *   (the page table has been deallocated too), 1 otherwise (there is at
  *   least one valid entry remaining in the page table)
  */
-int free_page_table(unsigned int *page_table_addr, int free_kernel_space) {
+int free_page_table(unsigned int * page_dir_entry_addr, 
+                    unsigned int *page_table_addr, int free_kernel_space) {
 
   unsigned int nb_entries = PAGE_SIZE / SIZE_ENTRY_BYTES;
   unsigned int *page_table_entry_addr;  
@@ -417,7 +418,7 @@ int free_page_table(unsigned int *page_table_addr, int free_kernel_space) {
     if (is_entry_present(page_table_entry_addr)) {
       unsigned int *frame_addr = get_frame_addr(page_table_entry_addr);
       
-      if (free_kernel_space != KERNEL_AND_USER_SPACE &&
+      if (free_kernel_space == USER_SPACE_ONLY &&
           (unsigned int) frame_addr < USER_MEM_START) {
         something_remaining = 1;
         continue;
@@ -432,7 +433,8 @@ int free_page_table(unsigned int *page_table_addr, int free_kernel_space) {
       }
 
       // Invalidate the entry
-      set_entry_invalid(page_table_entry_addr);
+      set_entry_invalid(page_table_entry_addr, 
+          get_virtual_address(page_dir_entry_addr, page_table_entry_addr));
     }
   }
 
@@ -482,7 +484,7 @@ void free_frames_range(unsigned int address, unsigned int nb_frames) {
         free_frame(get_frame_addr(page_table_entry_addr));
         
         // Invalidate the entry
-        set_entry_invalid(page_table_entry_addr);
+        set_entry_invalid(page_table_entry_addr, address);
         
       }      
     }

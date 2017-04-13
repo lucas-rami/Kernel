@@ -10,7 +10,7 @@
 #include <stdint.h>
 
 int is_entry_present(unsigned int *entry_addr);
-void set_entry_invalid(unsigned int *entry_addr);
+void set_entry_invalid(unsigned int *entry_addr, unsigned int address);
 
 unsigned int *create_page_table(unsigned int *page_directory_entry_addr,
                                 uint32_t flags);
@@ -30,7 +30,7 @@ unsigned int get_virtual_address(unsigned int *page_directory_entry_addr,
 unsigned int* allocate_frame();
 int free_frame(unsigned int* addr);
 int mark_address_requested(unsigned int address);
-int mark_adrress_range_requested(unsigned int address, unsigned int len);
+int mark_address_range_requested(unsigned int address, unsigned int len);
 int allocate_frame_if_address_requested(unsigned int address);
 int is_page_requested(unsigned int *addr);
 

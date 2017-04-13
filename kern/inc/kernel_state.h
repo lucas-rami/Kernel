@@ -17,7 +17,7 @@
 #define KERNEL_INIT_TRUE 1
 #define CPU_IDLE_FALSE 0
 #define CPU_IDLE_TRUE 1
-#define FIRST_TASK "knife"
+#define FIRST_TASK "remove_pages_test1"
 
 typedef struct kernel {
 
@@ -76,7 +76,7 @@ typedef struct alloc {
   /* @brief The base address for the allocation*/
   void* base;
 
-  /* @brief The length for the allocation */
+  /* @brief The length for the allocation (in number of pages) */
   int len;
 
 } alloc_t;
@@ -92,9 +92,9 @@ tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3);
 tcb_t* create_idle_thread();
 
 unsigned int hash_function_pcb(void *pcb, unsigned int nb_buckets);
-int find_pcb(void *pcb, void *tid);
-unsigned int hash_function_tcb(void *pcb, unsigned int nb_buckets);
-int find_tcb(void *pcb, void *tid);
+int find_pcb(void *pcb1, void *pcb2);
+unsigned int hash_function_tcb(void *tcb, unsigned int nb_buckets);
+int find_tcb(void *tcb1, void *tcb2);
 int find_alloc(void* alloc, void* base);
 
 #endif /* _KERNEL_STATE_H_ */
