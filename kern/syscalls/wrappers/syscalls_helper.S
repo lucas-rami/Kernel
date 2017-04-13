@@ -7,6 +7,8 @@
 
 .global save_state
 .global restore_state_and_iret
+.global restore_state_and_iret_with_errcode
+.global get_esp
 
 save_state:
 
@@ -15,10 +17,10 @@ save_state:
   movl 12(%esp), %ecx   // Get the original value of esp before pusha
   movl (%ecx), %ecx     // Get the return address in the wrapper
 
-  pushl %ds             // Push data segment selectors
-  pushl %es
+  pushl %gs             // Push data segment selectors
   pushl %fs
-  pushl %gs
+  pushl %es
+  pushl %ds
 
   pushl %ecx            // Push the return address in the wrapper
   ret                   // Return in the wrapper
@@ -27,10 +29,10 @@ restore_state_and_iret:
 
   addl $4, %esp         // Ignore the return address in the wrapper
 
-  popl %gs              // Pop data segment selectors
-  popl %fs
+  popl %ds              // Pop data segment selectors
   popl %es
-  popl %ds
+  popl %fs
+  popl %gs
   movl %eax, 28(%esp)   // Replace the value of %eax on the stack
   popa                  // Pop general purpose registers
 
@@ -38,3 +40,25 @@ restore_state_and_iret:
                         // wrapper started
 
   iret                  // Return from software interrupt
+
+restore_state_and_iret_with_errcode:
+
+  addl $4, %esp         // Ignore the return address in the wrapper
+
+  popl %ds              // Pop data segment selectors
+  popl %es
+  popl %fs
+  popl %gs
+  movl %eax, 28(%esp)   // Replace the value of %eax on the stack
+  popa                  // Pop general purpose registers
+
+  addl $4, %esp         // Put back the stack pointer to where it was when the
+                        // wrapper started
+
+  addl $4, %esp
+  iret                  // Return from software interrupt
+
+
+get_esp:
+  movl %esp, %eax
+  ret

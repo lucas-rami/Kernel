@@ -12,6 +12,7 @@
 
 #include <syscall.h>
 #include <syscall_int.h>
+#include <syscalls.h>
 
 // Debuging
 #include <simics.h>
@@ -30,7 +31,7 @@ int idt_syscall_install() {
                           (uintptr_t)fork, (uintptr_t)exec, 
                           (uintptr_t)new_pages, (uintptr_t)remove_pages,
                           (uintptr_t)readline, (uintptr_t)print,
-                          /*(uintptr_t)swexn*/
+                          (uintptr_t)swexn,
                           (uintptr_t)vanish, (uintptr_t)wait
                           };
 
@@ -38,7 +39,7 @@ int idt_syscall_install() {
   uint32_t idt_indexes[] = {GETTID_INT, DESCHEDULE_INT, MAKE_RUNNABLE_INT,
                             YIELD_INT, FORK_INT, EXEC_INT, NEW_PAGES_INT, 
                             REMOVE_PAGES_INT, READLINE_INT, PRINT_INT,
-                            /*SWEXN_INT*/
+                            SWEXN_INT,
                             VANISH_INT, WAIT_INT
                             };
 

@@ -4,6 +4,7 @@
 #include <simics.h>
 #include <virtual_memory_helper.h>
 #include <cr.h>
+#include <syscalls.h>
 
 #define PAGE_FAULT_IDT 0xE
 
@@ -15,12 +16,15 @@ int page_fault_init(void)
 
 void page_fault_c_handler()
 {
+  char *stack_ptr = get_esp();
+  stack_ptr -= sizeof(void*);
   lprintf("Page fault handler called\n");
   if (allocate_frame_if_address_requested(get_cr2()) < 0) {
-    // Valid page fault
-    // Throw an error
+    create_stack_sw_exception(SWEXN_CAUSE_PAGEFAULT, stack_ptr);
     lprintf("Valid page fault. We should throw an error");
-    return;
+    MAGIC_BREAK;
+    // vanish();
+    // return;
   }
   lprintf("The frame allocation was successfull");
   // Re run the instruction
