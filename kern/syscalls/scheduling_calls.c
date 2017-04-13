@@ -55,9 +55,7 @@ int kern_deschedule(int *reject) {
   // TODO: is this "atomically check" ?
   int r = *reject;
 
-  if (r == 0) {
-    lprintf("\tDescheduling...");
-    
+  if (r == 0) {    
     // The mutex will be unlocked in block_and_switch
     block_and_switch(THR_DESCHEDULED_TRUE);
   } else {
@@ -74,8 +72,6 @@ int kern_make_runnable(int tid) {
   if (tid < 0) {
     return -1;
   }
-
-  lprintf("make_runnable(): tid = %d", tid);
 
   tcb_t tmp;
   tmp.tid = tid;

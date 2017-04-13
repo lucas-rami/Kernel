@@ -26,7 +26,7 @@ thread_fork:
 
   movl %esp, %ecx   // Get %esp value
   pushl %ecx        // Pass it as a parameter to thread_fork
-  call thread_fork
+  call kern_thread_fork
   addl $4, %esp  
 
   call restore_state_and_iret
