@@ -105,7 +105,7 @@ int kern_fork(unsigned int *esp) {
 
 // TODO: doc
 int kern_thread_fork(unsigned int * esp) {
- 
+  
   // Allocate new kernel stack
   void* kernel_stack = malloc(PAGE_SIZE);
   if (kernel_stack == NULL) {
@@ -118,6 +118,8 @@ int kern_thread_fork(unsigned int * esp) {
   // Create new TCB
   tcb_t * new_tcb = create_new_tcb(kernel.current_thread->task, 
                                     esp0, kernel.current_thread->cr3);
+
+  lprintf("Forking %d", new_tcb->tid);
 
   // Craft the kernel stack for the new thread  
   new_tcb->esp = (uint32_t) initialize_stack_fork(kernel.current_thread->esp0,
@@ -135,12 +137,12 @@ static unsigned int * initialize_stack_fork(uint32_t orig_stack,
   // Copy part of the kernel stack of the original task to the new one's
   char *orig, *new;
   for (orig = (char *)orig_stack, new = (char *)new_stack ;
-       (unsigned int)orig >= (unsigned int)esp; --orig, --new) {
+       (unsigned int)orig >= (unsigned int)esp ; --orig, --new) {
     *new = *orig;
   }
 
   // Manually craft the new stack for first context switch to this thread
-  unsigned int * stack_addr = (unsigned int*) (new_stack + 1);
+  unsigned int * stack_addr = (unsigned int*) (new + 1);
   --stack_addr;
   *stack_addr = (unsigned int) new_tcb;
   --stack_addr;
