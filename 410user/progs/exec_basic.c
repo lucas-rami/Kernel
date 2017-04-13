@@ -20,7 +20,7 @@ int main()
 
   REPORT_LOCAL_INIT;  
 
-  char *name = "exec_basic_helper";
+  char *name = "stack_test1";
   char *args[] = {name, 0};
 
   REPORT_START_CMPLT;
