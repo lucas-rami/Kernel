@@ -14,10 +14,9 @@ int page_fault_init(void)
       PAGE_FAULT_IDT, USER_PRIVILEGE_LEVEL, SEGSEL_KERNEL_CS);
 }
 
-void page_fault_c_handler()
+void page_fault_c_handler(char *stack_ptr)
 {
-  char *stack_ptr = get_esp();
-  stack_ptr -= sizeof(void*);
+  // stack_ptr -= sizeof(void*);
   lprintf("Page fault handler called\n");
   if (allocate_frame_if_address_requested(get_cr2()) < 0) {
     create_stack_sw_exception(SWEXN_CAUSE_PAGEFAULT, stack_ptr);

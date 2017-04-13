@@ -17,7 +17,7 @@
 #define KERNEL_INIT_TRUE 1
 #define CPU_IDLE_FALSE 0
 #define CPU_IDLE_TRUE 1
-#define FIRST_TASK "coolness"
+#define FIRST_TASK "swexn_uninstall_test"
 
 typedef struct kernel {
 

@@ -11,11 +11,15 @@
 
 int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
 
-  char *stack_pointer = get_esp();
+  lprintf("swexn esp %p, eip %p, arg %p, ureg %p", esp3, eip, arg, newureg);
+  lprintf("cause %p, cr2 %p, ds %p, es %p, fs %p, gs %p, esp %p", (uint32_t*)newureg->cause, (uint32_t*)newureg->cr2, (uint32_t*)newureg->ds, (uint32_t*)newureg->es, (uint32_t*)newureg->fs, (uint32_t*)newureg->gs, (uint32_t*)newureg->esp);
+  char *stack_pointer = (char*)&esp3;
+  lprintf("sp %p", stack_pointer);
   int ret = 0;
   // Move the stack pointer to the 
-  stack_pointer += (NUM_ARGS + 1) * sizeof(void*);
-  if ((unsigned)eip < USER_MEM_START || (unsigned)esp3 < USER_MEM_START) {
+  stack_pointer += ((NUM_ARGS) * sizeof(void*));
+  lprintf("New sp %p", stack_pointer);
+  if ((eip && (unsigned)eip < USER_MEM_START) || (esp3 && (unsigned)esp3 < USER_MEM_START)) {
     // Invalid args
     // TODO: More validation. Check if eip is in text section
     // Check if esp3 looks like the correct value
@@ -24,12 +28,18 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
 
   // PRECHECKS
   if (newureg != NULL) {
-    if (is_buffer_valid((unsigned int)newureg, sizeof(ureg_t)) < 0) {
+    /*if (is_buffer_valid((unsigned int)newureg, sizeof(ureg_t)) < 0) {
       lprintf("Buffer is not valid");
     } else {
-      ret = (int)newureg->eax;
-      memcpy(stack_pointer, newureg, (sizeof(ureg_t) - (2 * sizeof(unsigned int))));
-    }
+    */  ret = (int)newureg->eax;
+      lprintf("Memcpy");
+      lprintf("swexn esp %p, eip %p, arg %p, ureg %p", esp3, eip, arg, newureg);
+      lprintf("Newureg ds address %p", &newureg->ds);
+      memcpy(stack_pointer, &newureg->ds, (sizeof(ureg_t) - (2 * sizeof(unsigned int))));
+      // memcpy(stack_pointer + (13 * sizeof(unsigned int)), &newureg->eip, 5 * sizeof(unsigned int));
+      lprintf("Memcpy donw");
+      lprintf("swexn esp %p, eip %p, arg %p, ureg %p", esp3, eip, arg, newureg);
+    // }
     // Check if memory address is valid for the whole structure. If yes,
     // copy it to our stack
     
@@ -57,5 +67,7 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
     // The values on return should be that in the newureg
   }
   */
+  lprintf("Returning from kern_swexn");
+  MAGIC_BREAK;
   return ret;
 } 
