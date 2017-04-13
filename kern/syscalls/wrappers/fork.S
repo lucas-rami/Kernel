@@ -7,7 +7,7 @@
 
 .global fork
 .global thread_fork
-.global fork_return_new_task
+.global fork_return_new_thread
 
 fork:
 
@@ -23,10 +23,15 @@ fork:
 thread_fork:
 
   call save_state
+
+  movl %esp, %ecx   // Get %esp value
+  pushl %ecx        // Pass it as a parameter to thread_fork
   call thread_fork
+  addl $4, %esp  
+
   call restore_state_and_iret
 
-fork_return_new_task:
+fork_return_new_thread:
 
   movl $0, %eax     // Set return value to 0 for new task
   addl $4, %esp     // Restore %esp to where it was when save_state() returned

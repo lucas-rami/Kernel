@@ -26,6 +26,8 @@
 #define NB_REGISTERS_POPA 8
 
 static unsigned int * copy_memory_regions(void);
+static unsigned int * initialize_stack_fork(uint32_t orig_stack, 
+                      uint32_t new_stack, unsigned int * esp, tcb_t * new_tcb);
 
 // TODO: doc
 int kern_fork(unsigned int *esp) {
@@ -91,30 +93,9 @@ int kern_fork(unsigned int *esp) {
   queue_insert_node(&kernel.current_thread->task->running_children, new_pcb);
   mutex_unlock(&kernel.current_thread->task->list_mutex);
 
-  /* ------ Craft the kernel stack for the new task ------ */
-
-  // Copy part of the kernel stack of the original task to the new one's
-  char *orig_stack, *new_stack;
-  for (orig_stack = (char *)kernel.current_thread->esp0,
-      new_stack = (char *)esp0;
-       (unsigned int)orig_stack >= (unsigned int)esp;
-       --orig_stack, --new_stack) {
-
-    *new_stack = *orig_stack;
-
-  }
-
-  // Manually craft the new stack for first context switch to this thread
-  unsigned int * stack_addr = (unsigned int*) (new_stack + 1);
-  --stack_addr;
-  *stack_addr = (unsigned int) new_tcb;
-  --stack_addr;
-  *stack_addr = (unsigned int) fork_return_new_task;
-  --stack_addr;
-  *stack_addr = (unsigned int) init_thread;
-  stack_addr -= NB_REGISTERS_POPA;
-
-  new_tcb->esp = (uint32_t) stack_addr;
+  // Craft the kernel stack for the new thread
+  new_tcb->esp = (uint32_t) initialize_stack_fork(kernel.current_thread->esp0,
+                                                  esp0, esp, new_tcb);
 
   // Make the thread runnable
   add_runnable_thread(new_tcb);
@@ -122,9 +103,53 @@ int kern_fork(unsigned int *esp) {
   return new_tcb->tid;
 }
 
-int kern_thread_fork() {
-  // TODO
-  return -1;
+// TODO: doc
+int kern_thread_fork(unsigned int * esp) {
+ 
+  // Allocate new kernel stack
+  void* kernel_stack = malloc(PAGE_SIZE);
+  if (kernel_stack == NULL) {
+    lprintf("kern_thread_fork(): Unable to allocate kernel stack");
+    return -1;
+  }
+
+  uint32_t esp0 = (uint32_t)(kernel_stack) + PAGE_SIZE;
+
+  // Create new TCB
+  tcb_t * new_tcb = create_new_tcb(kernel.current_thread->task, 
+                                    esp0, kernel.current_thread->cr3);
+
+  // Craft the kernel stack for the new thread  
+  new_tcb->esp = (uint32_t) initialize_stack_fork(kernel.current_thread->esp0,
+                                                  esp0, esp, new_tcb);
+
+  // Make the thread runnable
+  add_runnable_thread(new_tcb);
+
+  return new_tcb->tid;
+}
+
+static unsigned int * initialize_stack_fork(uint32_t orig_stack, 
+                      uint32_t new_stack, unsigned int * esp, tcb_t * new_tcb) {
+
+  // Copy part of the kernel stack of the original task to the new one's
+  char *orig, *new;
+  for (orig = (char *)orig_stack, new = (char *)new_stack ;
+       (unsigned int)orig >= (unsigned int)esp; --orig, --new) {
+    *new = *orig;
+  }
+
+  // Manually craft the new stack for first context switch to this thread
+  unsigned int * stack_addr = (unsigned int*) (new_stack + 1);
+  --stack_addr;
+  *stack_addr = (unsigned int) new_tcb;
+  --stack_addr;
+  *stack_addr = (unsigned int) fork_return_new_thread;
+  --stack_addr;
+  *stack_addr = (unsigned int) init_thread;
+  stack_addr -= NB_REGISTERS_POPA;
+
+  return stack_addr;                    
 }
 
 // TODO: doc

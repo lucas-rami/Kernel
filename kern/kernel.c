@@ -58,7 +58,13 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
   // Initialize the IDT
   handler_install(tick);
   page_fault_init();
-  idt_syscall_install();
+ 
+  if (idt_syscall_install() < 0) {
+    lprintf("kernel_main(): Failed to register syscall handlers\n");
+    while (1) {
+      continue;
+    }
+  }
 
   // Virtual memory initialized
   if (vm_init() < 0) {
