@@ -26,9 +26,13 @@ void context_switch(tcb_t* to) {
 
   tcb_t *me = kernel.current_thread;
 
+  lprintf("context switch asm being called from me %d to %d", me->tid, to->tid);
+  // MAGIC_BREAK;
+
   // Context switch to the other thread
   context_switch_asm(&kernel.current_thread->esp, &to->esp);
 
+  lprintf("Context switch to tid %d complete", me->tid);
   // Update the running thread state and the kernel state
   init_thread(me);
 

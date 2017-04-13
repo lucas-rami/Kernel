@@ -13,15 +13,16 @@
 int main()
 {
   int pid, exitstatus;
-  char shell[] = "shell";
-  char * args[] = {shell, 0};
+  char shell[] = "actual_wait";
+  char * args[] = {"actual_wait", 0};
 
   while(1) {
     pid = fork();
     if (!pid)
       exec(shell, args);
     
-    while (pid != wait(&exitstatus));
+    // while (pid != wait(&exitstatus));
+    while(1);
   
     printf("Shell exited with status %d; starting it back up...", exitstatus);
   }

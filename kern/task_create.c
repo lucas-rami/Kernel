@@ -23,6 +23,7 @@
 #include <virtual_memory_defines.h>
 #include <common_kern.h>
 #include <asm.h>
+#include <string.h>
 
 // Debugging
 #include <simics.h>
@@ -127,6 +128,10 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
     }
     new_pcb->original_thread_id = new_tcb->tid;
     stack_top = ESP;
+    if (!strcmp(task_name, FIRST_TASK)) {
+      kernel.init_cr3 = (uint32_t)cr3;
+      kernel.init_task = new_pcb;
+    }
   } else {
     esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
     new_tcb = kernel.current_thread;

@@ -75,6 +75,7 @@ void make_runnable_and_switch() {
  */
 void block_and_switch(int is_descheduled) {
 
+  lprintf("BLock and switch");
   assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
   assert(is_descheduled == THR_DESCHEDULED_TRUE ||
           is_descheduled == THR_DESCHEDULED_FALSE);
@@ -91,6 +92,7 @@ void block_and_switch(int is_descheduled) {
   kernel.current_thread->thread_state = THR_BLOCKED;
   kernel.current_thread->descheduled = is_descheduled;
 
+  lprintf("Context switching to next thread");
   context_switch(next_thread());
 
 }

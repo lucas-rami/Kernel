@@ -21,14 +21,17 @@ int main()
 
   report_start(START_CMPLT);
 
+  MAGIC_BREAK;
   pid = fork();
 
+  MAGIC_BREAK;
   if (pid < 0) {
     report_end(END_FAIL);
     exit(-1);
   }
   
   if (pid == 0) {
+    lprintf("Here");
     pid = gettid();
     exit(pid);
     report_end(END_FAIL);

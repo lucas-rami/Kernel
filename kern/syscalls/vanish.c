@@ -23,6 +23,7 @@ void kern_vanish() {
   // Destroy the tcb
   // Call the grabage collector
   // Is mutex_lock(&kernel.mutex) reqd?
+  lprintf("Kern vanish");
   hash_table_remove_element(&kernel.tcbs, kernel.current_thread);
   // Add the tcb to the garbage collector list
   // Add the kernel stack for this thread to the garbage collector
