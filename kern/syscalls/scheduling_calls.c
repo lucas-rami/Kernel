@@ -62,6 +62,7 @@ int kern_deschedule(int *reject) {
     mutex_unlock(&kernel.current_thread->mutex);
   }
 
+  lprintf("Deschedule returning");
   return 0;
 }
 
