@@ -64,7 +64,7 @@ void keyboard_c_handler(void) {
   uint8_t character = ( int )inb( KEYBOARD_PORT );
   //
   // // Store it in the static buf
-  // enqueue( character );
+  enqueue( character );
   
   // Ack the PIC
   outb(INT_CTL_PORT, INT_ACK_CURRENT);
