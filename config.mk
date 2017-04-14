@@ -100,10 +100,10 @@ KERNEL_OBJS = virtual_memory_helper.o virtual_memory_asm.o kernel_state.o hash_t
 KERNEL_OBJS += drivers/console.o drivers/keyboard.o drivers/keyboard_asm.o drivers/prechecks.o drivers/timer.o drivers/timer_asm.o
 
 # Files in syscalls/
-KERNEL_OBJS += syscalls/sleep.o syscalls/gettid.o syscalls/scheduling_calls.o syscalls/fork.o syscalls/exec.o syscalls/pages.o syscalls/console_io.o syscalls/vanish.o syscalls/wait.o syscalls/swexn.o
+KERNEL_OBJS += syscalls/set_status.o syscalls/get_ticks.o syscalls/sleep.o syscalls/gettid.o syscalls/scheduling_calls.o syscalls/fork.o syscalls/exec.o syscalls/pages.o syscalls/console_io.o syscalls/vanish.o syscalls/wait.o syscalls/swexn.o
 
 # Files in syscalls/wrappers/
-KERNEL_OBJS += syscalls/wrappers/sleep.o syscalls/wrappers/gettid.o syscalls/wrappers/scheduling_calls.o syscalls/wrappers/fork.o syscalls/wrappers/syscalls_helper.o syscalls/wrappers/exec.o syscalls/wrappers/pages.o syscalls/wrappers/console_io.o syscalls/wrappers/vanish.o syscalls/wrappers/wait.o syscalls/wrappers/exec.o syscalls/wrappers/swexn.o
+KERNEL_OBJS += syscalls/wrappers/set_status.o syscalls/wrappers/get_ticks.o syscalls/wrappers/halt.o syscalls/wrappers/sleep.o syscalls/wrappers/gettid.o syscalls/wrappers/scheduling_calls.o syscalls/wrappers/fork.o syscalls/wrappers/syscalls_helper.o syscalls/wrappers/exec.o syscalls/wrappers/pages.o syscalls/wrappers/console_io.o syscalls/wrappers/vanish.o syscalls/wrappers/wait.o syscalls/wrappers/exec.o syscalls/wrappers/swexn.o
 
 ###########################################################################
 # WARNING: Do not put **test** programs into the REQPROGS variables.  Your
