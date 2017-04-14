@@ -36,8 +36,6 @@ int kern_sleep(int ticks) {
   sleeper_t new_sleeper = {ticks, kernel.current_thread};
   generic_double_node_t new_node = {&new_sleeper, NULL, NULL};
 
-  lprintf("kern_sleep(): Function called");  
-
   // TODO: Linear search OK with interrupts disabled ?
   disable_interrupts();
 
@@ -83,8 +81,6 @@ int kern_sleep(int ticks) {
     }
 
   }
-
-  lprintf("kern_sleep(): Blocking thread %d", kernel.current_thread->tid);
 
   // Block the thread and context switch
   // (interrupts will be enabled after context switch)

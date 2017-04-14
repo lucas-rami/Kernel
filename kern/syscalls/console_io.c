@@ -45,6 +45,7 @@ int kern_print(int len, char *buf) {
   }
 
   // TODO: "reasonable" maximum bound on len ? Console size ?
+  
   // Check length validity
   if (len < 0) {
     lprintf("print(): Invalid length");

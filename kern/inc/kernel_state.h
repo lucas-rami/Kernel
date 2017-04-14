@@ -18,7 +18,7 @@
 #define CPU_IDLE_FALSE 0
 #define CPU_IDLE_TRUE 1
 
-#define FIRST_TASK "coolness"
+#define FIRST_TASK "print_basic"
 
 typedef struct kernel {
 
