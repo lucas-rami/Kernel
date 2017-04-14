@@ -44,6 +44,10 @@ int kern_wait(int *status_ptr);
 /* Vanish call */
 void kern_vanish(void);
 
+/* Sleep */
+int kern_sleep(int ticks);
+void wake_up_threads(unsigned int ticks);
+
 /* Helper function */
 char *get_esp();
 int create_stack_sw_exception(unsigned int cause, char *stack_ptr);

@@ -33,7 +33,8 @@ int idt_syscall_install() {
                           (uintptr_t)new_pages, (uintptr_t)remove_pages,
                           (uintptr_t)readline, (uintptr_t)print,
                           (uintptr_t)swexn,
-                          (uintptr_t)vanish, (uintptr_t)wait
+                          (uintptr_t)vanish, (uintptr_t)wait,
+                          (uintptr_t)sleep
                           };
 
   // List of offsets in the IDT corresponding to syscalls
@@ -41,7 +42,7 @@ int idt_syscall_install() {
                             YIELD_INT, FORK_INT, EXEC_INT, THREAD_FORK_INT,
                             NEW_PAGES_INT, REMOVE_PAGES_INT, READLINE_INT, 
                             PRINT_INT, SWEXN_INT,
-                            VANISH_INT, WAIT_INT
+                            VANISH_INT, WAIT_INT, SLEEP_INT
                             };
 
   int nb_syscalls = sizeof(syscalls) / sizeof(uintptr_t);

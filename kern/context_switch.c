@@ -50,7 +50,6 @@ void init_thread(tcb_t* to) {
 
   // Update the thread's state
   to->thread_state = THR_RUNNING;
-  to->descheduled = THR_DESCHEDULED_FALSE;
 
   // Update cr3 and esp0 registers
   set_cr3(to->cr3);

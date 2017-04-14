@@ -17,10 +17,6 @@
 #define THR_BLOCKED 2
 #define THR_ZOMBIE 3
 
-/* Constants for descheduled field */
-#define THR_DESCHEDULED_FALSE 0
-#define THR_DESCHEDULED_TRUE 1
-
 typedef void (*swexn_handler_t)(void *arg, ureg_t *ureg);
 
 typedef struct {
@@ -40,10 +36,6 @@ typedef struct tcb {
   /* @brief Thread's current state: may be one of [RUNNABLE, RUNNING, BLOCKED,
    * ZOMBIE] */
   int thread_state;
-
-  /* @brief Indicate whether the thread is blocked due to a call to
-   * deschedule() */
-  char descheduled;
 
   /* @brief Hold the value of %esp for this thread when context switching */
   uint32_t esp;

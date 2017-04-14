@@ -57,7 +57,7 @@ int kern_deschedule(int *reject) {
 
   if (r == 0) {    
     // The mutex will be unlocked in block_and_switch
-    block_and_switch(THR_DESCHEDULED_TRUE);
+    block_and_switch(HOLDING_MUTEX_TRUE);
   } else {
     mutex_unlock(&kernel.current_thread->mutex);
   }
@@ -85,8 +85,7 @@ int kern_make_runnable(int tid) {
   mutex_lock(&tcb->mutex);
 
   // If the thread exists and has been descheduled make it runnable again
-  if (tcb->thread_state == THR_BLOCKED &&
-      tcb->descheduled == THR_DESCHEDULED_TRUE) {
+  if (tcb->thread_state == THR_BLOCKED) {
     add_runnable_thread(tcb);
     mutex_unlock(&tcb->mutex);
     return 0;

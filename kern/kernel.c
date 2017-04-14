@@ -30,6 +30,7 @@
 #include <task_create.h>
 #include <virtual_memory.h>
 #include <page_fault_handler.h>
+#include <syscalls.h>
 
 // tmp
 #include <cr.h>
@@ -56,7 +57,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
   }
 
   // Initialize the IDT
-  handler_install(tick);
+  handler_install(wake_up_threads);
   page_fault_init();
  
   if (idt_syscall_install() < 0) {
@@ -88,7 +89,6 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
 
   // Enable interrupts
   enable_interrupts();
-  lprintf("Interupts enabled - VM enabled - Ready to run some programs !");
 
   run_idle(kernel.idle_thread->esp);
 
@@ -101,16 +101,3 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
   return 0;
 }
 
-/** @brief Tick function, to be called by the timer interrupt handler
- *   This function sets the game_tick variable equal to the numTicks
- *   Also, sets the refresh time which is a flag for the game to update
- *   the time being shown on the screen.
- *
- *  @param numTicks The number of ticks that have occured till now
- *
- *  @return void
- **/
-void tick(unsigned int numTicks) {
-  numTicks++;
-  return;
-}
