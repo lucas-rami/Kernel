@@ -1,6 +1,12 @@
+/** @file set_status.S
+ *  @brief Wrapper for set_status() system call
+ *  @author akanjani, lramire1
+ */
+
 .global set_status
 
 set_status:
+
   call save_state
 
   pushl %esi

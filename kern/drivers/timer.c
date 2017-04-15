@@ -57,6 +57,14 @@ void timer_c_handler()
 	make_runnable_and_switch();
 }
 
+/**	@brief Get the total number of ticks since the kernel booted
+ *
+ *	@return The global counter of ticks
+ */
+unsigned int get_global_counter() {
+	return timer_state_.global_counter;
+}
+
 /** @brief Initializes the timer and registers its handler with the IDT
  *
  *   This function configures the timer interrupt with the correct

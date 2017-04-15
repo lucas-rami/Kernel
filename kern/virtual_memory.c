@@ -302,12 +302,12 @@ int load_multiple_frames(unsigned int address, unsigned int nb_frames,
       }
 
       ++page_table_entry_addr;
-      if (!((unsigned int)page_table_entry_addr & PAGE_SIZE)) {
+      if (!((unsigned int)page_table_entry_addr & FRAME_OFFSET_MASK)) {
         // This was the last entry in the page table, go to the next page
         // directory entry
         ++page_directory_entry_addr;
 
-        if (!((unsigned int)page_directory_entry_addr & PAGE_SIZE)) {
+        if (!((unsigned int)page_directory_entry_addr & FRAME_OFFSET_MASK)) {
           // This was the last entry in the page directory, we cannot allocate
           // more frames beyond this address, free everything allocated up to
           // this point and return
@@ -515,7 +515,7 @@ void vm_enable() {
  *
  *  @return 0 if the buffer is valid, a negative number otherwise
  */
-int is_buffer_valid(unsigned int address, unsigned int len) {
+int is_buffer_valid(unsigned int address, int len) {
 
   // Get page directory entry of starting address
   unsigned int * page_dir_entry_addr = 
@@ -536,21 +536,22 @@ int is_buffer_valid(unsigned int address, unsigned int len) {
   }
 
   // Decrement length by the remaining amount of space in the frame 
-  len -= PAGE_SIZE - (address & PAGE_SIZE);
+  len -= (PAGE_SIZE - (address & FRAME_OFFSET_MASK));
 
   while (len > 0) {
 
     // Go to next table entry
     ++page_table_entry_addr;
 
-    if (!((unsigned int)page_table_entry_addr & PAGE_SIZE)) {
+    if (!((unsigned int)page_table_entry_addr & FRAME_OFFSET_MASK)) {
       // If the entry was the last one in the page table,
       // go to next page directory entry 
       ++page_dir_entry_addr;
-      if (!((unsigned int)page_table_entry_addr & PAGE_SIZE) ||
+      if (!((unsigned int)page_table_entry_addr & FRAME_OFFSET_MASK) ||
           !is_entry_present(page_dir_entry_addr)) {
         // If the directory entry was the last one or the current one is invalid
         // then the buffer is invalid
+
         return -1;
       }
       // Get next page table 
@@ -559,6 +560,7 @@ int is_buffer_valid(unsigned int address, unsigned int len) {
   
     // Check that the page table entry is valid
     if (!is_entry_present(page_table_entry_addr)) {
+
       return -1;
     }
 

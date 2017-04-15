@@ -5,8 +5,6 @@
 
 #include <kernel_state.h>
 
-#include <simics.h>
-
 int kern_gettid() {
   return kernel.current_thread->tid;
 }

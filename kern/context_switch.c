@@ -54,7 +54,6 @@ void init_thread(tcb_t* to) {
 
   // Update the thread's state
   to->thread_state = THR_RUNNING;
-  to->descheduled = THR_DESCHEDULED_FALSE;
 
   // Update cr3 and esp0 registers
   lprintf("Context switch to %d with cr3 %p", to->tid, (unsigned int *)to->cr3);

@@ -32,17 +32,22 @@ int idt_syscall_install() {
                           (uintptr_t)thread_fork, 
                           (uintptr_t)new_pages, (uintptr_t)remove_pages,
                           (uintptr_t)readline, (uintptr_t)print,
-                          (uintptr_t)swexn, (uintptr_t)set_status,
-                          (uintptr_t)vanish, (uintptr_t)wait
+                          (uintptr_t)swexn,
+                          (uintptr_t)vanish, (uintptr_t)wait,
+                          (uintptr_t)sleep, (uintptr_t)set_status,
+                          (uintptr_t)get_ticks, (uintptr_t)halt
                           };
 
   // List of offsets in the IDT corresponding to syscalls
   uint32_t idt_indexes[] = {GETTID_INT, DESCHEDULE_INT, MAKE_RUNNABLE_INT,
                             YIELD_INT, FORK_INT, EXEC_INT, THREAD_FORK_INT,
                             NEW_PAGES_INT, REMOVE_PAGES_INT, READLINE_INT, 
-                            PRINT_INT, SWEXN_INT, SET_STATUS_INT,
-                            VANISH_INT, WAIT_INT
+                            PRINT_INT, SWEXN_INT, VANISH_INT, WAIT_INT, 
+                            SLEEP_INT, SET_STATUS_INT, GET_TICKS_INT, HALT_INT
                             };
+
+  // TODO: create a similar array to differnetiate between TRAP and INTERRUPT
+  // gates
 
   int nb_syscalls = sizeof(syscalls) / sizeof(uintptr_t);
   int i;

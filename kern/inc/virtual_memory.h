@@ -22,7 +22,7 @@ int free_page_table(unsigned int * page_dir_entry_addr,
                     unsigned int *page_table_addr, int free_kernel_space);
 void free_frames_range(unsigned int address, unsigned int nb_frames);
 
-int is_buffer_valid(unsigned int address, unsigned int len);
+int is_buffer_valid(unsigned int address, int len);
 int is_valid_string(char *addr);
 
 void vm_enable();

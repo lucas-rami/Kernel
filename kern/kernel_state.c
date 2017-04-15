@@ -125,7 +125,6 @@ tcb_t *create_idle_thread() {
   // Set various fields to their initial value
   new_tcb->task = new_pcb;
   new_tcb->thread_state = THR_RUNNING;
-  new_tcb->descheduled = THR_DESCHEDULED_FALSE;
   new_pcb->num_of_frames_requested = 0;  
   new_tcb->tid = 0; // Fine since no other thread is allowed to have this tid
 
@@ -244,7 +243,6 @@ tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3) {
   // Set various fields to their initial value
   new_tcb->task = pcb;
   new_tcb->thread_state = THR_BLOCKED; // NOTE: not really, just not ready...
-  new_tcb->descheduled = THR_DESCHEDULED_FALSE;
   new_tcb->esp = 0; // NOTE: should be modified when the stack is crafted
   new_tcb->esp0 = esp0;
   new_tcb->cr3 = cr3;

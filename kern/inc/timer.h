@@ -11,5 +11,6 @@
 void timer_c_handler();
 
 int timer_init( void ( *tickback )( unsigned int ) );
+unsigned int get_global_counter();
 
 #endif

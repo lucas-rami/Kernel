@@ -68,21 +68,20 @@ void make_runnable_and_switch() {
 
 /** @brief Block the invoking thread and then context switch to another thread
  *
- *  @param is_descheduled Indicates whether the thread is being descheduled
- *    because of a system call to deschedule()
+ *  @param holding_mutex Indicates whether the function should unlock the mutex
+ *    on the invoking thread's state
  *
  *  @return void
  */
-void block_and_switch(int is_descheduled) {
+void block_and_switch(int holding_mutex) {
 
-  lprintf("BLock and switch");
   assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
-  assert(is_descheduled == THR_DESCHEDULED_TRUE ||
-          is_descheduled == THR_DESCHEDULED_FALSE);
 
   disable_interrupts();
 
-  mutex_unlock(&kernel.current_thread->mutex);
+  if (holding_mutex == HOLDING_MUTEX_TRUE) {
+    mutex_unlock(&kernel.current_thread->mutex);
+  }
 
   if (kernel.cpu_idle == CPU_IDLE_TRUE) {
     context_switch(next_thread());
@@ -90,9 +89,7 @@ void block_and_switch(int is_descheduled) {
   }
 
   kernel.current_thread->thread_state = THR_BLOCKED;
-  kernel.current_thread->descheduled = is_descheduled;
 
-  lprintf("Context switching to next thread");
   context_switch(next_thread());
 
 }
@@ -107,6 +104,11 @@ void add_runnable_thread(tcb_t *tcb) {
 
   assert(tcb != NULL && kernel.init == KERNEL_INIT_TRUE);
 
+  // Reject the call if the thread is already in the runnable queue
+  if (tcb->thread_state == THR_RUNNABLE) {
+    return;
+  }
+
   generic_node_t new_tail = {tcb, NULL};
 
   lprintf("Adding runnable thread %d", tcb->tid);
@@ -119,7 +121,6 @@ void add_runnable_thread(tcb_t *tcb) {
   }
 
   tcb->thread_state = THR_RUNNABLE;
-  tcb->descheduled = THR_DESCHEDULED_FALSE;
 
   generic_node_t * node_addr = (generic_node_t *)(tcb->esp0 - PAGE_SIZE);
   *(node_addr) = new_tail;

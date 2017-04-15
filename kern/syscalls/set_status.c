@@ -1,5 +1,15 @@
+/** @file set_status.c
+ *  @brief This file contains the definition for the set_status() system call.
+ *  @author akanjani, lramire1
+ */
+
 #include <kernel_state.h>
+#include <mutex.h>
+#include <pcb.h>
 
 void kern_set_status(int status) {
-  kernel.current_thread->task->return_status = status;
+  pcb_t * pcb = kernel.current_thread->task;
+  mutex_lock(&pcb->mutex);
+  pcb->return_status = status;
+  mutex_unlock(&pcb->mutex);
 }

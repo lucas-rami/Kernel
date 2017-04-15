@@ -31,6 +31,11 @@
 #include <seg.h>
 #include <simics.h>
 #include <stdio.h>
+#include <tcb.h>
+
+extern int input_available;
+extern tcb_t* waiting_input_tcb;
+
 
 /** @brief keyboard initialization function
  *
@@ -64,7 +69,13 @@ void keyboard_c_handler(void) {
   uint8_t character = ( int )inb( KEYBOARD_PORT );
   //
   // // Store it in the static buf
-  // enqueue( character );
+  enqueue( character );
+
+  // Signal new input available for readline()
+  input_available = CONSOLE_IO_TRUE;
+  if (waiting_input_tcb != NULL) {
+    add_runnable_thread(waiting_input_tcb);
+  }
   
   // Ack the PIC
   outb(INT_CTL_PORT, INT_ACK_CURRENT);

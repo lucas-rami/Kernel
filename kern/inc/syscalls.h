@@ -44,8 +44,15 @@ int kern_wait(int *status_ptr);
 /* Vanish call */
 void kern_vanish(void);
 
-/* Set status call */
-void set_status(int status);
+/* Sleep */
+int kern_sleep(int ticks);
+void wake_up_threads(unsigned int ticks);
+
+/* Set status */
+void kern_set_status(int status);
+
+/* Get ticks*/
+unsigned int kern_get_ticks();
 
 /* Helper function */
 char *get_esp();
