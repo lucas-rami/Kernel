@@ -33,6 +33,8 @@ int main()
   if (pid == 0) {
     lprintf("Here");
     pid = gettid();
+    lprintf("Calling exit");
+    MAGIC_BREAK;
     exit(pid);
     report_end(END_FAIL);
   }
@@ -47,5 +49,6 @@ int main()
   }
 
   report_end(END_SUCCESS);
-  exit(0);
+  while(1);
+  // exit(0);
 }

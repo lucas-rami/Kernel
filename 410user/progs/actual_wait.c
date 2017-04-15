@@ -44,7 +44,7 @@ main(int argc, char *argv[])
       pids[c] = pid;
 
       snprintf(msg, sizeof (msg), "slot %d pid %d", c, pid);
-      printf("%s\n", msg);
+      lprintf("%s\n", msg);
       REPORT_MISC(msg);
 
       if (c & 1)
@@ -62,7 +62,7 @@ main(int argc, char *argv[])
     pid = wait(&slot);
 
     snprintf(msg, sizeof (msg), "slot %d pid %d", slot, pid);
-    printf("%s\n", msg);
+    lprintf("%s\n", msg);
     REPORT_MISC(msg);
 
     if ((slot < 0) || (slot >= NCHILD)) {
@@ -102,7 +102,7 @@ child(int which)
   char msg[128];
 
   snprintf(msg, sizeof (msg), "child %d", which);
-  printf("%s\n", msg);
+  lprintf("%s\n", msg);
   REPORT_MISC(msg);
 
   switch(((gpid = fork()) < 0) ? -1 : gpid) {

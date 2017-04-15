@@ -65,6 +65,7 @@ int kern_fork(unsigned int *esp) {
 
   uint32_t esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
 
+  // disable_interrupts();
   // Create new PCB/TCB for the task and its root thread
   pcb_t *new_pcb = create_new_pcb();
   if (new_pcb == NULL) {
@@ -97,6 +98,7 @@ int kern_fork(unsigned int *esp) {
   new_tcb->esp = (uint32_t) initialize_stack_fork(kernel.current_thread->esp0,
                                                   esp0, esp, new_tcb);
 
+  // enable_interrupts();
   // Make the thread runnable
   add_runnable_thread(new_tcb);
 

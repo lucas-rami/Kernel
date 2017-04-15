@@ -24,16 +24,21 @@ int main(int argc, char *argv[]) {
 	lprintf("parent pid: %d", gettid());
 
 	while(count < 1000) {
-		if((pid = fork()) == 0) {
+                pid = fork();
+                if (pid > 0) {
+                 report_fmt("child: %d", pid);
+                }
+		if(pid == 0) {
+                        lprintf("Child");
 			exit(42);
 		}
 		if(pid < 0) {
 			break;
 		}
     count++;
-        report_fmt("child: %d", pid);
 	}
 
     report_end(END_SUCCESS);
+    while(1);
 	exit(42);
 }

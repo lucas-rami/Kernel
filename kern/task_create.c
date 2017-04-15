@@ -129,6 +129,7 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
     new_pcb->original_thread_id = new_tcb->tid;
     stack_top = ESP;
     if (!strcmp(task_name, FIRST_TASK)) {
+      lprintf("\n\n\n\n\n\n\n\n\n\n\n Setting the init_cr3 as %p\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", cr3);
       kernel.init_cr3 = (uint32_t)cr3;
       kernel.init_task = new_pcb;
     }

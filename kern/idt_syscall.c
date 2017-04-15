@@ -32,7 +32,7 @@ int idt_syscall_install() {
                           (uintptr_t)thread_fork, 
                           (uintptr_t)new_pages, (uintptr_t)remove_pages,
                           (uintptr_t)readline, (uintptr_t)print,
-                          (uintptr_t)swexn,
+                          (uintptr_t)swexn, (uintptr_t)set_status,
                           (uintptr_t)vanish, (uintptr_t)wait
                           };
 
@@ -40,7 +40,7 @@ int idt_syscall_install() {
   uint32_t idt_indexes[] = {GETTID_INT, DESCHEDULE_INT, MAKE_RUNNABLE_INT,
                             YIELD_INT, FORK_INT, EXEC_INT, THREAD_FORK_INT,
                             NEW_PAGES_INT, REMOVE_PAGES_INT, READLINE_INT, 
-                            PRINT_INT, SWEXN_INT,
+                            PRINT_INT, SWEXN_INT, SET_STATUS_INT,
                             VANISH_INT, WAIT_INT
                             };
 

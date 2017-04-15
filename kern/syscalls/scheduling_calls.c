@@ -8,6 +8,7 @@
 #include <kernel_state.h>
 #include <scheduler.h>
 #include <stdlib.h>
+#include <asm.h>
 
 /* For debugging */
 #include <simics.h>
@@ -25,6 +26,7 @@ int kern_yield(int tid) {
 
     if (next_thread != NULL) {
       mutex_lock(&next_thread->mutex);
+      lprintf("yielding to thread %d", tid);
       if (next_thread->thread_state == THR_RUNNABLE) {
         // If the thread exists and is in the THR_RUNNABLE state, run it
         lprintf("\tStill not asleep");
@@ -47,6 +49,7 @@ int kern_yield(int tid) {
 int kern_deschedule(int *reject) {
 
   // TODO: check that reject is a valid pointer
+  lprintf("Deschdule thread %d", kernel.current_thread->tid);
 
   // Lock the mutex on the thread
   mutex_lock(&kernel.current_thread->mutex);
@@ -73,9 +76,10 @@ int kern_make_runnable(int tid) {
     return -1;
   }
 
+  lprintf("Make runnable thread %d", tid);
   tcb_t tmp;
   tmp.tid = tid;
-
+  // disable_interrupts();
   // Try to get the TCB with the given tid
   tcb_t *tcb = hash_table_get_element(&kernel.tcbs, &tmp);
   if (tcb == NULL) {
@@ -83,6 +87,7 @@ int kern_make_runnable(int tid) {
     return -1;
   }
 
+  lprintf("Found tcb");
   mutex_lock(&tcb->mutex);
 
   // If the thread exists and has been descheduled make it runnable again
@@ -90,9 +95,13 @@ int kern_make_runnable(int tid) {
       tcb->descheduled == THR_DESCHEDULED_TRUE) {
     add_runnable_thread(tcb);
     mutex_unlock(&tcb->mutex);
+  lprintf("Make runnable ended %d", tid);
+    // enable_interrupts();
     return 0;
   }
 
   mutex_unlock(&tcb->mutex);
+  lprintf("Make runnable ended %d", tid);
+  // enable_interrupts();
   return -1;
 }

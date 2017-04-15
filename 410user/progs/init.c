@@ -13,8 +13,8 @@
 int main()
 {
   int pid, exitstatus;
-  char shell[] = "actual_wait";
-  char * args[] = {"actual_wait", 0};
+  char shell[] = "wait_getpid";
+  char * args[] = {"wait_getpid", 0};
 
   while(1) {
     pid = fork();

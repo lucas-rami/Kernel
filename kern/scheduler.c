@@ -109,6 +109,7 @@ void add_runnable_thread(tcb_t *tcb) {
 
   generic_node_t new_tail = {tcb, NULL};
 
+  lprintf("Adding runnable thread %d", tcb->tid);
   disable_interrupts();
 
   // Should not happen
@@ -130,6 +131,7 @@ void add_runnable_thread(tcb_t *tcb) {
     kernel.runnable_head = (kernel.runnable_tail = node_addr);
   }
 
+  lprintf("Added runnable thread %d", tcb->tid);
   enable_interrupts();
 
 }

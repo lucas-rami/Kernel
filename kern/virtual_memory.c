@@ -353,6 +353,7 @@ int load_multiple_frames(unsigned int address, unsigned int nb_frames,
 int free_address_space(unsigned int *page_directory_addr, 
                         int free_kernel_space) {
 
+  // MAGIC_BREAK;
   unsigned int nb_entries = PAGE_SIZE / SIZE_ENTRY_BYTES;
   unsigned int *page_directory_entry_addr;
   int something_remaining = 0;

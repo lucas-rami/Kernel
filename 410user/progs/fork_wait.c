@@ -42,5 +42,6 @@ int main()
   }
 
   report_end(END_SUCCESS);
-  exit(0);
+  while(1);
+  // exit(0);
 }

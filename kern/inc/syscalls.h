@@ -44,6 +44,9 @@ int kern_wait(int *status_ptr);
 /* Vanish call */
 void kern_vanish(void);
 
+/* Set status call */
+void set_status(int status);
+
 /* Helper function */
 char *get_esp();
 int create_stack_sw_exception(unsigned int cause, char *stack_ptr);

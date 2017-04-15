@@ -165,6 +165,7 @@ pcb_t *create_new_pcb() {
   }
 
   // Initialize the list_mutex on this PCB
+  lprintf("Initializing the mutex %p", &new_pcb->list_mutex);
   if (mutex_init(&new_pcb->list_mutex) < 0) {
     lprintf("create_new_pcb(): Failed to initialize list_mutex");
     free(new_pcb);
