@@ -35,7 +35,7 @@ UPDATE_METHOD = afs
 # directory.
 #
 
-410TESTS = print_basic exec_basic exec_basic_helper knife peon merchant coolness fork_bomb new_pages remove_pages_test1 remove_pages_test2 swexn_basic_test swexn_cookie_monster swexn_dispatch swexn_regs swexn_stands_for_swextensible swexn_uninstall_test stack_test1 actual_wait fork_wait_bomb fork_wait wait_getpid minclone_mem sleep_test1
+410TESTS = readline_basic print_basic exec_basic exec_basic_helper knife peon merchant coolness fork_bomb new_pages remove_pages_test1 remove_pages_test2 swexn_basic_test swexn_cookie_monster swexn_dispatch swexn_regs swexn_stands_for_swextensible swexn_uninstall_test stack_test1 actual_wait fork_wait_bomb fork_wait wait_getpid minclone_mem sleep_test1
 
 ###########################################################################
 # Test programs you have written which you wish to run

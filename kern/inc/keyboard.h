@@ -8,6 +8,9 @@
 #ifndef __KEYBOARD_H_
 #define __KEYBOARD_H_
 
+#define CONSOLE_IO_FALSE 0
+#define CONSOLE_IO_TRUE 1
+
 int keyboard_init();
 
 void keyboard_c_handler();

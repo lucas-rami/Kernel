@@ -75,7 +75,6 @@ void make_runnable_and_switch() {
  */
 void block_and_switch(int holding_mutex) {
 
-  lprintf("BLock and switch");
   assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
 
   disable_interrupts();
@@ -91,7 +90,6 @@ void block_and_switch(int holding_mutex) {
 
   kernel.current_thread->thread_state = THR_BLOCKED;
 
-  lprintf("Context switching to next thread");
   context_switch(next_thread());
 
 }
@@ -105,6 +103,11 @@ void block_and_switch(int holding_mutex) {
 void add_runnable_thread(tcb_t *tcb) {
 
   assert(tcb != NULL && kernel.init == KERNEL_INIT_TRUE);
+
+  // Reject the call if the thread is already in the runnable queue
+  if (tcb->thread_state == THR_RUNNABLE) {
+    return;
+  }
 
   generic_node_t new_tail = {tcb, NULL};
 
