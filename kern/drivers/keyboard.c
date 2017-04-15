@@ -75,6 +75,7 @@ void keyboard_c_handler(void) {
   input_available = CONSOLE_IO_TRUE;
   if (waiting_input_tcb != NULL) {
     add_runnable_thread(waiting_input_tcb);
+    waiting_input_tcb = NULL;
   }
   
   // Ack the PIC
