@@ -44,6 +44,5 @@ int main(int argc, char *argv[]) {
 	}
 
     report_end(END_SUCCESS);
-    while(1);
 	exit(42);
 }

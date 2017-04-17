@@ -8,7 +8,7 @@
 #define _KERNEL_STATE_H_
 
 #include <hash_table.h>
-#include <mutex.h>
+#include <eff_mutex.h>
 #include <generic_node.h>
 #include <tcb.h>
 #include <pcb.h>
@@ -49,7 +49,7 @@ typedef struct kernel {
   int cpu_idle;
 
   /** @brief Mutex used to ensure atomicity when changing the kernel state */
-  mutex_t mutex;
+  eff_mutex_t mutex;
 
   /** @brief Count of the number of frames available(not used or requested for) */
   unsigned int free_frame_count;

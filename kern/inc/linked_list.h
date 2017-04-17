@@ -8,7 +8,7 @@
 #define _LINKED_LIST_H
 
 #include <generic_node.h>
-#include <mutex.h>
+#include <eff_mutex.h>
 
 /** @brief A structure of a linked list
  */
@@ -31,7 +31,7 @@ typedef struct linked_list {
 
   /** @brief A mutex to guarantee atomic access to the linked list
    */
-  mutex_t mp;
+  eff_mutex_t mp;
 
 } generic_linked_list_t;
 

@@ -8,7 +8,7 @@
  */
 
 #include <linked_list.h>
-#include <mutex.h>
+#include <eff_mutex.h>
 #include <stdlib.h>
 
 /** @brief Initialize the linked list
@@ -34,7 +34,7 @@ int linked_list_init(generic_linked_list_t *list, int (*find)(void *, void *)) {
   list->find = find;
 
   // Initialize the mutex
-  if (mutex_init(&list->mp) < 0) {
+  if (eff_mutex_init(&list->mp) < 0) {
     return -1;
   }
 
@@ -63,7 +63,7 @@ int linked_list_insert_node(generic_linked_list_t *list, void *value) {
   new_node->value = value;
   new_node->next = NULL;
 
-  mutex_lock(&list->mp);
+  eff_mutex_lock(&list->mp);
 
   if (list->head == NULL && list->tail == NULL) {
     // Linked list is empty
@@ -75,7 +75,7 @@ int linked_list_insert_node(generic_linked_list_t *list, void *value) {
     list->tail = new_node;
   }
 
-  mutex_unlock(&list->mp);
+  eff_mutex_unlock(&list->mp);
 
   return 0;
 }
@@ -100,7 +100,7 @@ void *linked_list_delete_node(generic_linked_list_t *list, void *value) {
     return NULL;
   }
 
-  mutex_lock(&list->mp);
+  eff_mutex_lock(&list->mp);
 
   // Iterator on the list's elements
   generic_node_t *node = list->head, *prev = NULL;
@@ -126,14 +126,14 @@ void *linked_list_delete_node(generic_linked_list_t *list, void *value) {
       void *ret = node->value;
       free(node);
 
-      mutex_unlock(&list->mp);
+      eff_mutex_unlock(&list->mp);
       return ret;
     }
     prev = node;
     node = node->next;
   }
 
-  mutex_unlock(&list->mp);
+  eff_mutex_unlock(&list->mp);
   return NULL;
 }
 
@@ -156,7 +156,7 @@ void *linked_list_get_node(generic_linked_list_t *list, void *value) {
     return NULL;
   }
 
-  mutex_lock(&list->mp);
+  eff_mutex_lock(&list->mp);
 
   // Iterator on the list's elements
   generic_node_t *iterator = list->head;
@@ -164,13 +164,13 @@ void *linked_list_get_node(generic_linked_list_t *list, void *value) {
   // Loop over the list
   while (iterator != NULL) {
     if (list->find(iterator->value, value)) {
-      mutex_unlock(&list->mp);
+      eff_mutex_unlock(&list->mp);
       return iterator->value;
     }
     iterator = iterator->next;
   }
 
-  mutex_unlock(&list->mp);
+  eff_mutex_unlock(&list->mp);
   return NULL;
 }
 
@@ -186,7 +186,7 @@ void linked_list_delete_list(generic_linked_list_t *list) {
     return;
   }
 
-  mutex_lock(&list->mp);
+  eff_mutex_lock(&list->mp);
 
   generic_node_t *iterator = list->head;
 
@@ -200,5 +200,5 @@ void linked_list_delete_list(generic_linked_list_t *list) {
   list->head = NULL;
   list->tail = NULL;
 
-  mutex_unlock(&list->mp);
+  eff_mutex_unlock(&list->mp);
 }

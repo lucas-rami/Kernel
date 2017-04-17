@@ -4,12 +4,12 @@
  */
 
 #include <kernel_state.h>
-#include <mutex.h>
+#include <eff_mutex.h>
 #include <pcb.h>
 
 void kern_set_status(int status) {
   pcb_t * pcb = kernel.current_thread->task;
-  mutex_lock(&pcb->mutex);
+  eff_mutex_lock(&pcb->mutex);
   pcb->return_status = status;
-  mutex_unlock(&pcb->mutex);
+  eff_mutex_unlock(&pcb->mutex);
 }

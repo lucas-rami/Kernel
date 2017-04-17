@@ -6,7 +6,7 @@
 #ifndef _TCB_H_
 #define _TCB_H_
 
-#include <mutex.h>
+#include <eff_mutex.h>
 #include <pcb.h>
 #include <ureg.h>
 #include <stdint.h>
@@ -60,7 +60,7 @@ typedef struct tcb {
   pcb_t *reaped_task;
 
   /** @brief Mutex used to ensure atomicity when changing the thread state */
-  mutex_t mutex;
+  eff_mutex_t mutex;
 
 } tcb_t;
 

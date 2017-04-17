@@ -25,15 +25,15 @@ int kern_yield(int tid) {
     tcb_t *next_thread = hash_table_get_element(&kernel.tcbs, &tmp);
 
     if (next_thread != NULL) {
-      mutex_lock(&next_thread->mutex);
-      lprintf("yielding to thread %d", tid);
+      eff_mutex_lock(&next_thread->mutex);
+      // lprintf("yielding to thread %d", tid);
       if (next_thread->thread_state == THR_RUNNABLE) {
         // If the thread exists and is in the THR_RUNNABLE state, run it
-        lprintf("\tStill not asleep");
+        // lprintf("\tStill not asleep");
         // The mutex will be unlocked in force_next_thread()       
         force_next_thread(next_thread);
       } else {
-        mutex_unlock(&next_thread->mutex);  
+        eff_mutex_unlock(&next_thread->mutex);  
         return -1;    
       }
 
@@ -49,10 +49,10 @@ int kern_yield(int tid) {
 int kern_deschedule(int *reject) {
 
   // TODO: check that reject is a valid pointer
-  lprintf("Deschdule thread %d", kernel.current_thread->tid);
+  // lprintf("Deschdule thread %d", kernel.current_thread->tid);
 
   // Lock the mutex on the thread
-  mutex_lock(&kernel.current_thread->mutex);
+  eff_mutex_lock(&kernel.current_thread->mutex);
 
   // Atomically checks the integer pointed to by reject
   // TODO: is this "atomically check" ?
@@ -62,10 +62,10 @@ int kern_deschedule(int *reject) {
     // The mutex will be unlocked in block_and_switch
     block_and_switch(HOLDING_MUTEX_TRUE);
   } else {
-    mutex_unlock(&kernel.current_thread->mutex);
+    eff_mutex_unlock(&kernel.current_thread->mutex);
   }
 
-  lprintf("Deschedule returning");
+  // lprintf("Deschedule returning");
   return 0;
 }
 
@@ -76,7 +76,7 @@ int kern_make_runnable(int tid) {
     return -1;
   }
 
-  lprintf("Make runnable thread %d", tid);
+  // lprintf("Make runnable thread %d", tid);
   tcb_t tmp;
   tmp.tid = tid;
   // disable_interrupts();
@@ -87,20 +87,20 @@ int kern_make_runnable(int tid) {
     return -1;
   }
 
-  lprintf("Found tcb");
-  mutex_lock(&tcb->mutex);
+  // lprintf("Found tcb");
+  eff_mutex_lock(&tcb->mutex);
 
   // If the thread exists and has been descheduled make it runnable again
   if (tcb->thread_state == THR_BLOCKED) {
     add_runnable_thread(tcb);
-    mutex_unlock(&tcb->mutex);
-  lprintf("Make runnable ended %d", tid);
+    eff_mutex_unlock(&tcb->mutex);
+  // lprintf("Make runnable ended %d", tid);
     // enable_interrupts();
     return 0;
   }
 
-  mutex_unlock(&tcb->mutex);
-  lprintf("Make runnable ended %d", tid);
+  eff_mutex_unlock(&tcb->mutex);
+  // lprintf("Make runnable ended %d", tid);
   // enable_interrupts();
   return -1;
 }

@@ -25,20 +25,17 @@ int main(int argc, char *argv[]) {
 
 	while(count < 1000) {
                 pid = fork();
-                if (pid > 0) {
-                 report_fmt("child: %d", pid);
-                }
 		if(pid == 0) {
-                        lprintf("Child");
 			exit(42);
 		}
 		if(pid < 0) {
 			break;
 		}
-    count++;
+                count++;
+                report_fmt("child: %d", pid);
+                // lprintf("Count is %d now", count);
 	}
 
     report_end(END_SUCCESS);
-    while(1);
 	exit(42);
 }

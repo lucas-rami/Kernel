@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <pcb.h>
 #include <kernel_state.h>
-#include <mutex.h>
+#include <eff_mutex.h>
 #include <dynamic_queue.h>
 #include <syscalls.h>
 #include <malloc.h>
@@ -25,7 +25,7 @@ int kern_wait(int *status_ptr) {
 */
   lprintf("Reaching here");
   pcb_t *curr_task = kernel.current_thread->task;
-  mutex_lock(&curr_task->list_mutex);
+  eff_mutex_lock(&curr_task->list_mutex);
   if (curr_task->zombie_children.head != NULL) {
     // Remove the zombie child
     pcb_t *zombie_child = queue_delete_node(&curr_task->zombie_children);
@@ -33,7 +33,7 @@ int kern_wait(int *status_ptr) {
       lprintf("kern_wait(): zombie queue delete failed");
       return -1;
     }
-    mutex_unlock(&curr_task->list_mutex);
+    eff_mutex_unlock(&curr_task->list_mutex);
     if (status_ptr != NULL) {
       *status_ptr = zombie_child->return_status;
     }
@@ -43,7 +43,7 @@ int kern_wait(int *status_ptr) {
     return ret;
   }
   queue_insert_node(&curr_task->waiting_threads, kernel.current_thread);
-  mutex_unlock(&curr_task->list_mutex);
+  eff_mutex_unlock(&curr_task->list_mutex);
   lprintf("Reaching there");
   int x = 0;
   kern_deschedule(&x);

@@ -104,13 +104,13 @@ int kern_remove_pages(void *base) {
 static int reserve_frames_zfod(void* base, int nb_pages) {
 
   // Try to reserve nb_pages 
-  mutex_lock(&kernel.mutex);
+  eff_mutex_lock(&kernel.mutex);
   if (kernel.free_frame_count < nb_pages) {
-    mutex_unlock(&kernel.mutex);
+    eff_mutex_unlock(&kernel.mutex);
     return -1;
   }
   kernel.free_frame_count -= nb_pages;
-  mutex_unlock(&kernel.mutex);
+  eff_mutex_unlock(&kernel.mutex);
 
   // Allocate space for new allocation structure
   alloc_t * new_alloc = malloc(sizeof(alloc_t));
@@ -123,9 +123,9 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
   // Register the allocation
   pcb_t * current_pcb = kernel.current_thread->task;
   if (linked_list_insert_node(&current_pcb->allocations, new_alloc) < 0) {
-    mutex_lock(&kernel.mutex);
+    eff_mutex_lock(&kernel.mutex);
     kernel.free_frame_count += nb_pages;  
-    mutex_unlock(&kernel.mutex);
+    eff_mutex_unlock(&kernel.mutex);
     free(new_alloc);
     lprintf("reserve_frames_zfod(): Registration of new allocation failed");
     return -1;
@@ -133,9 +133,9 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
 
   // Mark the pages as requested
   if (mark_address_range_requested((unsigned int)base, (unsigned int)nb_pages) < 0) {
-    mutex_lock(&kernel.mutex);
+    eff_mutex_lock(&kernel.mutex);
     kernel.free_frame_count += nb_pages;  
-    mutex_unlock(&kernel.mutex);
+    eff_mutex_unlock(&kernel.mutex);
     free(new_alloc);
     linked_list_delete_node(&current_pcb->allocations, new_alloc);
     lprintf("reserve_frames_zfod(): mark_address_range_requested failed");
@@ -143,14 +143,14 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
   }
 
   // Update the total number of frames requested by the invoking thread
-  mutex_lock(&kernel.current_thread->mutex);
+  eff_mutex_lock(&kernel.current_thread->mutex);
   kernel.current_thread->num_of_frames_requested += nb_pages;
-  mutex_unlock(&kernel.current_thread->mutex);
+  eff_mutex_unlock(&kernel.current_thread->mutex);
 
   // Update the total number of frames requested by the invoking task
-  mutex_lock(&current_pcb->mutex);
+  eff_mutex_lock(&current_pcb->mutex);
   current_pcb->num_of_frames_requested += nb_pages;
-  mutex_unlock(&current_pcb->mutex);
+  eff_mutex_unlock(&current_pcb->mutex);
 
   return 0;
 
@@ -179,13 +179,13 @@ static int free_frames_zfod(void* base) {
   // Free the frames
   free_frames_range((unsigned int) base, len);
 
-  mutex_lock(&kernel.current_thread->mutex);
+  eff_mutex_lock(&kernel.current_thread->mutex);
   kernel.current_thread->num_of_frames_requested -= (len/PAGE_SIZE);
-  mutex_unlock(&kernel.current_thread->mutex);
+  eff_mutex_unlock(&kernel.current_thread->mutex);
 
-  mutex_lock(&kernel.current_thread->task->mutex);
+  eff_mutex_lock(&kernel.current_thread->task->mutex);
   kernel.current_thread->task->num_of_frames_requested -= (len/PAGE_SIZE);
-  mutex_unlock(&kernel.current_thread->task->mutex);
+  eff_mutex_unlock(&kernel.current_thread->task->mutex);
   // set_cr3(get_cr3());
   return 0;
 

@@ -80,7 +80,7 @@ void block_and_switch(int holding_mutex) {
   disable_interrupts();
 
   if (holding_mutex == HOLDING_MUTEX_TRUE) {
-    mutex_unlock(&kernel.current_thread->mutex);
+    eff_mutex_unlock(&kernel.current_thread->mutex);
   }
 
   if (kernel.cpu_idle == CPU_IDLE_TRUE) {
@@ -111,7 +111,7 @@ void add_runnable_thread(tcb_t *tcb) {
 
   generic_node_t new_tail = {tcb, NULL};
 
-  lprintf("Adding runnable thread %d", tcb->tid);
+  // lprintf("Adding runnable thread %d", tcb->tid);
   disable_interrupts();
 
   // Should not happen
@@ -132,7 +132,7 @@ void add_runnable_thread(tcb_t *tcb) {
     kernel.runnable_head = (kernel.runnable_tail = node_addr);
   }
 
-  lprintf("Added runnable thread %d", tcb->tid);
+  // lprintf("Added runnable thread %d", tcb->tid);
   enable_interrupts();
 
 }
@@ -155,7 +155,7 @@ void force_next_thread(tcb_t *force_next_tcb) {
   generic_node_t new_tail = {kernel.current_thread, NULL};
 
   disable_interrupts();    
-  mutex_unlock(&force_next_tcb->mutex);  
+  eff_mutex_unlock(&force_next_tcb->mutex);  
 
   // Should not happen 
   if (kernel.cpu_idle == CPU_IDLE_TRUE) {

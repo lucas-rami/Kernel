@@ -56,7 +56,6 @@ void init_thread(tcb_t* to) {
   to->thread_state = THR_RUNNING;
 
   // Update cr3 and esp0 registers
-  lprintf("Context switch to %d with cr3 %p", to->tid, (unsigned int *)to->cr3);
   set_cr3(to->cr3);
   set_esp0(to->esp0);
 

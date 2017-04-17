@@ -28,6 +28,7 @@ int curr_cookie = 0;
 int first_pass = 1;
 
 
+#define GOOD_MEMORY ((void *)0x40000000)
 
 void handler(void *arg, ureg_t *uregs)
 {
@@ -76,7 +77,7 @@ int main(void)
         exit(1);
     }
     
-    *(int*)NULL = 42;
+    *(int*)GOOD_MEMORY = 42;
 
     /* Should not get here */
     REPORT_MISC(" Something is very wrong");

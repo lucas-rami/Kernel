@@ -240,14 +240,14 @@ unsigned int request_frames_needed_by_program(simple_elf_t *elf) {
   total_frames_reqd++;
   total_frames_reqd -= reduce_count;
 
-  mutex_lock(&kernel.mutex);
+  eff_mutex_lock(&kernel.mutex);
   if (total_frames_reqd <= kernel.free_frame_count) {
     kernel.free_frame_count -= total_frames_reqd;
   } else {
-    mutex_unlock(&kernel.mutex);
+    eff_mutex_unlock(&kernel.mutex);
     return 0;
   }
-  mutex_unlock(&kernel.mutex);
+  eff_mutex_unlock(&kernel.mutex);
   // TODO: Test the code when two sections overlap
   return total_frames_reqd;
 }

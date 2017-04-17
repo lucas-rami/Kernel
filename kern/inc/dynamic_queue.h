@@ -8,7 +8,7 @@
 #define _DYNAMIC_QUEUE_H_
 
 #include <generic_node.h>
-#include <mutex.h>
+#include <eff_mutex.h>
 
 /** @brief A structure that represents a generic queue object. It contains
  *   the head and tail pointers for the queue and the mutex used by it to
@@ -28,7 +28,7 @@ typedef struct queue {
 
   /** @brief A mutex for this queue to perform all operations atomic
    */
-  mutex_t mp;
+  eff_mutex_t mp;
 
 } generic_queue_t;
 

@@ -198,10 +198,11 @@ unsigned int get_virtual_address(unsigned int *page_directory_entry_addr,
 unsigned int *allocate_frame() {
   int i;
   for (i = 0; i < num_user_frames; i++) {
-    if (get_bit(&free_map, i) == BITMAP_UNALLOCATED) {
-      set_bit(&free_map, i);
+    //if (get_bit(&free_map, i) == BITMAP_UNALLOCATED) {
+    if (set_bit(&free_map, i) >= 0) {
       return (void *)(USER_MEM_START + (i * PAGE_SIZE));
     }
+    //}
   }
   return NULL;
 }
@@ -217,14 +218,14 @@ unsigned int *allocate_frame() {
  */
 int free_frame(unsigned int* addr) {
   int frame_index = ((unsigned int)(addr) - USER_MEM_START) / PAGE_SIZE;
-  if (!get_bit(&free_map, frame_index)) {
+  /*if (!get_bit(&free_map, frame_index)) {
     lprintf("free_frame(): Trying to deallocate unallocated frame");
     return -1;
-  }
+  }*/
   unset_bit(&free_map, frame_index);
-  mutex_lock(&kernel.mutex);
+  eff_mutex_lock(&kernel.mutex);
   kernel.free_frame_count++;
-  mutex_unlock(&kernel.mutex);
+  eff_mutex_unlock(&kernel.mutex);
   return 0;
 }
 
