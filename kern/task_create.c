@@ -38,7 +38,7 @@
 
 
 /** @brief Creates a task from an executable. Loads all the different
- *   sections required by the program from the ELF file. Allocated a new
+ *   sections required by the program from the ELF file. Allocates a new
  *   pcb/tcb if needed. This only happens when the first task for the system
  *   is being created. After that, all the calls are from exec and as they
  *   already have a tcb/pcb, we do not allocate new ones.
@@ -54,7 +54,7 @@
  *  @return unsigned int The starting instruction pointer of the program 
  *                       that is being loaded on success, 0 otherwise
  */
-unsigned int create_task_from_executable(const char *task_name, int is_exec,
+unsigned int create_task_from_executable(char *task_name, int is_exec,
     char **argvec, int count) {
 
   if (task_name == NULL) {
@@ -84,8 +84,7 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
   }
 
   // Allocate a kernel stack for the root thread
-  void *stack_kernel = NULL;
-  stack_kernel = malloc(PAGE_SIZE);
+  void *stack_kernel = malloc(PAGE_SIZE);
   if (stack_kernel == NULL) {
     lprintf("Could not allocate kernel stack for task's root thread");
     return 0;
@@ -102,10 +101,15 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
     return 0;
   }
 
+  // SIMICS Debugging 
+  sim_reg_process(cr3, task_name);
+
   uint32_t esp0, stack_top;
   pcb_t *new_pcb = NULL;
   tcb_t *new_tcb = NULL;
+  
   if (is_exec != TRUE) {
+
     // Doing this for the first user task of the system
     esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
 
@@ -126,13 +130,20 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
       // TODO: Increase the kernel free frame count
       return 0;
     }
+
     new_pcb->original_thread_id = new_tcb->tid;
-    stack_top = ESP;
+
+    char *argv[2];
+    argv[0] = task_name;
+    argv[1] = NULL;
+    stack_top = (uint32_t) load_args_for_new_program(argv, old_cr3, 1);
+
     if (!strcmp(task_name, FIRST_TASK)) {
-      lprintf("\n\n\n\n\n\n\n\n\n\n\n Setting the init_cr3 as %p\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", cr3);
+      lprintf("\ttask_create(): Setting the init_cr3 as %p", cr3);
       kernel.init_cr3 = (uint32_t)cr3;
       kernel.init_task = new_pcb;
     }
+
   } else {
     esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
     new_tcb = kernel.current_thread;
@@ -179,7 +190,7 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
   *stack_addr = (unsigned int) init_thread;
 
   if (is_exec != TRUE) {
-    // It isn't called from exec. The gerneral purpose regs won't be popped
+    // It isn't called from exec. The general purpose regs won't be popped
     stack_addr -= NB_REGISTERS_POPA;
   }
 
@@ -188,7 +199,15 @@ unsigned int create_task_from_executable(const char *task_name, int is_exec,
 
   // Make the thread runnable
   if (is_exec != TRUE) {  
-    add_runnable_thread(new_tcb);
+
+    // This code is only ran by the first created task
+    lprintf("\tcreate_task_from_executable(): Adding thread to runnable queue");
+    new_tcb->thread_state = THR_RUNNABLE;
+    generic_node_t new_tail = {new_tcb, NULL};
+    generic_node_t * node_addr = (generic_node_t *)(new_tcb->esp0 - PAGE_SIZE);
+    *(node_addr) = new_tail;
+    kernel.runnable_head = (kernel.runnable_tail = node_addr);
+
   }
 
   return elf.e_entry;
@@ -235,7 +254,7 @@ unsigned int request_frames_needed_by_program(simple_elf_t *elf) {
   total_frames_reqd += (dataend/PAGE_SIZE) + 1 - (datastart/PAGE_SIZE);
   total_frames_reqd += (bssend/PAGE_SIZE) + 1 - (bssstart/PAGE_SIZE);
 
-  lprintf("The number of frames reqd are %u", total_frames_reqd - reduce_count + 1);
+  // lprintf("The number of frames reqd are %u", total_frames_reqd - reduce_count + 1);
   // Adding 1 frame for the stack
   total_frames_reqd++;
   total_frames_reqd -= reduce_count;

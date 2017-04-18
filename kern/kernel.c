@@ -31,6 +31,7 @@
 #include <virtual_memory.h>
 #include <page_fault_handler.h>
 #include <syscalls.h>
+#include <assert.h>
 
 // tmp
 #include <cr.h>
@@ -61,7 +62,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
   page_fault_init();
  
   if (idt_syscall_install() < 0) {
-    lprintf("kernel_main(): Failed to register syscall handlers\n");
+    lprintf("kernel_main(): Failed to register syscall handlers");
     while (1) {
       continue;
     }
@@ -69,30 +70,34 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
 
   // Virtual memory initialized
   if (vm_init() < 0) {
-    lprintf("VM init failed\n");
+    lprintf("VM init failed");
   }
 
-    // Create the initial task and load everything into memory
+  lprintf("\tkernel_main(): Creating first task");
+
+  // Create the initial task and load everything into memory
   uint32_t entrypoint;
   if ( (entrypoint = create_task_from_executable(FIRST_TASK, FALSE, NULL, 0)) == 0 ) {
-    lprintf("Failed to create user task\n");
+    lprintf("Failed to create user task");
     while (1) {
       continue;
     }
   }
 
-  // Enable virtual memory (no handled by setup_vm())
-  // vm_enable();
-
   // Clear the console before running anything
   clear_console();
 
   // Enable interrupts
-  enable_interrupts();
+  // enable_interrupts();
 
+  lprintf("\tkernel_main(): Running idle thread...");
+
+  // Run the idle thread
   run_idle(kernel.idle_thread->esp);
 
   // We never get here
+  lprintf("kernel_main(): THIS IS REALLY BAD");
+  assert(0);
 
   while (1) {
     continue;

@@ -7,6 +7,7 @@
 #ifndef _ATOMIC_OPS_H_
 #define _ATOMIC_OPS_H_
 
+// TODO: doc
 int atomic_add_and_update(int *i, int j);
 int atomic_exchange(void* addr, int value);
 

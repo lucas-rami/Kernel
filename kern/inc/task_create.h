@@ -9,7 +9,7 @@
 
 #include <elf_410.h>
 
-unsigned int create_task_from_executable(const char* task_name, int is_exec, char **argv, int count);
+unsigned int create_task_from_executable(char* task_name, int is_exec, char **argv, int count);
 
 unsigned int request_frames_needed_by_program(simple_elf_t *elf);
 

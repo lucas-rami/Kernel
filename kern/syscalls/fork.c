@@ -15,12 +15,14 @@
 #include <scheduler.h>
 #include <asm.h>
 #include <syscalls.h>
+#include <assert.h>
 
 /* VM system */
 #include <virtual_memory.h>
 #include <virtual_memory_helper.h>
 #include <virtual_memory_defines.h>
 
+/* Debugging */
 #include <simics.h>
 
 #define NB_REGISTERS_POPA 8
@@ -32,13 +34,12 @@ static unsigned int * initialize_stack_fork(uint32_t orig_stack,
 // TODO: doc
 int kern_fork(unsigned int *esp) {
 
-  // NOTE: Reject call if more than one thread in the task ?
+  // TODO: Reject call if more than one thread in the task ?
   // TODO: Need to register software exception handler
-  // TODO: Args validation?? Should be OK, the argument is not given by the user 
 
   mutex_lock(&kernel.mutex);
   if (kernel.current_thread->num_of_frames_requested <= kernel.free_frame_count) {
-    // Shouldn't it be kernel.current_thread->task->num_of_frames_requested ?
+    // TODO: Shouldn't it be kernel.current_thread->task->num_of_frames_requested ?
     kernel.free_frame_count -= kernel.current_thread->num_of_frames_requested;
   } else {
     lprintf("Can't fork as no frames left");
@@ -63,9 +64,12 @@ int kern_fork(unsigned int *esp) {
     return -1;
   }
 
+  // SIMICS Debugging 
+  sim_reg_child(new_cr3, (void *) kernel.current_thread->cr3);
+
+  // Highest address of child's kernel stack
   uint32_t esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
 
-  // disable_interrupts();
   // Create new PCB/TCB for the task and its root thread
   pcb_t *new_pcb = create_new_pcb();
   if (new_pcb == NULL) {
@@ -98,7 +102,8 @@ int kern_fork(unsigned int *esp) {
   new_tcb->esp = (uint32_t) initialize_stack_fork(kernel.current_thread->esp0,
                                                   esp0, esp, new_tcb);
 
-  // enable_interrupts();
+  lprintf("\tkern_fork(): Thread %d forking %d", kernel.current_thread->tid, new_tcb->tid);
+
   // Make the thread runnable
   add_runnable_thread(new_tcb);
 
@@ -120,8 +125,6 @@ int kern_thread_fork(unsigned int * esp) {
   // Create new TCB
   tcb_t * new_tcb = create_new_tcb(kernel.current_thread->task, 
                                     esp0, kernel.current_thread->cr3);
-
-  lprintf("Forking %d", new_tcb->tid);
 
   // Craft the kernel stack for the new thread  
   new_tcb->esp = (uint32_t) initialize_stack_fork(kernel.current_thread->esp0,
@@ -185,7 +188,13 @@ static unsigned int * copy_memory_regions() {
 
       unsigned int *orig_page_table_addr = get_page_table_addr(orig_dir_entry);
       unsigned int *new_page_table_addr = 
-                      create_page_table(new_dir_entry, PAGE_TABLE_FLAGS);
+                      create_page_table(new_dir_entry, DIRECTORY_FLAGS);
+
+      if (new_page_table_addr == NULL) {
+        lprintf("copy_memory_regions(): Unable to allocate new page table\n");
+        // TODO: free everything previously allocated
+        return NULL;
+      }
 
       unsigned int *orig_tab_entry, *new_tab_entry;
       for (orig_tab_entry = orig_page_table_addr,
@@ -198,7 +207,7 @@ static unsigned int * copy_memory_regions() {
 
           if ((unsigned int)get_frame_addr(orig_tab_entry) < USER_MEM_START) {
             // This is direct mapped kernel memory
-            *(new_tab_entry) = *orig_tab_entry;
+            *new_tab_entry = *orig_tab_entry;
           } else {
             // This is user space memory, we have to allocated a new frame
 

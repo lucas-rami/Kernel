@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <syscall.h>
 #include <assert.h>
+#include <simics.h>
 
 extern int main(int argc, char *argv[]);
 extern void install_autostack(void * stack_high, void * stack_low);

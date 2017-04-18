@@ -39,7 +39,7 @@ bitmap_t free_map;
  */
 int vm_init() {
 
-  // Figure out the number of usernumber of user frames
+  // Figure out the number of user frames
   num_user_frames = kernel.free_frame_count;
 
   int size = (kernel.free_frame_count / BITS_IN_UINT8_T) + 1;
@@ -57,32 +57,39 @@ int vm_init() {
  */
 unsigned int *setup_vm(const simple_elf_t *elf_info) {
 
-  unsigned int *page_table_directory =
+  unsigned int *page_dir =
       (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
-  memset(page_table_directory, 0, PAGE_SIZE);
+
+  // TODO: check NULL pointer
+  lprintf("\tsetup_vm(): Creating page directory @ %p", page_dir);
+
+  memset(page_dir, 0, PAGE_SIZE);
 
   // Load kernel section
   int i;
   for (i = 0; i < USER_MEM_START; i += PAGE_SIZE) {
-    load_frame(i, SECTION_KERNEL, page_table_directory);
+    load_frame(i, SECTION_KERNEL, page_dir);
   }
 
   if (!strcmp(elf_info->e_fname, FIRST_TASK)) {
-    set_cr3((uint32_t)page_table_directory);
+    set_cr3((uint32_t)page_dir);
     vm_enable();
   }
+
   // Add stack area as well.
-  if (load_every_segment(elf_info, page_table_directory) < 0) {
+  if (load_every_segment(elf_info, page_dir) < 0) {
     // TODO: test this
-    free_address_space(page_table_directory, KERNEL_AND_USER_SPACE);
+    free_address_space(page_dir, KERNEL_AND_USER_SPACE);
     return NULL;
   }
 
   // TODO: Make this atomic and reverse the changes if something goes bad
   // set cr3 to this value;
-  set_cr3((uint32_t)page_table_directory);
-  kernel.current_thread->cr3 = (uint32_t)page_table_directory;
-  return page_table_directory;
+
+  set_cr3((uint32_t)page_dir);
+  kernel.current_thread->cr3 = (uint32_t)page_dir;
+
+  return page_dir;
 }
 
 /** @brief Load every segment of a task into virtual memory
@@ -197,9 +204,17 @@ void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3) {
   unsigned int *page_directory_entry_addr = get_page_directory_addr(
                                             (unsigned int*)address, cr3);
 
+  int page_table_allocated = 0;
+
   // If there is no page table associated with this entry, create it
   if (!is_entry_present(page_directory_entry_addr)) {
-    create_page_table(page_directory_entry_addr, PAGE_TABLE_FLAGS);
+
+    // In case there is no kernel memory left
+    if (create_page_table(page_directory_entry_addr, DIRECTORY_FLAGS) == NULL) {
+      return NULL;
+    }
+
+    page_table_allocated = 1;
   }
 
   unsigned int *page_table_entry = 
@@ -207,129 +222,41 @@ void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3) {
 
   // If there is no physical frame associated with this entry, allocate it
   if (!is_entry_present(page_table_entry)) {
+    
     if (type != SECTION_KERNEL) {
-      unsigned int *physical_frame_addr = allocate_frame();
-      *page_table_entry = ((unsigned int)physical_frame_addr & PAGE_ADDR_MASK);
-      // TODO: Set appropriate flag based on the type passed
-      // NOTE: When this is done, we should use create_page_table_entry() to
-      // allocate the frame
-      *page_table_entry |= PAGE_TABLE_FLAGS;
       
-      // TODO: Zero out frames if allocated through a different function
-      // Zero out every frame
+      // Create flags for new entry depending on segment
+      unsigned int flags = (type == SECTION_RODATA || type == SECTION_TXT) ?
+                            PAGE_USER_RO_FLAGS : PAGE_USER_FLAGS;
+     
+      // Create page table entry
+      if (create_page_table_entry(page_table_entry, flags) == NULL) {
+        if (page_table_allocated) {
+          sfree(get_page_table_addr(page_directory_entry_addr), PAGE_SIZE);
+        }
+        return NULL;
+      }
+
+      // Zero out old frame
+      // TODO: should we do this every time or only for SECTION_BSS ?
       uint32_t old_cr3 = get_cr3();
       set_cr3((uint32_t)cr3);
       memset((char*)((address/PAGE_SIZE) * PAGE_SIZE), 0, PAGE_SIZE);
       set_cr3(old_cr3);
+    
     } else {
+
       *page_table_entry = address & PAGE_ADDR_MASK;
-      // TODO: Make it kernel accessible only
-      *page_table_entry |= PAGE_TABLE_FLAGS;
+      *page_table_entry |= PAGE_KERN_FLAGS; 
+
     }
   }
 
   uint8_t *frame_base_addr = (uint8_t *)(*page_table_entry & PAGE_ADDR_MASK);
-  unsigned int offset = ((unsigned int)address & FRAME_OFFSET_MASK);
+  unsigned int offset = address & FRAME_OFFSET_MASK;
 
   // TODO: This should be uint8_t *  and not unsigned int *, right?
   return (frame_base_addr + offset);
-}
-
-/** @brief Allocate multiple frames starting from a given virtual address
- *
- *  If one of the page within the virtual address range 
- *  [address, address + (nb_frmaes - 1) * PAGE_SIZE] is already allocated 
- *  before the call, then the function won't allocate any new page and return with an
- *  error code.
- *
- *  @param address    The virtual address to start with
- *  @param nb_frames  The number of frames to allocate
- *  @param type       The frame's type (e.g. code, data...)
- *
- *  @return 0 on success, a negative number on error
- */
-int load_multiple_frames(unsigned int address, unsigned int nb_frames, 
-                            unsigned int type) {
-  
-  // Check that the number of frames requested is valid
-  if (nb_frames <= 0 || nb_frames > kernel.free_frame_count) {
-    lprintf("load_multiple_frames(): invalid number of frames");
-    return -1;
-  } 
-
-  unsigned int frames_remaining = nb_frames;
-
-  // Get page directory entry address
-  unsigned int *page_directory_entry_addr = 
-        get_page_directory_addr_with_offset(address);
-  
-  // If there is no page table associated with this entry, create it
-  if (!is_entry_present(page_directory_entry_addr)) {
-    create_page_table(page_directory_entry_addr, PAGE_TABLE_FLAGS);
-  }
-  
-  // Get page table entry address
-  unsigned int *page_table_entry_addr = 
-        get_page_table_addr_with_offset(page_directory_entry_addr, address);
-
-  while(frames_remaining != 0) {
-
-    if (is_entry_present(page_table_entry_addr)) {
-      // Something is already occupying this virtual address, free everything
-      // previously allocated and return
-      free_frames_range(address, nb_frames - frames_remaining);
-      return -1;
-    } else {
-
-      // Create a new table entry
-      if (type != SECTION_KERNEL) {
-        unsigned int *physical_frame_addr = allocate_frame();
-        *page_table_entry_addr = ((unsigned int)physical_frame_addr & 
-                                  PAGE_ADDR_MASK);
-        // TODO: Set appropriate flag based on the type passed
-        // NOTE: When this is done, we should use create_page_table_entry() to
-        // allocate the frame
-        *page_table_entry_addr |= PAGE_TABLE_FLAGS;
-      } else {
-        *page_table_entry_addr = address & PAGE_ADDR_MASK;
-        // TODO: Make it kernel accessible only
-        *page_table_entry_addr |= PAGE_TABLE_FLAGS;
-      }
-
-      if (--frames_remaining == 0) {
-        // We were able to allocate all frames
-        return 0; 
-      }
-
-      ++page_table_entry_addr;
-      if (!((unsigned int)page_table_entry_addr & FRAME_OFFSET_MASK)) {
-        // This was the last entry in the page table, go to the next page
-        // directory entry
-        ++page_directory_entry_addr;
-
-        if (!((unsigned int)page_directory_entry_addr & FRAME_OFFSET_MASK)) {
-          // This was the last entry in the page directory, we cannot allocate
-          // more frames beyond this address, free everything allocated up to
-          // this point and return
-          free_frames_range(address, nb_frames - frames_remaining);
-          return -1;          
-        } else {
-          // If there is no page table associated with this entry, create it
-          if (!is_entry_present(page_directory_entry_addr)) {
-            create_page_table(page_directory_entry_addr, PAGE_TABLE_FLAGS);
-          }
-          // Get the first entry in the new page table
-          page_table_entry_addr = get_page_table_addr(
-                                  page_directory_entry_addr);
-        }
-      }
-    }
-  } 
-
-  // Normally we should never reach this point, when frames_remaining == 0, 
-  // the code returns before (within the loop)
-
-  return 0;
 }
 
 /** @brief Free all the physical frames pointed to by a given page directory
@@ -495,8 +422,6 @@ void free_frames_range(unsigned int address, unsigned int nb_frames) {
   }
 
 }
-
-
 
 /** @brief Enable paging and the "Page Global Enable" bit in %cr4
  *

@@ -55,6 +55,8 @@ void make_runnable_and_switch() {
     return;
   }
 
+  lprintf("\tmake_runnable_and_switch(): Enqueueing %d", kernel.current_thread->tid);  
+
   if(kernel.runnable_head != NULL) {
     kernel.runnable_tail->next = &new_tail;
     kernel.runnable_tail = &new_tail;
@@ -78,6 +80,8 @@ void block_and_switch(int holding_mutex) {
   assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
 
   disable_interrupts();
+
+  lprintf("\tblock_and_switch(): Blocking thread %d", kernel.current_thread->tid);
 
   if (holding_mutex == HOLDING_MUTEX_TRUE) {
     mutex_unlock(&kernel.current_thread->mutex);
@@ -109,9 +113,10 @@ void add_runnable_thread(tcb_t *tcb) {
     return;
   }
 
+  lprintf("\tadd_runnable_thread(): Thread %d adding %d to runnable queue", kernel.current_thread->tid, tcb->tid);
+
   generic_node_t new_tail = {tcb, NULL};
 
-  lprintf("Adding runnable thread %d", tcb->tid);
   disable_interrupts();
 
   // Should not happen
@@ -132,7 +137,6 @@ void add_runnable_thread(tcb_t *tcb) {
     kernel.runnable_head = (kernel.runnable_tail = node_addr);
   }
 
-  lprintf("Added runnable thread %d", tcb->tid);
   enable_interrupts();
 
 }
@@ -156,6 +160,10 @@ void force_next_thread(tcb_t *force_next_tcb) {
 
   disable_interrupts();    
   mutex_unlock(&force_next_tcb->mutex);  
+
+  lprintf("force_next_thread(): Forcing thread %d", force_next_tcb->tid);
+
+  kernel.current_thread->thread_state = THR_RUNNABLE;
 
   // Should not happen 
   if (kernel.cpu_idle == CPU_IDLE_TRUE) {

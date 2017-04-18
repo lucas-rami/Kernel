@@ -30,7 +30,7 @@ typedef struct {
 } bitmap_t;
 
 int bitmap_init(bitmap_t *map, int size);
-int get_bit(bitmap_t *map, int index);
+// int get_bit(bitmap_t *map, int index);
 int set_bit(bitmap_t *map, int index);
 int unset_bit(bitmap_t *map, int index);
 

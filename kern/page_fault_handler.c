@@ -16,14 +16,16 @@ int page_fault_init(void)
 
 void page_fault_c_handler(char *stack_ptr)
 {
+
+  lprintf("\tpage_fault_c_handler(): Page fault @ %p", (void*) get_cr2());
+
   if (allocate_frame_if_address_requested(get_cr2()) < 0) {
     create_stack_sw_exception(SWEXN_CAUSE_PAGEFAULT, stack_ptr);
-    lprintf("Valid page fault. We should throw an error");
-    MAGIC_BREAK;
-    // vanish();
-    // return;
+    kern_set_status(-2);
+    kern_vanish();
   }
-  lprintf("The frame allocation was successfull");
+  
+  lprintf("\tpage_fault_c_handler(): The frame allocation was successfull");
   // Re run the instruction
 
   // Get the page table base register from the register cr3

@@ -13,6 +13,7 @@
 #include <common_kern.h>
 #include <virtual_memory_defines.h>
 #include <syscalls.h>
+#include <cr.h>
 
 /* Debugging */
 #include <simics.h>
@@ -21,7 +22,7 @@
 #define NB_BUCKETS 8
 
 static void idle() {
-  lprintf("Idle task running");
+  lprintf("\tidle(): Idle task running");
   enable_interrupts();
   while (1) {
     continue;
@@ -44,7 +45,6 @@ int kernel_init() {
   kernel.thread_id = 1;
   kernel.cpu_idle = CPU_IDLE_TRUE;
   kernel.free_frame_count = machine_phys_frames() - NUM_KERNEL_FRAMES;
-  lprintf("The number of free frames in the kernel is %u", kernel.free_frame_count);
   kernel.runnable_head = NULL;
   kernel.runnable_tail = NULL;
 
@@ -109,7 +109,7 @@ tcb_t *create_idle_thread() {
   // Set various fields to their initial value
   new_pcb->return_status = 0;
   new_pcb->task_state = TASK_RUNNING;
-  new_pcb->tid = 0; // Fine since no other task is allowed to have this tid
+  new_pcb->tid = 0; // Okay since no other task is allowed to have this tid
 
   // Allocate space for the new PCB
   tcb_t *new_tcb = malloc(sizeof(tcb_t));
@@ -140,9 +140,7 @@ tcb_t *create_idle_thread() {
   --stack_addr;
   *stack_addr = (unsigned int) idle;
   new_tcb->esp = (unsigned int) stack_addr;
-
-  // NOTE: I don't think that we really care about cr3 since this thread will
-  // always stay in kernel space
+  new_tcb->cr3 = get_cr3();
 
   return new_tcb;
 
@@ -164,7 +162,6 @@ pcb_t *create_new_pcb() {
   }
 
   // Initialize the list_mutex on this PCB
-  lprintf("Initializing the mutex %p", &new_pcb->list_mutex);
   if (mutex_init(&new_pcb->list_mutex) < 0) {
     lprintf("create_new_pcb(): Failed to initialize list_mutex");
     free(new_pcb);

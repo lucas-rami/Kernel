@@ -32,7 +32,18 @@ extern bitmap_t free_map;
  *  @return A positive integer if the entry is valid, 0 otherwise
  */
 int is_entry_present(unsigned int *entry_addr) {
-  return *entry_addr & PRESENT_BIT_MASK;
+  return *entry_addr & PRESENT_BIT;
+}
+
+/** @brief Checks if the address of the page table entry passed has the 
+ *   requested bit set
+ *
+ *  @param addr The address of the page table entry 
+ *
+ *  @return int 0 if not requested, a non zero number otherwise
+ */
+int is_page_requested(unsigned int *addr) {
+  return *addr & PAGE_TABLE_RESERVED_BIT;
 }
 
 /** @brief Invalidate an entry
@@ -42,8 +53,8 @@ int is_entry_present(unsigned int *entry_addr) {
  *  @return void
  */
 void set_entry_invalid(unsigned int *entry_addr, unsigned int address) {
-  *entry_addr &= ~PRESENT_BIT_MASK;
-  *entry_addr &= ~PAGE_TABLE_RESERVED_BITMASK;
+  *entry_addr &= ~PRESENT_BIT;
+  *entry_addr &= ~PAGE_TABLE_RESERVED_BIT;
   invalidate_tlb(address);
 }
 
@@ -62,7 +73,9 @@ unsigned int *create_page_table(unsigned int *page_directory_entry_addr,
   if (page_table_entry_addr == NULL) {
     return NULL;
   }
+
   memset(page_table_entry_addr, 0, PAGE_SIZE);
+  
   *page_directory_entry_addr =
       ((unsigned int)page_table_entry_addr & PAGE_ADDR_MASK);
   *page_directory_entry_addr |= flags;
@@ -80,6 +93,10 @@ unsigned int *create_page_table(unsigned int *page_directory_entry_addr,
 unsigned int *create_page_table_entry(unsigned int *page_table_entry_addr,
                                       uint32_t flags) {
   unsigned int *physical_frame_addr = allocate_frame();
+  if (physical_frame_addr == NULL) {
+    lprintf("create_page_table_entry(): Unable to allocate new frame");
+    return NULL;
+  }
   *page_table_entry_addr = ((unsigned int)physical_frame_addr & PAGE_ADDR_MASK);
   *page_table_entry_addr |= flags;
   return physical_frame_addr;
@@ -116,11 +133,12 @@ unsigned int *get_frame_addr(unsigned int *page_table_entry_addr) {
 unsigned int *get_page_directory_addr(unsigned int *address, unsigned int *base_addr) {
   unsigned int offset = (((unsigned int)address & PAGE_TABLE_DIRECTORY_MASK) >>
                          PAGE_DIR_RIGHT_SHIFT);
-
   return base_addr + offset;
 }
 
 /** @brief Get the page directory entry for a particular virtual address
+ *
+ *  TODO: DUPLICATE GET_PAGE_DIRECTORY_ADDR --> TO REMOVE 
  *
  *  @param address A virtual address
  *
@@ -134,6 +152,7 @@ unsigned int *get_page_directory_addr_with_offset(unsigned int address) {
                          PAGE_DIR_RIGHT_SHIFT);
   return base_addr + offset;
 }
+
 /** @brief Get the entry related to a particular virtual address in a page table
  *
  *  @param page_directory_entry_addr  The page directory entry pointing to the
@@ -153,7 +172,6 @@ unsigned int *get_page_table_addr_with_offset(
   return page_table_base_addr + offset; 
 }
 
-
 /** @brief Get the flags of an entry in a page table/directory
  *  
  *  @param enry_addr The entry's address
@@ -161,7 +179,7 @@ unsigned int *get_page_table_addr_with_offset(
  *  @return The entry's flags
  */
 uint32_t get_entry_flags(unsigned int *entry_addr) {
-  return *entry_addr & PAGE_TABLE_FLAGS;
+  return *entry_addr & PAGE_FLAGS_MASK;
 }
 
 /** @brief Get the virtual address associated with a physical frame, given the
@@ -190,7 +208,6 @@ unsigned int get_virtual_address(unsigned int *page_directory_entry_addr,
   return virtual_address;
 }
 
-
 /** @brief Find and allocate a free frame in memory
  *
  *  @return The frame's address if one free frame was found, NULL otherwise
@@ -198,8 +215,7 @@ unsigned int get_virtual_address(unsigned int *page_directory_entry_addr,
 unsigned int *allocate_frame() {
   int i;
   for (i = 0; i < num_user_frames; i++) {
-    if (get_bit(&free_map, i) == BITMAP_UNALLOCATED) {
-      set_bit(&free_map, i);
+    if (set_bit(&free_map, i) == BITMAP_UNALLOCATED) {
       return (void *)(USER_MEM_START + (i * PAGE_SIZE));
     }
   }
@@ -217,11 +233,10 @@ unsigned int *allocate_frame() {
  */
 int free_frame(unsigned int* addr) {
   int frame_index = ((unsigned int)(addr) - USER_MEM_START) / PAGE_SIZE;
-  if (!get_bit(&free_map, frame_index)) {
+  if (unset_bit(&free_map, frame_index) == BITMAP_UNALLOCATED) {
     lprintf("free_frame(): Trying to deallocate unallocated frame");
     return -1;
   }
-  unset_bit(&free_map, frame_index);
   mutex_lock(&kernel.mutex);
   kernel.free_frame_count++;
   mutex_unlock(&kernel.mutex);
@@ -241,7 +256,7 @@ int mark_address_requested(unsigned int address) {
   unsigned int *page_directory_entry_addr = 
       get_page_directory_addr_with_offset(address);
   if (!is_entry_present(page_directory_entry_addr)) {
-    if (!create_page_table(page_directory_entry_addr, PAGE_TABLE_FLAGS)) {
+    if (!create_page_table(page_directory_entry_addr, DIRECTORY_FLAGS)) {
       return -1;
     }
   }
@@ -255,11 +270,10 @@ int mark_address_requested(unsigned int address) {
     return -1;
   }
 
-  *page_table_entry_addr |= PAGE_TABLE_RESERVED_BITMASK;
+  *page_table_entry_addr |= PAGE_TABLE_RESERVED_BIT;
 
   return 0;
 }
-
 
 /** @brief Marks the page table entry for virtual address range passed as a 
  *   paramater as requested by new_pages so that we can differentiate between 
@@ -285,17 +299,6 @@ int mark_address_range_requested(unsigned int address, unsigned int count) {
     }
   }
   return 0;
-}
-
-/** @brief Checks if the address of the page table entry passed has the 
- *   requested bit set
- *
- *  @param addr The address of the page table entry 
- *
- *  @return int 0 if not requested, a non zero number otherwise
- */
-int is_page_requested(unsigned int *addr) {
-  return *addr & PAGE_TABLE_RESERVED_BITMASK;
 }
 
 /** @brief Checks if the address passed as a parameter is already requested
@@ -329,7 +332,7 @@ int allocate_frame_if_address_requested(unsigned int address) {
   }
 
   if (is_page_requested(page_table_entry_addr)) {
-    if (create_page_table_entry(page_table_entry_addr, PAGE_TABLE_FLAGS) 
+    if (create_page_table_entry(page_table_entry_addr, PAGE_USER_FLAGS) 
         < 0) {
       // Error while allocating a frame
       // SHOULD NEVER HAPPEN
