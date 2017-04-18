@@ -15,7 +15,7 @@
 #include "410_tests.h"
 DEF_TEST_NAME("actual_wait:");
 
-#define NCHILD 40 /* must be < 255 */
+#define NCHILD 80 /* must be < 255 */
 #define PRESERVE (1024*1024)
 
 void child(int);

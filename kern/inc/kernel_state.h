@@ -97,5 +97,6 @@ int find_pcb(void *pcb1, void *pcb2);
 unsigned int hash_function_tcb(void *tcb, unsigned int nb_buckets);
 int find_tcb(void *tcb1, void *tcb2);
 int find_alloc(void* alloc, void* base);
+int find_pcb_ll(void* pcb1, void* pcb2);
 
 #endif /* _KERNEL_STATE_H_ */

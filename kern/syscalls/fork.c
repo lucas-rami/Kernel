@@ -95,7 +95,8 @@ int kern_fork(unsigned int *esp) {
 
   // Add the child to the running queue
   eff_mutex_lock(&kernel.current_thread->task->list_mutex);
-  queue_insert_node(&kernel.current_thread->task->running_children, new_pcb);
+  kernel.current_thread->task->num_running_children++;
+  linked_list_insert_node(&kernel.current_thread->task->running_children, new_pcb);
   eff_mutex_unlock(&kernel.current_thread->task->list_mutex);
 
   // Craft the kernel stack for the new thread

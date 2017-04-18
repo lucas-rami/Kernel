@@ -176,7 +176,7 @@ pcb_t *create_new_pcb() {
   }
 
   // Initialize the running children queue
-  if (queue_init(&new_pcb->running_children) < 0) {
+  if (linked_list_init(&new_pcb->running_children, find_pcb_ll) < 0) {
     lprintf("create_new_pcb(): Failed to initialize running_children");
     free(new_pcb);
     return NULL;
@@ -203,6 +203,8 @@ pcb_t *create_new_pcb() {
   new_pcb->num_of_threads = 1;
   new_pcb->parent = NULL;
   new_pcb->original_thread_id = 0;
+  new_pcb->num_running_children = 0;
+  new_pcb->num_waiting_threads = 0;
 
   // Assign a unique id to the PCB
   eff_mutex_lock(&kernel.mutex);
@@ -338,4 +340,8 @@ int find_alloc(void* alloc, void* base) {
     return 1;
   }
   return 0;
+}
+
+int find_pcb_ll(void *pcb1, void *pcb2) {
+  return (uint32_t)pcb1 == (uint32_t)pcb2;
 }

@@ -36,8 +36,7 @@ char *load_args_for_new_program(char **argvec, unsigned int *new_ptd, int count)
 
 /* swexn calls */
 int swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg);
-int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg,
-               unsigned int * kern_esp);
+int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg);
 
 /* wait call */
 int kern_wait(int *status_ptr);
