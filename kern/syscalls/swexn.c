@@ -52,6 +52,7 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg, unsi
     }
 
     // Check EFLAGS 
+    // TODO: IOPL ?
     uint32_t eflags = newureg->eflags;
     if ( !(eflags & EFL_RESV1) || (eflags & EFL_AC) ||
         (eflags & EFL_IOPL_RING3) != EFL_IOPL_RING3 || !(eflags & EFL_IF) ) {
