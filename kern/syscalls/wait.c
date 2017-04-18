@@ -11,7 +11,7 @@
 #include <assert.h>
 
 int kern_wait(int *status_ptr) {
-  /*
+  
   if (is_buffer_valid((unsigned int)&status_ptr, sizeof(uintptr_t)) < 0) {
     // status ptr isn't a valid memory address
     lprintf("kern_wait(): Invalid args");
@@ -23,7 +23,6 @@ int kern_wait(int *status_ptr) {
     lprintf("The address status_ptr isn't valid");
     return -1;
   }
-  */
 
   lprintf("\tkern_wait(status_ptr = %p): Thread %d waiting", status_ptr, kernel.current_thread->tid);
 

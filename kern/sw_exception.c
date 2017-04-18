@@ -41,6 +41,7 @@ int create_stack_sw_exception(unsigned int cause, char *stack_start) {
   unsigned int *sw_eip = (unsigned int *)kernel.current_thread->swexn_values.eip;
   kernel.current_thread->swexn_values.esp3 = NULL;
   kernel.current_thread->swexn_values.eip = NULL;
+  kernel.current_thread->swexn_values.arg = NULL;
 
   lprintf("Running first thread with the correct values");
   lprintf("eip %p stack %p", sw_eip, stack_ptr);

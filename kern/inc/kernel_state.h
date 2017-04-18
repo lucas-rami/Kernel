@@ -18,7 +18,7 @@
 #define CPU_IDLE_FALSE 0
 #define CPU_IDLE_TRUE 1
 
-#define FIRST_TASK "mem_permissions"
+#define FIRST_TASK "swexn_regs"
 
 typedef struct kernel {
 

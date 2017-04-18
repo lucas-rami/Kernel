@@ -167,10 +167,11 @@ unsigned int create_task_from_executable(char *task_name, int is_exec,
   new_tcb->task->num_of_frames_requested = num_frames_requested;
 
   // Create EFLAGS for the user task
+  // TODO: IOPL ?
   uint32_t eflags = get_eflags();
   eflags |= EFL_RESV1;       // Set bit 1
-  eflags &= !EFL_AC;         // Alignment checking off
-  eflags &= !EFL_IOPL_RING3; // Clear current privilege level
+  eflags &= ~EFL_AC;         // Alignment checking off
+  eflags &= ~EFL_IOPL_RING3; // Clear current privilege level
   eflags |= EFL_IOPL_RING3;  // Set privilege level to 3
   eflags |= EFL_IF;          // Enable interrupts
 
