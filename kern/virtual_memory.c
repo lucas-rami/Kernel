@@ -21,6 +21,7 @@
 #include <virtual_memory.h>
 #include <virtual_memory_helper.h>
 #include <virtual_memory_defines.h>
+#include "virtual_memory_internal.h"
 
 /* Debugging */
 #include <simics.h>
@@ -64,13 +65,18 @@ unsigned int *setup_vm(const simple_elf_t *elf_info) {
 
   memset(page_dir, 0, PAGE_SIZE);
 
+  int is_first_task = FIRST_TASK_FALSE;
+  if (!strcmp(elf_info->e_fname, FIRST_TASK)) {
+    is_first_task = FIRST_TASK_TRUE;
+  }
+
   // Load kernel section
   int i;
   for (i = 0; i < USER_MEM_START; i += PAGE_SIZE) {
-    load_frame(i, SECTION_KERNEL, page_dir);
+    load_frame(i, SECTION_KERNEL, page_dir, is_first_task);
   }
 
-  if (!strcmp(elf_info->e_fname, FIRST_TASK)) {
+  if (is_first_task == FIRST_TASK_TRUE) {
     set_cr3((uint32_t)page_dir);
     vm_enable();
   }
@@ -160,7 +166,7 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
       max_size = remaining_size;
     }
     frame_addr = NULL;
-    frame_addr = load_frame(addr, type, page_table_directory);
+    frame_addr = load_frame(addr, type, page_table_directory, FIRST_TASK_FALSE);
 
     if (frame_addr == NULL) {
       lprintf("Error\n");
@@ -198,7 +204,8 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
  *
  *  @return 0 The physical address associated with the virtual one
  */
-void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3) {
+void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3,
+                 int is_first_task) {
 
   unsigned int *page_directory_entry_addr = get_page_directory_addr(
                                             (unsigned int*)address, cr3);
@@ -209,8 +216,20 @@ void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3) {
   if (!is_entry_present(page_directory_entry_addr)) {
 
     // In case there is no kernel memory left
-    if (create_page_table(page_directory_entry_addr, DIRECTORY_FLAGS) == NULL) {
+    if (create_page_table(page_directory_entry_addr, DIRECTORY_FLAGS, is_first_task) == NULL) {
       return NULL;
+    }
+
+    if (is_first_task == FIRST_TASK_TRUE && type == SECTION_KERNEL) {
+      if (address == 0) {
+        kernel_page_table_1 = (unsigned int)get_page_table_addr_with_offset(page_directory_entry_addr, address);
+      } else if (address == (USER_MEM_START/4)) {
+        kernel_page_table_2 = (unsigned int)get_page_table_addr_with_offset(page_directory_entry_addr, address);
+      } else if (address == (USER_MEM_START/2)) {
+        kernel_page_table_3 = (unsigned int)get_page_table_addr_with_offset(page_directory_entry_addr, address);
+      } else if (address == ((USER_MEM_START/4)*3)) {
+        kernel_page_table_4 = (unsigned int)get_page_table_addr_with_offset(page_directory_entry_addr, address);
+      }
     }
 
     page_table_allocated = 1;
@@ -285,7 +304,7 @@ int free_address_space(unsigned int *page_directory_addr,
   int something_remaining = 0;
   
   // Iterate over the page directory entries
-  for (page_directory_entry_addr = page_directory_addr ;
+  for (page_directory_entry_addr = (page_directory_addr + 4);
        page_directory_entry_addr < page_directory_addr + nb_entries ;
        ++page_directory_entry_addr) {
 

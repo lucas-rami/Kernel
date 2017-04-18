@@ -65,7 +65,7 @@ int kern_fork(unsigned int *esp) {
   }
 
   // SIMICS Debugging 
-  sim_reg_child(new_cr3, (void *) kernel.current_thread->cr3);
+  // sim_reg_child(new_cr3, (void *) kernel.current_thread->cr3);
 
   // Highest address of child's kernel stack
   uint32_t esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
@@ -188,7 +188,7 @@ static unsigned int * copy_memory_regions() {
 
       unsigned int *orig_page_table_addr = get_page_table_addr(orig_dir_entry);
       unsigned int *new_page_table_addr = 
-                      create_page_table(new_dir_entry, DIRECTORY_FLAGS);
+                      create_page_table(new_dir_entry, DIRECTORY_FLAGS, FIRST_TASK_FALSE);
 
       if (new_page_table_addr == NULL) {
         lprintf("copy_memory_regions(): Unable to allocate new page table\n");

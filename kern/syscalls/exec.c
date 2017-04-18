@@ -61,9 +61,10 @@ int kern_exec(char *execname, char **argvec) {
     return ERR_INVALID_ARGS;
   }
 
-  if (execname != argvec[0]) {
+  if (strcmp(execname, argvec[0])) {
     // execname doesn't match the first parameter to argvec. Some things
     // might fail. Hence, returning error now
+    lprintf("First argument should be the name of the program");
     return -1;
   }
 

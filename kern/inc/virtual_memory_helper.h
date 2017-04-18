@@ -13,7 +13,7 @@ int is_entry_present(unsigned int *entry_addr);
 void set_entry_invalid(unsigned int *entry_addr, unsigned int address);
 
 unsigned int *create_page_table(unsigned int *page_directory_entry_addr,
-                                uint32_t flags);
+                                uint32_t flags, int is_first_task);
 unsigned int *create_page_table_entry(unsigned int *page_table_entry_addr,
                                       uint32_t flags);
 
