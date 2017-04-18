@@ -6,7 +6,7 @@
 #ifndef _PCB_H_
 #define _PCB_H_
 
-#include <mutex.h>
+#include <eff_mutex.h>
 #include <stdint.h>
 #include <linked_list.h>
 #include <dynamic_queue.h>
@@ -54,10 +54,10 @@ typedef struct pcb {
   generic_queue_t waiting_threads;
 
   /** @brief Mutex used to ensure atomicity when changing the above three queues */
-  mutex_t list_mutex;
+  eff_mutex_t list_mutex;
 
   /** @brief Mutex used to ensure atomicity when changing the task state */
-  mutex_t mutex;
+  eff_mutex_t mutex;
 
 } pcb_t;
 

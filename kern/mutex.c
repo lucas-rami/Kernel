@@ -9,6 +9,7 @@
 #include <syscall.h>
 #include <assert.h>
 #include <syscalls.h>
+#include <eff_mutex.h>
 
 /** @brief A state of the mutex which means that mutex_init hasn't been called
  *   after a mutex_destroy
@@ -98,11 +99,6 @@ void mutex_lock(mutex_t *mp) {
   int my_ticket = atomic_add_and_update(&mp->next_ticket, j);
 
   while((mp->prev + 1) != my_ticket) {
-    // A thread which acquired the mutex earlier is running
-    // Yield till it releases the lock
-    // if (kern_yield(mp->tid_owner) < 0) {
-    //   kern_yield(-1);
-    // }
     kern_yield(-1);
   }
 
@@ -131,4 +127,53 @@ void mutex_unlock(mutex_t *mp) {
   // Increment the prev value which stores the ticket of the last run thread
   mp->prev++;
   
+}
+
+
+int eff_mutex_init(eff_mutex_t *mp) {
+
+  if (!mp) {
+    // Invalid parameter
+    return -1;
+  }
+
+  if (mutex_init(&mp->mp) < 0 || cond_init(&mp->cv) < 0) {
+    return -1;
+  }
+
+  return 0;
+}
+
+
+void eff_mutex_destroy(eff_mutex_t *mp) {
+
+  // Invalid parameter
+  assert(mp);
+
+  mutex_destroy(&mp->mp);
+
+  cond_destroy(&mp->cv);
+
+}
+
+
+void eff_mutex_lock(eff_mutex_t *mp) {
+
+  // Validate parameter and the fact that the mutex is initialized
+  assert(mp);
+  mutex_lock(&mp->mp);
+  while(mp->state == MUTEX_LOCKED) {
+    cond_wait(&mp->cv, &mp->mp);
+  }
+  mp->state = MUTEX_LOCKED;
+  mutex_unlock(&mp->mp);
+}
+
+
+void eff_mutex_unlock(eff_mutex_t *mp) {
+  assert(mp);
+  mutex_lock(&mp->mp);
+  mp->state = MUTEX_UNLOCKED;
+  cond_signal(&mp->cv);
+  mutex_unlock(&mp->mp);
 }

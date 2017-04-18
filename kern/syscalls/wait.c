@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <pcb.h>
 #include <kernel_state.h>
-#include <mutex.h>
+#include <eff_mutex.h>
 #include <dynamic_queue.h>
 #include <syscalls.h>
 #include <malloc.h>
@@ -33,8 +33,8 @@ int kern_wait(int *status_ptr) {
   pcb_t *curr_task = kernel.current_thread->task;
   
   // To modify task's ZOMBIE/WAITING list
-  mutex_lock(&curr_task->list_mutex);
-  
+  eff_mutex_lock(&curr_task->list_mutex);
+
   if (curr_task->zombie_children.head != NULL) {
     // If one child is in ZOMBIE state... 
 
@@ -47,7 +47,7 @@ int kern_wait(int *status_ptr) {
     }
 
     // Release the mutex for ZOMBIE list
-    mutex_unlock(&curr_task->list_mutex);
+    eff_mutex_unlock(&curr_task->list_mutex);
 
     // Collect return status of the child
     if (status_ptr != NULL) {
@@ -57,7 +57,7 @@ int kern_wait(int *status_ptr) {
     
     // TODO: Free kernel stack of the last thread
     free(zombie_child);
-  
+
   } else {
     // No one is ZOMBIE state...
 
@@ -65,11 +65,15 @@ int kern_wait(int *status_ptr) {
     queue_insert_node(&curr_task->waiting_threads, kernel.current_thread);
 
     // Release the mutex for WAITING list    
-    mutex_unlock(&curr_task->list_mutex);
+    eff_mutex_unlock(&curr_task->list_mutex);
+
+    lprintf("Reaching there");
 
     // Deschedule thread while waiting for someone to vanish()
     int x = 0;
     kern_deschedule(&x);
+
+    lprintf("SHOULDNT PRINT UNTIL THE FIRST ONE EXITS");
 
     // Collect return status of the child
     if (status_ptr != NULL) {
@@ -80,6 +84,8 @@ int kern_wait(int *status_ptr) {
    
     // TODO: Free kernel stack of the last thread
     free(kernel.current_thread->reaped_task);
+
+    return ret;
   }
 
   // Return original thread id of reaped task

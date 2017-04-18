@@ -201,7 +201,6 @@ unsigned int create_task_from_executable(char *task_name, int is_exec,
   if (is_exec != TRUE) {  
 
     // This code is only ran by the first created task
-    lprintf("\tcreate_task_from_executable(): Adding thread to runnable queue");
     new_tcb->thread_state = THR_RUNNABLE;
     generic_node_t new_tail = {new_tcb, NULL};
     generic_node_t * node_addr = (generic_node_t *)(new_tcb->esp0 - PAGE_SIZE);
@@ -259,14 +258,14 @@ unsigned int request_frames_needed_by_program(simple_elf_t *elf) {
   total_frames_reqd++;
   total_frames_reqd -= reduce_count;
 
-  mutex_lock(&kernel.mutex);
+  eff_mutex_lock(&kernel.mutex);
   if (total_frames_reqd <= kernel.free_frame_count) {
     kernel.free_frame_count -= total_frames_reqd;
   } else {
-    mutex_unlock(&kernel.mutex);
+    eff_mutex_unlock(&kernel.mutex);
     return 0;
   }
-  mutex_unlock(&kernel.mutex);
+  eff_mutex_unlock(&kernel.mutex);
   // TODO: Test the code when two sections overlap
   return total_frames_reqd;
 }

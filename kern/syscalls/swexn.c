@@ -48,7 +48,7 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
 
   // Store the current esp of the exception stack and the eip to restore in
   // case something goes bad
-  mutex_lock(&kernel.current_thread->mutex);
+  eff_mutex_lock(&kernel.current_thread->mutex);
   if (esp3 == NULL || eip == NULL) {
     // Deregister the current handlewexn_handler_t eip
     kernel.current_thread->swexn_values.esp3 = NULL;
@@ -60,7 +60,7 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
     kernel.current_thread->swexn_values.eip = eip;
     kernel.current_thread->swexn_values.arg = arg;
   }
-  mutex_unlock(&kernel.current_thread->mutex);
+  eff_mutex_unlock(&kernel.current_thread->mutex);
 
   /*
   if (newureg != NULL) {

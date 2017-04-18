@@ -12,7 +12,7 @@
 #define BITS_IN_UINT8_T 8
 
 #include <stdint.h>
-#include <mutex.h>
+#include <eff_mutex.h>
 
 /** @brief A structure representing a bitmap
  */
@@ -25,12 +25,11 @@ typedef struct {
   int size;
   
   /* @brief A mutex to make the bitmap implememtation thread-safe */
-  mutex_t mp;
+  eff_mutex_t mp;
 
 } bitmap_t;
 
 int bitmap_init(bitmap_t *map, int size);
-// int get_bit(bitmap_t *map, int index);
 int set_bit(bitmap_t *map, int index);
 int unset_bit(bitmap_t *map, int index);
 

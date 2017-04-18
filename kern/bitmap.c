@@ -26,7 +26,7 @@ int bitmap_init(bitmap_t *map, int length) {
   if (map->arr == NULL) {
     return -1;
   }
-  if (mutex_init(&map->mp) < 0) {
+  if (eff_mutex_init(&map->mp) < 0) {
     free(map->arr);
     return -1;
   }
@@ -64,11 +64,10 @@ int set_bit(bitmap_t *map, int index) {
     return -1;
   }
 
-  mutex_lock(&map->mp);  
-
+  eff_mutex_lock(&map->mp);
   if (get_bit(map, index) != BITMAP_UNALLOCATED) {
-    mutex_unlock(&map->mp);    
-    return BITMAP_ALLOCATED;  
+    eff_mutex_unlock(&map->mp);
+    return -1;
   }
 
 
@@ -77,8 +76,9 @@ int set_bit(bitmap_t *map, int index) {
   map->arr[actual_index] |= 
                         (BITMAP_ALLOCATED << (BITS_IN_UINT8_T - bit_pos - 1));
 
-  mutex_unlock(&map->mp);    
-  return BITMAP_UNALLOCATED;
+  eff_mutex_unlock(&map->mp);    
+  return 0;
+
 }
 
 /** @brief Unset the value of a particular bit in the mipmap
@@ -93,18 +93,17 @@ int unset_bit(bitmap_t *map, int index) {
     return -1;
   }
 
-  mutex_lock(&map->mp);
-
-  if (get_bit(map, index) == BITMAP_UNALLOCATED) {
-    mutex_unlock(&map->mp);    
-    return BITMAP_UNALLOCATED;  
+  eff_mutex_lock(&map->mp);
+  if (get_bit(map, index) <= 0) {
+    eff_mutex_unlock(&map->mp);
+    return -1;
   }
-
+    
   int actual_index = (index / BITS_IN_UINT8_T);
   int bit_pos = (index % BITS_IN_UINT8_T);
   map->arr[actual_index] &= 
                         (~(BITMAP_ALLOCATED << (BITS_IN_UINT8_T - bit_pos - 1)));
 
-  mutex_unlock(&map->mp);    
-  return BITMAP_ALLOCATED;
+  eff_mutex_unlock(&map->mp);    
+  return 0;
 }

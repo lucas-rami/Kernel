@@ -19,6 +19,7 @@ char exn_staq[STAQ_SIZE];
 
 #define COOKIE ((void *)0x0dd0ad9b)
 
+#define GOOD_MEMORY ((void *)0x40000000)
 void handler(void *arg, ureg_t *uregs)
 {
 	REPORT_MISC("Hello from a handler");
@@ -48,7 +49,7 @@ int main()
 	}
 
 	/* Invoke handler */
-	ret = *(int *)NULL;
+	ret = *(int *)GOOD_MEMORY;
 	REPORT_MISC("should not get here!");
 	REPORT_END_FAIL;
 	exit(ret);

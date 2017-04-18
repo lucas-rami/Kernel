@@ -37,16 +37,16 @@ int kern_fork(unsigned int *esp) {
   // TODO: Reject call if more than one thread in the task ?
   // TODO: Need to register software exception handler
 
-  mutex_lock(&kernel.mutex);
+  eff_mutex_lock(&kernel.mutex);
   if (kernel.current_thread->num_of_frames_requested <= kernel.free_frame_count) {
     // TODO: Shouldn't it be kernel.current_thread->task->num_of_frames_requested ?
     kernel.free_frame_count -= kernel.current_thread->num_of_frames_requested;
   } else {
     lprintf("Can't fork as no frames left");
-    mutex_unlock(&kernel.mutex);
+    eff_mutex_unlock(&kernel.mutex);
     return -1;
   }
-  mutex_unlock(&kernel.mutex);
+  eff_mutex_unlock(&kernel.mutex);
 
   // Allocate a kernel stack for the new task
   void *stack_kernel = malloc(PAGE_SIZE);
@@ -94,9 +94,9 @@ int kern_fork(unsigned int *esp) {
   
 
   // Add the child to the running queue
-  mutex_lock(&kernel.current_thread->task->list_mutex);
+  eff_mutex_lock(&kernel.current_thread->task->list_mutex);
   queue_insert_node(&kernel.current_thread->task->running_children, new_pcb);
-  mutex_unlock(&kernel.current_thread->task->list_mutex);
+  eff_mutex_unlock(&kernel.current_thread->task->list_mutex);
 
   // Craft the kernel stack for the new thread
   new_tcb->esp = (uint32_t) initialize_stack_fork(kernel.current_thread->esp0,

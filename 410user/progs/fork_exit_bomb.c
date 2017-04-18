@@ -37,10 +37,11 @@ int main(int argc, char *argv[]) {
             report_end(END_FAIL);    
 			break;
 		}
-    count++;
+                count++;
+                report_fmt("child: %d", pid);
+                // lprintf("Count is %d now", count);
 	}
 
     report_end(END_SUCCESS);
-    while(1);
 	exit(42);
 }

@@ -61,7 +61,6 @@ unsigned int *setup_vm(const simple_elf_t *elf_info) {
       (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
 
   // TODO: check NULL pointer
-  lprintf("\tsetup_vm(): Creating page directory @ %p", page_dir);
 
   memset(page_dir, 0, PAGE_SIZE);
 

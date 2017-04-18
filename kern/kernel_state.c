@@ -76,7 +76,7 @@ int kernel_init() {
   }
 
   // Initialize the kernel mutex
-  if (mutex_init(&kernel.mutex) < 0) {
+  if (eff_mutex_init(&kernel.mutex) < 0) {
     lprintf("kernel_init(): Failed to initialize mutex");
     return -1;
   }
@@ -100,7 +100,7 @@ tcb_t *create_idle_thread() {
   pcb_t *new_pcb = malloc(sizeof(pcb_t));
 
   // Initialize the mutex on this PCB
-  if (mutex_init(&new_pcb->mutex) < 0) {
+  if (eff_mutex_init(&new_pcb->mutex) < 0) {
     lprintf("create_idle_thread(): Failed to initialize PCB mutex");
     free(new_pcb);
     return NULL;
@@ -115,7 +115,7 @@ tcb_t *create_idle_thread() {
   tcb_t *new_tcb = malloc(sizeof(tcb_t));
 
   // Initialize the mutex on this PCB
-  if (mutex_init(&new_tcb->mutex) < 0) {
+  if (eff_mutex_init(&new_tcb->mutex) < 0) {
     lprintf("create_idle_thread(): Failed to initialize TCB mutex");
     free(new_pcb);
     free(new_tcb);
@@ -155,14 +155,14 @@ pcb_t *create_new_pcb() {
   pcb_t *new_pcb = malloc(sizeof(pcb_t));
 
   // Initialize the mutex on this PCB
-  if (mutex_init(&new_pcb->mutex) < 0) {
+  if (eff_mutex_init(&new_pcb->mutex) < 0) {
     lprintf("create_new_pcb(): Failed to initialize mutex");
     free(new_pcb);
     return NULL;
   }
 
   // Initialize the list_mutex on this PCB
-  if (mutex_init(&new_pcb->list_mutex) < 0) {
+  if (eff_mutex_init(&new_pcb->list_mutex) < 0) {
     lprintf("create_new_pcb(): Failed to initialize list_mutex");
     free(new_pcb);
     return NULL;
@@ -205,12 +205,12 @@ pcb_t *create_new_pcb() {
   new_pcb->original_thread_id = 0;
 
   // Assign a unique id to the PCB
-  mutex_lock(&kernel.mutex);
+  eff_mutex_lock(&kernel.mutex);
   new_pcb->tid = kernel.task_id;
   if (++kernel.task_id < 0) {
     kernel.task_id = 1;
   }
-  mutex_unlock(&kernel.mutex);
+  eff_mutex_unlock(&kernel.mutex);
 
   // Add the new PCB to the hash table
   if (hash_table_add_element(&kernel.pcbs, new_pcb) < 0) {
@@ -231,7 +231,7 @@ tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3) {
   tcb_t *new_tcb = malloc(sizeof(tcb_t));
 
   // Initialize the mutex on this PCB
-  if (mutex_init(&new_tcb->mutex) < 0) {
+  if (eff_mutex_init(&new_tcb->mutex) < 0) {
     lprintf("create_new_tcb(): Failed to initialize mutex");
     free(new_tcb);
     return NULL;
@@ -251,12 +251,12 @@ tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3) {
   // TODO: Change this into an atomic op.
   // No need for a mutex
   // Assign a unique id to the TCB
-  mutex_lock(&kernel.mutex);
+  eff_mutex_lock(&kernel.mutex);
   new_tcb->tid = kernel.thread_id;
   if (++kernel.thread_id < 0) {
     kernel.thread_id = 1;
   }
-  mutex_unlock(&kernel.mutex);
+  eff_mutex_unlock(&kernel.mutex);
 
   // Add the new PCB to the hash table
   if (hash_table_add_element(&kernel.tcbs, new_tcb) < 0) {

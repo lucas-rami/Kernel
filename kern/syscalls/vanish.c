@@ -1,6 +1,6 @@
 #include <hash_table.h>
 #include <kernel_state.h>
-#include <mutex.h>
+#include <eff_mutex.h>
 #include <cr.h>
 #include <dynamic_queue.h>
 #include <linked_list.h>
@@ -32,7 +32,7 @@ void kern_vanish() {
   pcb_t *curr_task = kernel.current_thread->task;
 
   // Get mutex on current task's state
-  mutex_lock(&curr_task->mutex);
+  eff_mutex_lock(&curr_task->mutex);
 
   if (curr_task->num_of_threads <= 1) {
     // We are the last thread in the task...
@@ -41,19 +41,19 @@ void kern_vanish() {
     curr_task->task_state = EXITED;
 
     // Release mutex on current task's state
-    mutex_unlock(&curr_task->mutex);
+    eff_mutex_unlock(&curr_task->mutex);
     
     // hash_table_remove_element(&kernel.pcbs, curr_task);
     
     // Free up the virtual memory. Switch to the init's cr3 to make kernel code
     // run
    
-    // TODO: Change this so that only a task has cr3
     // TODO: Change this to task again when above is fixed
 
     // Free whole address space of invoking task's
     unsigned int *cr3 = (unsigned int *)kernel.current_thread->cr3;
     kernel.current_thread->cr3 = kernel.init_cr3;
+ 
     set_cr3(kernel.init_cr3);
     free_address_space(cr3, KERNEL_AND_USER_SPACE);
    
@@ -64,7 +64,7 @@ void kern_vanish() {
     linked_list_delete_list(&curr_task->allocations);
 
     // To modify task's ZOMBIE/RUNNING list
-    mutex_lock(&curr_task->list_mutex);
+    eff_mutex_lock(&curr_task->list_mutex);
 
     // Mark all running children's parent as init
     generic_node_t *tmp = curr_task->running_children.head;
@@ -86,10 +86,10 @@ void kern_vanish() {
     }
 
     // Release the mutex task's ZOMBIE/RUNNING list
-    mutex_unlock(&curr_task->list_mutex);
+    eff_mutex_unlock(&curr_task->list_mutex);
 
     // To modify parent task's ZOMBIE/RUNNING list
-    mutex_lock(&curr_task->parent->list_mutex);
+    eff_mutex_lock(&curr_task->parent->list_mutex);
     
     if (is_queue_empty(&curr_task->parent->waiting_threads)) {
       // No thread is waiting for me in, add myself to the zombie list
@@ -106,12 +106,12 @@ void kern_vanish() {
     }
 
     // Release the mutex on parent task's ZOMBIE/RUNNING list    
-    mutex_unlock(&curr_task->parent->list_mutex);
+    eff_mutex_unlock(&curr_task->parent->list_mutex);
 
   } else {
 
     // Release mutex on current task's state  
-    mutex_unlock(&kernel.current_thread->task->mutex);
+    eff_mutex_unlock(&kernel.current_thread->task->mutex);
   }
 
   // TODO: What about the PCB and the kernel stack. How do you delete those?
@@ -120,9 +120,11 @@ void kern_vanish() {
   hash_table_remove_element(&kernel.tcbs, kernel.current_thread);
 
   // Context switch to someone else
-  block_and_switch(HOLDING_MUTEX_FALSE);
+  disable_interrupts();
+  context_switch(next_thread());
 
   lprintf("\tkern_vanish(): Reached end of vanish -> PANIC");
+
   assert(0);
 
   return;

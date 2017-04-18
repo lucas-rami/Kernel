@@ -13,7 +13,7 @@
 
 int main() {
 
-  char *program = "fork_wait_bomb";
+  char *program = "fork_exit_bomb";
   char *args[2];
   int pid = fork();
   args[0] = program;

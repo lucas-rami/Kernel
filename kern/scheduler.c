@@ -84,7 +84,7 @@ void block_and_switch(int holding_mutex) {
   lprintf("\tblock_and_switch(): Blocking thread %d", kernel.current_thread->tid);
 
   if (holding_mutex == HOLDING_MUTEX_TRUE) {
-    mutex_unlock(&kernel.current_thread->mutex);
+    eff_mutex_unlock(&kernel.current_thread->mutex);
   }
 
   if (kernel.cpu_idle == CPU_IDLE_TRUE) {
@@ -159,7 +159,7 @@ void force_next_thread(tcb_t *force_next_tcb) {
   generic_node_t new_tail = {kernel.current_thread, NULL};
 
   disable_interrupts();    
-  mutex_unlock(&force_next_tcb->mutex);  
+  eff_mutex_unlock(&force_next_tcb->mutex);  
 
   lprintf("force_next_thread(): Forcing thread %d", force_next_tcb->tid);
 

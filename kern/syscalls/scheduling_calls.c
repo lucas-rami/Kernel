@@ -25,14 +25,14 @@ int kern_yield(int tid) {
     tcb_t *next_thread = hash_table_get_element(&kernel.tcbs, &tmp);
 
     if (next_thread != NULL) {
-      mutex_lock(&next_thread->mutex);
+      eff_mutex_lock(&next_thread->mutex);
       lprintf("\tkern_yield(tid = %d): Thread %d yielding", tid, kernel.current_thread->tid);
       if (next_thread->thread_state == THR_RUNNABLE) {
         // If the thread exists and is in the THR_RUNNABLE state, run it
         // The mutex will be unlocked in force_next_thread()       
         force_next_thread(next_thread);
       } else {
-        mutex_unlock(&next_thread->mutex);  
+        eff_mutex_unlock(&next_thread->mutex);  
         return -1;    
       }
 
@@ -48,8 +48,9 @@ int kern_yield(int tid) {
 int kern_deschedule(int *reject) {
 
   // TODO: check that reject is a valid pointer
+
   // Lock the mutex on the thread
-  mutex_lock(&kernel.current_thread->mutex);
+  eff_mutex_lock(&kernel.current_thread->mutex);
 
   // Atomically checks the integer pointed to by reject
   // TODO: is this "atomically check" ?
@@ -59,7 +60,7 @@ int kern_deschedule(int *reject) {
     // The mutex will be unlocked in block_and_switch
     block_and_switch(HOLDING_MUTEX_TRUE);
   } else {
-    mutex_unlock(&kernel.current_thread->mutex);
+    eff_mutex_unlock(&kernel.current_thread->mutex);
   }
 
   return 0;
@@ -82,17 +83,15 @@ int kern_make_runnable(int tid) {
     return -1;
   }
 
-  mutex_lock(&tcb->mutex);
+  eff_mutex_lock(&tcb->mutex);
 
   // If the thread exists and has been descheduled make it runnable again
   if (tcb->thread_state == THR_BLOCKED) {
     add_runnable_thread(tcb);
-    mutex_unlock(&tcb->mutex);
-    // enable_interrupts();
+    eff_mutex_unlock(&tcb->mutex);
     return 0;
   }
 
-  mutex_unlock(&tcb->mutex);
-  // enable_interrupts();
+  eff_mutex_unlock(&tcb->mutex);
   return -1;
 }
