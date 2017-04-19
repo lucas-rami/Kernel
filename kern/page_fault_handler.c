@@ -18,7 +18,7 @@ void page_fault_c_handler(char *stack_ptr)
 {
 
   lprintf("\tpage_fault_c_handler(): Page fault @ %p", (void*) get_cr2());
-  MAGIC_BREAK;
+  // MAGIC_BREAK;
 
   if (allocate_frame_if_address_requested(get_cr2()) < 0) {
     create_stack_sw_exception(SWEXN_CAUSE_PAGEFAULT, stack_ptr);

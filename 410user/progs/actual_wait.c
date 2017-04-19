@@ -15,7 +15,7 @@
 #include "410_tests.h"
 DEF_TEST_NAME("actual_wait:");
 
-#define NCHILD 80 /* must be < 255 */
+#define NCHILD 40 /* must be < 255 */
 #define PRESERVE (1024*1024)
 
 void child(int);
@@ -44,7 +44,7 @@ main(int argc, char *argv[])
       pids[c] = pid;
 
       snprintf(msg, sizeof (msg), "slot %d pid %d", c, pid);
-      lprintf("%s\n", msg);
+      printf("%s\n", msg);
       REPORT_MISC(msg);
 
       if (c & 1)
@@ -62,7 +62,7 @@ main(int argc, char *argv[])
     pid = wait(&slot);
 
     snprintf(msg, sizeof (msg), "slot %d pid %d", slot, pid);
-    lprintf("%s\n", msg);
+    // printf("%s\n", msg);
     REPORT_MISC(msg);
 
     if ((slot < 0) || (slot >= NCHILD)) {
@@ -102,7 +102,7 @@ child(int which)
   char msg[128];
 
   snprintf(msg, sizeof (msg), "child %d", which);
-  lprintf("%s\n", msg);
+  // printf("%s\n", msg);
   REPORT_MISC(msg);
 
   switch(((gpid = fork()) < 0) ? -1 : gpid) {

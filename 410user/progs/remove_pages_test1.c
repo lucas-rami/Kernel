@@ -36,7 +36,6 @@ int main() {
       failed = 1;
     }
     
-    lprintf("New pages returned fine");
     /* verify pages */
     for (i = 0; i < size; i++) {
       if (*(int *)(ADDR + i * PAGE_SIZE) != 0) {

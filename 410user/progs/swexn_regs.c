@@ -24,7 +24,6 @@ char swexn_stack[SWEXN_STACK_SIZE];
 #define EFLAGS_MASK 0x00003000
 
 
-#define GOOD_MEMORY ((void *)0x40000000)
 void handler(void *arg, ureg_t *uregs)
 {
     int ret;
@@ -58,7 +57,7 @@ int main(void)
         exit(1);
     }
     
-    *(int*)GOOD_MEMORY = 42;
+    *(int*)NULL = 42;
 
     /* Should not get here */
     REPORT_END_FAIL;

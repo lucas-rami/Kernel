@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include "410_tests.h"
 #include <report.h>
-#include <assert.h>
 
 DEF_TEST_NAME("fork_exit_bomb:");
 
@@ -25,21 +24,16 @@ int main(int argc, char *argv[]) {
 	lprintf("parent pid: %d", gettid());
 
 	while(count < 1000) {
-        pid = fork();
-		if(pid == 0) {
+		if((pid = fork()) == 0) {
 			exit(42);
 		}
 		if(pid < 0) {
-            lprintf("fork_exit_bomb(): Fork() failed");
-            report_end(END_FAIL);    
 			break;
 		}
-                count++;
-                report_fmt("child: %d", pid);
-                // lprintf("Count is %d now", count);
+    count++;
+        report_fmt("child: %d", pid);
 	}
 
     report_end(END_SUCCESS);
-    // MAGIC_BREAK;
 	exit(42);
 }
