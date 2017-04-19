@@ -114,6 +114,8 @@ int kern_fork(unsigned int *esp) {
 // TODO: doc
 int kern_thread_fork(unsigned int * esp) {
   
+  pcb_t * current_task = kernel.current_thread->task
+
   // Allocate new kernel stack
   void* kernel_stack = malloc(PAGE_SIZE);
   if (kernel_stack == NULL) {
@@ -124,12 +126,17 @@ int kern_thread_fork(unsigned int * esp) {
   uint32_t esp0 = (uint32_t)(kernel_stack) + PAGE_SIZE;
 
   // Create new TCB
-  tcb_t * new_tcb = create_new_tcb(kernel.current_thread->task, 
-                                    esp0, kernel.current_thread->cr3);
+  tcb_t * new_tcb = create_new_tcb(current_task, esp0, 
+                                      kernel.current_thread->cr3);
 
   // Craft the kernel stack for the new thread  
   new_tcb->esp = (uint32_t) initialize_stack_fork(kernel.current_thread->esp0,
                                                   esp0, esp, new_tcb);
+
+  // Increment the number of threads in the current task
+  eff_mutex_lock(&current_task->mutex);
+  ++current_task->num_of_threads;
+  eff_mutex_unlock(&current_task->mutex);
 
   // Make the thread runnable
   add_runnable_thread(new_tcb);
