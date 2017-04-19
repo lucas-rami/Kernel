@@ -171,8 +171,8 @@ unsigned int create_task_from_executable(char *task_name, int is_exec,
   uint32_t eflags = get_eflags();
   eflags |= EFL_RESV1;       // Set bit 1
   eflags &= ~EFL_AC;         // Alignment checking off
-  eflags &= ~EFL_IOPL_RING3; // Clear current privilege level
-  eflags |= EFL_IOPL_RING3;  // Set privilege level to 3
+  // eflags &= ~EFL_IOPL_RING3; // Clear current privilege level
+  // eflags |= EFL_IOPL_RING3;  // Set privilege level to 3
   eflags |= EFL_IF;          // Enable interrupts
 
   unsigned int * stack_addr = (unsigned int *) esp0;

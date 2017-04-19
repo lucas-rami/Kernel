@@ -4,6 +4,8 @@
 #include <string.h>
 #include <kernel_state.h>
 #include <common_kern.h>
+#include <seg.h>
+#include <eflags.h>
 
 #define NUM_ARGS 4
 
@@ -48,7 +50,7 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
     // TODO: IOPL ?
     uint32_t eflags = newureg->eflags;
     if ( !(eflags & EFL_RESV1) || (eflags & EFL_AC) ||
-        (eflags & EFL_IOPL_RING3) != EFL_IOPL_RING3 || !(eflags & EFL_IF) ) {
+        eflags & EFL_IOPL_RING3 || !(eflags & EFL_IF) ) {
       lprintf("\tkern_swexn(): Invalid EFLAGS ");          
       return -1;
     }
@@ -66,7 +68,7 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
     // lprintf("swexn esp %p, eip %p, arg %p, ureg %p", esp3, eip, arg, newureg);
 
     // memcpy(stack_pointer, &newureg->ds, 12 * sizeof(unsigned int));
-    // stack_pointer += 12;
+    // stack_pointer += 13;
     // memcpy(stack_pointer, &newureg->eip, 5 * sizeof(unsigned int));
     
     memcpy(stack_pointer, &newureg->ds, (sizeof(ureg_t) - (2 * sizeof(unsigned int))));
