@@ -114,7 +114,7 @@ int kern_fork(unsigned int *esp) {
 // TODO: doc
 int kern_thread_fork(unsigned int * esp) {
   
-  pcb_t * current_task = kernel.current_thread->task
+  pcb_t * current_task = kernel.current_thread->task;
 
   // Allocate new kernel stack
   void* kernel_stack = malloc(PAGE_SIZE);
