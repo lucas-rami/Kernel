@@ -8,10 +8,10 @@
 #include <dynamic_queue.h>
 #include <syscalls.h>
 #include <malloc.h>
-#include <assert.h>
 
 int kern_wait(int *status_ptr) {
   
+  // Validation of args
   if (is_buffer_valid((unsigned int)&status_ptr, sizeof(uintptr_t)) < 0) {
     // status ptr isn't a valid memory address
     lprintf("kern_wait(): Invalid args");
@@ -23,70 +23,68 @@ int kern_wait(int *status_ptr) {
     lprintf("The address status_ptr isn't valid");
     return -1;
   }
-
-  lprintf("\tkern_wait(status_ptr = %p): Thread %d waiting", status_ptr, kernel.current_thread->tid);
-
-  int ret;
-
-  // Get current task
-  pcb_t *curr_task = kernel.current_thread->task;
   
-  // To modify task's ZOMBIE/WAITING list
+  
+  lprintf("Wait %d", kernel.current_thread->tid);
+
+  // Check if this thread will wait infinitely 
+  pcb_t *curr_task = kernel.current_thread->task;
+  lprintf("Taking list mutex %p for task", &curr_task->list_mutex);
   eff_mutex_lock(&curr_task->list_mutex);
-
+  lprintf("Taken list mutex %p for task", &curr_task->list_mutex);
+  // lprintf("Waiting threads %d running children %d", (int)curr_task->num_waiting_threads, (int)curr_task->num_running_children);
+  if (curr_task->num_waiting_threads >= curr_task->num_running_children) {
+    // This thread will wait infinitely
+    eff_mutex_unlock(&curr_task->list_mutex);
+    return -1;
+  }
+  
   if (curr_task->zombie_children.head != NULL) {
-    // If one child is in ZOMBIE state... 
-
-    // Remove it from the ZOMBIE list
+    // lprintf("At least 1 zombie child present");
+    // Remove the zombie child
     pcb_t *zombie_child = queue_delete_node(&curr_task->zombie_children);
     if (zombie_child == NULL) {
-      lprintf("\tkern_wait(): zombie queue delete failed");
-      assert(0);
+      lprintf("kern_wait(): zombie queue delete failed");
       return -1;
     }
-
-    // Release the mutex for ZOMBIE list
+    curr_task->num_running_children--;
     eff_mutex_unlock(&curr_task->list_mutex);
 
-    // Collect return status of the child
     if (status_ptr != NULL) {
       *status_ptr = zombie_child->return_status;
     }
-    ret = zombie_child->original_thread_id;
+    int ret = zombie_child->original_thread_id;
     
     // TODO: Free kernel stack of the last thread
+    // TODO: Destroy the mutexes and everything?
+    /// lprintf("Freeing the pcb %p of thread %d. My tid %d.", zombie_child, zombie_child->original_thread_id, kernel.current_thread->tid);
     free(zombie_child);
-
-  } else {
-    // No one is ZOMBIE state...
-
-    // Insert myself in list of waiting threads
-    queue_insert_node(&curr_task->waiting_threads, kernel.current_thread);
-
-    // Release the mutex for WAITING list    
-    eff_mutex_unlock(&curr_task->list_mutex);
-
-    lprintf("Reaching there");
-
-    // Deschedule thread while waiting for someone to vanish()
-    int x = 0;
-    kern_deschedule(&x);
-
-    lprintf("SHOULDNT PRINT UNTIL THE FIRST ONE EXITS");
-
-    // Collect return status of the child
-    if (status_ptr != NULL) {
-      *status_ptr = kernel.current_thread->reaped_task->return_status;
-    }
-
-    ret = kernel.current_thread->reaped_task->original_thread_id;
-   
-    // TODO: Free kernel stack of the last thread
-    free(kernel.current_thread->reaped_task);
-
+    // lprintf("Free returned");
+ 
     return ret;
   }
 
-  // Return original thread id of reaped task
+  curr_task->num_waiting_threads++;
+  // lprintf("No zombie child");
+  // No zombie children at the time
+  // Wait for at least one thread to vanish
+  queue_insert_node(&curr_task->waiting_threads, kernel.current_thread);
+  eff_mutex_unlock(&curr_task->list_mutex);
+  // lprintf("Reaching there");
+  int x = 0;
+  // lprintf("Calling kern_deschedule waiting for thread %d", kernel.current_thread->tid);
+  kern_deschedule(&x);
+  // lprintf("SHOULDNT PRINT UNTIL THE FIRST ONE EXITS");
+  
+  if (status_ptr != NULL) {
+    *status_ptr = kernel.current_thread->reaped_task->return_status;
+  }
+  int ret = kernel.current_thread->reaped_task->original_thread_id;
+
+  // TODO: Free kernel stack of the last thread
+  // lprintf("Freeing pcb of the reaped task. My tid %d", kernel.current_thread->tid);
+  free(kernel.current_thread->reaped_task);
+  // lprintf("Free returned");
+
   return ret;
 }

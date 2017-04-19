@@ -1,9 +1,3 @@
-/** @file swexn.S
- *  @brief This file contains the definition for the swexn() system call 
- *    wrapper.
- *  @author akanjani, lramire1
- */
-
 .global swexn
 
 swexn:
@@ -22,3 +16,4 @@ swexn:
   addl $16, %esp
 
   call restore_state_and_iret
+

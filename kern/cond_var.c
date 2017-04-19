@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <syscalls.h>
 #include <cond_var.h>
+#include <simics.h>
 
 /** @brief The state of a condition variable which means that a cond_init has
  *   been called but cond_destroy hasn't been called after that
@@ -76,6 +77,9 @@ void cond_destroy(cond_t *cv) {
   // Invalid parameter
   assert(cv);
 
+  if (cv->init != CVAR_INITIALIZED) {
+    lprintf("Not init %p", cv);
+  }
   // Illegal Operation. Destroy on an uninitalized cvar
   assert(cv->init == CVAR_INITIALIZED);
 
@@ -108,6 +112,9 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
   // Invalid parameter
   assert(cv && mp);
 
+  if (cv->init != CVAR_INITIALIZED) {
+    lprintf("Not init %p", cv);
+  }
   // Illegal Operation. cond_wait on an uninitialized cvar
   assert(cv->init == CVAR_INITIALIZED);
 
@@ -151,6 +158,9 @@ void cond_signal(cond_t *cv) {
   // Invalid parameter
   assert(cv);
 
+  if (cv->init != CVAR_INITIALIZED) {
+    lprintf("Not init %p", cv);
+  }
   // Illegal operation. cond_signal on an uninitialized cvar
   assert(cv->init == CVAR_INITIALIZED);
 

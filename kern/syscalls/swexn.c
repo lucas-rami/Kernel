@@ -1,16 +1,9 @@
-/** @file swexn.c
- *  @brief This file contains the definition for the kern_swexn() system call.
- *  @author akanjani, lramire1
- */
-
 #include <stddef.h>
 #include <virtual_memory.h>
 #include <simics.h>
 #include <string.h>
 #include <kernel_state.h>
 #include <common_kern.h>
-#include <seg.h>
-#include <eflags.h>
 
 #define NUM_ARGS 4
 
@@ -21,8 +14,8 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
   // lprintf("swexn esp %p, eip %p, arg %p, ureg %p", esp3, eip, arg, newureg);
   // lprintf("cause %p, cr2 %p, ds %p, es %p, fs %p, gs %p, esp %p", (uint32_t*)newureg->cause, (uint32_t*)newureg->cr2, (uint32_t*)newureg->ds, (uint32_t*)newureg->es, (uint32_t*)newureg->fs, (uint32_t*)newureg->gs, (uint32_t*)newureg->esp);
   char *stack_pointer = (char*)&esp3;
-  int ret = 0;
   // lprintf("sp %p", stack_pointer);
+  int ret = 0;
   // Move the stack pointer to the 
   stack_pointer += ((NUM_ARGS) * sizeof(void*));
   // lprintf("New sp %p", stack_pointer);
@@ -33,7 +26,7 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
     return -1;
   }
 
-  // Check validity of ureg data structure
+  // PRECHECKS
   if (newureg != NULL) {
 
     // Chech that the ureg_t structure is in user address space
@@ -84,7 +77,7 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
   // case something goes bad
   eff_mutex_lock(&kernel.current_thread->mutex);
   if (esp3 == NULL || eip == NULL) {
-    // Deregister the current handler
+    // Deregister the current handlewexn_handler_t eip
     kernel.current_thread->swexn_values.esp3 = NULL;
     kernel.current_thread->swexn_values.eip = NULL;
     kernel.current_thread->swexn_values.arg = NULL;

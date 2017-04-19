@@ -41,11 +41,17 @@ typedef struct pcb {
   /* @brief Number of threads associated with this task */
   uint32_t num_of_threads;
 
+  /* @brief Number of threads associated with this task */
+  uint32_t num_waiting_threads;
+
+  /* @brief Number of threads associated with this task */
+  uint32_t num_running_children;
+
   /* @brief List of allocations made using new_pages() */
   generic_linked_list_t allocations;
 
   /* @brief Queue of running children */
-  generic_queue_t running_children;
+  generic_linked_list_t running_children;
 
   /* @brief Queue of zombie children */
   generic_queue_t zombie_children;

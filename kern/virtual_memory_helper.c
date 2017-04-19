@@ -16,6 +16,7 @@
 #include <virtual_memory.h>
 #include <virtual_memory_helper.h>
 #include <virtual_memory_defines.h>
+#include "virtual_memory_internal.h"
 
 /* Debugging */
 #include <simics.h>
@@ -67,15 +68,40 @@ void set_entry_invalid(unsigned int *entry_addr, unsigned int address) {
  *  @return The address of the newly created page table
  */
 unsigned int *create_page_table(unsigned int *page_directory_entry_addr, 
-                                uint32_t flags) {                          
-  unsigned int *page_table_entry_addr =
+                                uint32_t flags, int is_first_task) {                          
+  unsigned int *page_table_entry_addr;
+  if (is_first_task != FIRST_TASK_TRUE) {
+    switch(((uint32_t)page_directory_entry_addr & (PAGE_SIZE - 1))) {
+      case 0:
+        page_table_entry_addr = (unsigned int *)kernel_page_table_1;
+        break;
+      case 4:
+        page_table_entry_addr = (unsigned int *)kernel_page_table_2;
+        break;
+      case 8:
+        page_table_entry_addr = (unsigned int *)kernel_page_table_3;
+        break;
+      case 12:
+        page_table_entry_addr = (unsigned int *)kernel_page_table_4;
+        break;
+      default:
+        page_table_entry_addr =
+          (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
+        if (page_table_entry_addr == NULL) {
+          return NULL;
+        }
+        memset(page_table_entry_addr, 0, PAGE_SIZE);
+    };
+  } else {
+    page_table_entry_addr =
       (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
-  if (page_table_entry_addr == NULL) {
-    return NULL;
+    if (page_table_entry_addr == NULL) {
+      return NULL;
+    }
+
+    memset(page_table_entry_addr, 0, PAGE_SIZE);
   }
 
-  memset(page_table_entry_addr, 0, PAGE_SIZE);
-  
   *page_directory_entry_addr =
       ((unsigned int)page_table_entry_addr & PAGE_ADDR_MASK);
   *page_directory_entry_addr |= flags;
@@ -254,7 +280,8 @@ int mark_address_requested(unsigned int address) {
   unsigned int *page_directory_entry_addr = 
       get_page_directory_addr_with_offset(address);
   if (!is_entry_present(page_directory_entry_addr)) {
-    if (!create_page_table(page_directory_entry_addr, DIRECTORY_FLAGS)) {
+    if (!create_page_table(page_directory_entry_addr, 
+        DIRECTORY_FLAGS, FIRST_TASK_FALSE)) {
       return -1;
     }
   }

@@ -102,7 +102,7 @@ unsigned int create_task_from_executable(char *task_name, int is_exec,
   }
 
   // SIMICS Debugging 
-  sim_reg_process(cr3, task_name);
+  // sim_reg_process(cr3, task_name);
 
   uint32_t esp0, stack_top;
   pcb_t *new_pcb = NULL;

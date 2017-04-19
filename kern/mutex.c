@@ -90,6 +90,9 @@ void mutex_destroy(mutex_t *mp) {
  */
 void mutex_lock(mutex_t *mp) {
 
+  if (mp->init != MUTEX_INITIALIZED) {
+    lprintf("Mutex not init. %p", mp);
+  }
   // Validate parameter and the fact that the mutex is initialized
   assert(mp && mp->init == MUTEX_INITIALIZED);
 
@@ -117,6 +120,9 @@ void mutex_lock(mutex_t *mp) {
  *  @return void
  */
 void mutex_unlock(mutex_t *mp) {
+  if (mp->init != MUTEX_INITIALIZED) {
+    lprintf("Mutex not init. %p", mp);
+  }
 
   // Validate parameter and the fact that the mutex is initialized
   assert(mp && mp->init == MUTEX_INITIALIZED);
@@ -141,6 +147,7 @@ int eff_mutex_init(eff_mutex_t *mp) {
     return -1;
   }
 
+  mp->state = MUTEX_UNLOCKED;
   return 0;
 }
 
@@ -160,12 +167,14 @@ void eff_mutex_destroy(eff_mutex_t *mp) {
 void eff_mutex_lock(eff_mutex_t *mp) {
 
   // Validate parameter and the fact that the mutex is initialized
+  lprintf("Mutex lock %p", mp);
   assert(mp);
   mutex_lock(&mp->mp);
   while(mp->state == MUTEX_LOCKED) {
     cond_wait(&mp->cv, &mp->mp);
   }
   mp->state = MUTEX_LOCKED;
+  lprintf("Mutex locked %p", mp);
   mutex_unlock(&mp->mp);
 }
 
@@ -175,5 +184,6 @@ void eff_mutex_unlock(eff_mutex_t *mp) {
   mutex_lock(&mp->mp);
   mp->state = MUTEX_UNLOCKED;
   cond_signal(&mp->cv);
+  lprintf("mutex unlocked %p", mp);
   mutex_unlock(&mp->mp);
 }

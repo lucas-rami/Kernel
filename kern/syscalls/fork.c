@@ -65,7 +65,7 @@ int kern_fork(unsigned int *esp) {
   }
 
   // SIMICS Debugging 
-  sim_reg_child(new_cr3, (void *) kernel.current_thread->cr3);
+  // sim_reg_child(new_cr3, (void *) kernel.current_thread->cr3);
 
   // Highest address of child's kernel stack
   uint32_t esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
@@ -95,7 +95,8 @@ int kern_fork(unsigned int *esp) {
 
   // Add the child to the running queue
   eff_mutex_lock(&kernel.current_thread->task->list_mutex);
-  queue_insert_node(&kernel.current_thread->task->running_children, new_pcb);
+  kernel.current_thread->task->num_running_children++;
+  linked_list_insert_node(&kernel.current_thread->task->running_children, new_pcb);
   eff_mutex_unlock(&kernel.current_thread->task->list_mutex);
 
   // Craft the kernel stack for the new thread
@@ -188,7 +189,7 @@ static unsigned int * copy_memory_regions() {
 
       unsigned int *orig_page_table_addr = get_page_table_addr(orig_dir_entry);
       unsigned int *new_page_table_addr = 
-                      create_page_table(new_dir_entry, DIRECTORY_FLAGS);
+                      create_page_table(new_dir_entry, DIRECTORY_FLAGS, FIRST_TASK_FALSE);
 
       if (new_page_table_addr == NULL) {
         lprintf("copy_memory_regions(): Unable to allocate new page table\n");

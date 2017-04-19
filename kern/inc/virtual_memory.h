@@ -14,7 +14,8 @@ unsigned int *setup_vm(const simple_elf_t *elf);
 int load_every_segment(const simple_elf_t *elf, unsigned int *cr3);
 int load_segment(const char *fname, unsigned long offset, unsigned long size,
                  unsigned long start_addr, int type, unsigned int *cr3);
-void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3);
+void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3,
+                 int is_first_task);
 int load_multiple_frames(unsigned int address, unsigned int nb_frames, 
                             unsigned int type);
 int free_address_space(unsigned int *page_table_addr, int free_kernel_space);
