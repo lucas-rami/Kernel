@@ -44,17 +44,17 @@ static int free_frames_zfod(void* base);
  */
 int kern_new_pages(void *base, int len) {
 
-  lprintf("Base addr is %p, Length is %d", base, len);
+  lprintf("\tkern_new_pages(): Base addr is %p, Length is %d", base, len);
   // Check that the 'len' argument is valid
   if (len <= 0 || len % PAGE_SIZE != 0) {
-    lprintf("kern_new_pages(): Invalid len argument");
+    lprintf("\tkern_new_pages(): Invalid len argument");
     return -1;
   }
 
   // Check that the 'base' argument is valid
   if ((unsigned int)base < USER_MEM_START ||
       ((unsigned int)base % PAGE_SIZE) != 0) {
-    lprintf("kern_new_pages(): Invalid base argument");        
+    lprintf("\tkern_new_pages(): Invalid base argument");        
     return -1;
   }
 
@@ -63,7 +63,7 @@ int kern_new_pages(void *base, int len) {
 
   // Reserve nb_pages of ZFOD space
   if (reserve_frames_zfod(base, nb_pages) < 0) {
-    lprintf("kern_new_pages(): Failed to reserve ZFOD space");
+    lprintf("\tkern_new_pages(): Failed to reserve ZFOD space");
     return -1;
   }
 
@@ -87,7 +87,7 @@ int kern_remove_pages(void *base) {
   // Check that the 'base' argument is valid
   if ((unsigned int)base < USER_MEM_START ||
       ((unsigned int)base & PAGE_SIZE) != 0) {
-    lprintf("kern_remove_pages(): Invalid base argument");        
+    lprintf("\tkern_remove_pages(): Invalid base argument");        
     return -1;
   }
 

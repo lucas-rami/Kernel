@@ -28,22 +28,49 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
 
   // PRECHECKS
   if (newureg != NULL) {
-    /*if (is_buffer_valid((unsigned int)newureg, sizeof(ureg_t)) < 0) {
-      lprintf("Buffer is not valid");
-    } else {
-    */  ret = (int)newureg->eax;
-      // lprintf("Memcpy");
-      // lprintf("swexn esp %p, eip %p, arg %p, ureg %p", esp3, eip, arg, newureg);
-      // lprintf("Newureg ds address %p", &newureg->ds);
-      memcpy(stack_pointer, &newureg->ds, (sizeof(ureg_t) - (2 * sizeof(unsigned int))));
-      // memcpy(stack_pointer + (13 * sizeof(unsigned int)), &newureg->eip, 5 * sizeof(unsigned int));
-      // lprintf("Memcpy donw");
-      // lprintf("swexn esp %p, eip %p, arg %p, ureg %p", esp3, eip, arg, newureg);
-    // }
-    // Check if memory address is valid for the whole structure. If yes,
-    // copy it to our stack
+
+    // Chech that the ureg_t structure is in user address space
+    // TODO: check ureg not in kernel space
+    if (is_buffer_valid((unsigned int)newureg, sizeof(ureg_t)) < 0) {
+      lprintf("\tkern_swexn(): Invalid newureg buffer");
+      return -1;
+    }
+
+    // Check segment selectors
+    if (newureg->ds != SEGSEL_USER_DS || newureg->es != SEGSEL_USER_DS || 
+        newureg->fs != SEGSEL_USER_DS || newureg->gs != SEGSEL_USER_DS ||
+        newureg->ss != SEGSEL_USER_DS || newureg->cs != SEGSEL_USER_CS) {
+      lprintf("\tkern_swexn(): Invalid segments");          
+      return -1;
+    }
+
+    // Check EFLAGS 
+    // TODO: IOPL ?
+    uint32_t eflags = newureg->eflags;
+    if ( !(eflags & EFL_RESV1) || (eflags & EFL_AC) ||
+        (eflags & EFL_IOPL_RING3) != EFL_IOPL_RING3 || !(eflags & EFL_IF) ) {
+      lprintf("\tkern_swexn(): Invalid EFLAGS ");          
+      return -1;
+    }
+
+  }
+
+  if (newureg != NULL) {
+
+    ret = (int)newureg->eax;
+
+    // lprintf("Memcpy");
+    // lprintf("swexn esp %p, eip %p, arg %p, ureg %p", esp3, eip, arg, newureg);
+    // lprintf("Newureg ds address %p", &newureg->ds);
+    // lprintf("Memcpy donw");
+    // lprintf("swexn esp %p, eip %p, arg %p, ureg %p", esp3, eip, arg, newureg);
+
+    // memcpy(stack_pointer, &newureg->ds, 12 * sizeof(unsigned int));
+    // stack_pointer += 12;
+    // memcpy(stack_pointer, &newureg->eip, 5 * sizeof(unsigned int));
     
-    // Otherwise, throw an error
+    memcpy(stack_pointer, &newureg->ds, (sizeof(ureg_t) - (2 * sizeof(unsigned int))));
+
   }
 
   // Store the current esp of the exception stack and the eip to restore in
@@ -62,12 +89,7 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
   }
   eff_mutex_unlock(&kernel.current_thread->mutex);
 
-  /*
-  if (newureg != NULL) {
-    // The values on return should be that in the newureg
-  }
-  */
-  // lprintf("Returning from kern_swexn");
-  // MAGIC_BREAK;
+  lprintf("\tkern_swexn(): Returning");
+  
   return ret;
 } 
