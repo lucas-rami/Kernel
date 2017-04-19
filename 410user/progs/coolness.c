@@ -10,18 +10,17 @@
 #include <syscall.h>
 #include <simics.h>
 
+char *program = "peon";
+char *args[2];
 
 int main() {
 
-  char *program = "fork_exit_bomb";
-  char *args[2];
-  int pid = fork();
+  fork();
   args[0] = program;
-  args[1] = 0;
-  // fork();
-  if (pid == 0) 
-    exec(program, args);
+  fork();
 
-  while(1);
+  exec(program, args);
+
+  while(1)
       lprintf("ULTIMATE BADNESS");
 }

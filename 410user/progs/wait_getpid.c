@@ -21,20 +21,15 @@ int main()
 
   report_start(START_CMPLT);
 
-  MAGIC_BREAK;
   pid = fork();
 
-  MAGIC_BREAK;
   if (pid < 0) {
     report_end(END_FAIL);
     exit(-1);
   }
   
   if (pid == 0) {
-    lprintf("Here");
     pid = gettid();
-    lprintf("Calling exit");
-    MAGIC_BREAK;
     exit(pid);
     report_end(END_FAIL);
   }
@@ -49,6 +44,5 @@ int main()
   }
 
   report_end(END_SUCCESS);
-  while(1);
-  // exit(0);
+  exit(0);
 }

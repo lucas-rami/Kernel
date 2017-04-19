@@ -23,7 +23,6 @@ int main() {
   args[3] = buf;
   sprintf(buf, "%d", tid);
 
-  lprintf("The buffer is %s", buf);
   lprintf("promoting peon #%d to a merchant", tid);
 
   if (exec(prog, args) < 0)
