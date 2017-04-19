@@ -20,7 +20,7 @@
 
 #ifdef ASSEMBLER
 
-#define lprintf /* sim_printf */
+#define lprintf sim_printf
 
 #else /* !ASSEMBLER */
 
@@ -68,7 +68,7 @@ extern void sim_booted(const char *kern);
 
 /* "Compatibility mode" for old code */
 #define MAGIC_BREAK sim_breakpoint()
-#define lprintf(...) /* sim_printf(__VA_ARGS__) */
+#define lprintf(...) sim_printf(__VA_ARGS__) 
 
 #endif /* !ASSEMBLER */
 

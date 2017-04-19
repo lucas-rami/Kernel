@@ -11,9 +11,10 @@
 #include <stdio.h>
 #include <simics.h>
 
-#define TEST "actual_wait"
+// #define TEST "actual_wait"
 // #define TEST "fork_exit_bomb"
 // #define TEST "make_crash"
+// #define TEST "cho"
 
 int main()
 {

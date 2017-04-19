@@ -19,7 +19,7 @@ int kern_wait(int *status_ptr) {
 
   // If number of running children is less than or equal
   // to number of waiitng threads, return err
-  if (status_ptr != NULL && is_buffer_valid((unsigned int)*status_ptr, sizeof(int)) < 0) {
+  if (status_ptr != NULL && is_buffer_valid((unsigned int)status_ptr, sizeof(int)) < 0) {
     lprintf("The address status_ptr isn't valid");
     return -1;
   }
@@ -31,10 +31,11 @@ int kern_wait(int *status_ptr) {
   pcb_t *curr_task = kernel.current_thread->task;
   lprintf("Taking list mutex %p for task", &curr_task->list_mutex);
   eff_mutex_lock(&curr_task->list_mutex);
-  lprintf("Taken list mutex %p for task", &curr_task->list_mutex);
-  // lprintf("Waiting threads %d running children %d", (int)curr_task->num_waiting_threads, (int)curr_task->num_running_children);
+  // lprintf("Taken list mutex %p for task", &curr_task->list_mutex);
+  lprintf("Waiting threads %d running children %d", (int)curr_task->num_waiting_threads, (int)curr_task->num_running_children);
   if (curr_task->num_waiting_threads >= curr_task->num_running_children) {
     // This thread will wait infinitely
+    lprintf("Waitin children equals running children. Returning -1");
     eff_mutex_unlock(&curr_task->list_mutex);
     return -1;
   }

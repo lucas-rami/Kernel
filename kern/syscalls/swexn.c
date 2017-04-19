@@ -4,6 +4,8 @@
 #include <string.h>
 #include <kernel_state.h>
 #include <common_kern.h>
+#include <eflags.h>
+#include <seg.h>
 
 #define NUM_ARGS 4
 

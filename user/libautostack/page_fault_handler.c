@@ -36,7 +36,7 @@ void singlethread_handler(void* arg, ureg_t *ureg) {
     // Check if the page fault is in the stack limit for this task
     if (ureg->cr2 < ((unsigned int)task.stack_highest - MAX_STACK_SIZE)) {
       // Not a page fault for the stack
-      task_vanish(-1);
+      vanish();
     }
 
     // Calculate the Number of pages required
@@ -50,7 +50,7 @@ void singlethread_handler(void* arg, ureg_t *ureg) {
          growth_size) < 0) {
       // Can't grow the stack further. Something went really wrong
       // Revert back to default behaviour
-      task_vanish(-1);
+      vanish();
     }
     task.stack_lowest = (void *)((char*)task.stack_lowest - growth_size);
 
@@ -75,5 +75,5 @@ void singlethread_handler(void* arg, ureg_t *ureg) {
  *  @return void
  */
  void multithread_handler(void* arg, ureg_t *ureg) {
-   task_vanish(-1);
+   vanish();
  }

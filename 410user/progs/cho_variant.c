@@ -164,5 +164,6 @@ int main(int argc, char **argv)
   }
 
     report_end(END_SUCCESS);
+   MAGIC_BREAK;
   exit(0);
 }
