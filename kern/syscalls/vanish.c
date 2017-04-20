@@ -144,7 +144,9 @@ void kern_vanish() {
   if (is_last_thread == LAST_THREAD_TRUE) {
     eff_mutex_unlock(&curr_task->parent->list_mutex);
   }
-  context_switch(next_thread());
+
+  block_and_switch(HOLDING_MUTEX_FALSE);
+
   lprintf("kern_vanish(): Should never have reached here");
   assert(0);
   return;

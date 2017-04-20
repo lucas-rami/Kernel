@@ -178,6 +178,20 @@ void force_next_thread(tcb_t *force_next_tcb) {
     kernel.runnable_head = (kernel.runnable_tail = &new_tail);
   }
 
+  generic_node_t *it = kernel.runnable_head, *prev = NULL;
+  while (it != NULL) {
+    if (it->value == force_next_tcb) {
+      if (prev == NULL) {
+        kernel.runnable_head = it->next;
+      } else {
+        prev->next = it->next;
+      }
+    }
+    prev = it;
+    it = it->next;
+  }
+
+
   context_switch(force_next_tcb);
 
 }
