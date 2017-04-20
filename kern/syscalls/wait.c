@@ -8,6 +8,7 @@
 #include <dynamic_queue.h>
 #include <syscalls.h>
 #include <malloc.h>
+#include <stack_queue.h>
 
 int kern_wait(int *status_ptr) {
   
@@ -42,12 +43,16 @@ int kern_wait(int *status_ptr) {
   
   if (curr_task->zombie_children.head != NULL) {
     // lprintf("At least 1 zombie child present");
+    
     // Remove the zombie child
-    pcb_t *zombie_child = queue_delete_node(&curr_task->zombie_children);
-    if (zombie_child == NULL) {
+    generic_node_t * zombie_child_node = stack_queue_dequeue(&curr_task->zombie_children);
+    if (zombie_child_node == NULL) {
       lprintf("kern_wait(): zombie queue delete failed");
       return -1;
     }
+
+    pcb_t* zombie_child = zombie_child_node->value;
+
     curr_task->num_running_children--;
     eff_mutex_unlock(&curr_task->list_mutex);
 
@@ -69,7 +74,11 @@ int kern_wait(int *status_ptr) {
   // lprintf("No zombie child");
   // No zombie children at the time
   // Wait for at least one thread to vanish
-  queue_insert_node(&curr_task->waiting_threads, kernel.current_thread);
+
+  // Enqueue myself in the the queue of waiting threads
+  generic_node_t new_waiting = {kernel.current_thread, NULL};
+  stack_queue_enqueue(&curr_task->waiting_threads, &new_waiting);
+  
   eff_mutex_unlock(&curr_task->list_mutex);
   // lprintf("Reaching there");
   int x = 0;

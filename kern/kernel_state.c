@@ -14,6 +14,7 @@
 #include <virtual_memory_defines.h>
 #include <syscalls.h>
 #include <cr.h>
+#include <stack_queue.h>
 
 /* Debugging */
 #include <simics.h>
@@ -182,19 +183,9 @@ pcb_t *create_new_pcb() {
     return NULL;
   }
 
-  // Initialize the zombie children queue
-  if (queue_init(&new_pcb->zombie_children) < 0) {
-    lprintf("create_new_pcb(): Failed to initialize zombie_children");
-    free(new_pcb);
-    return NULL;
-  }
- 
-  // Initialize the waiting thread queue
-  if (queue_init(&new_pcb->waiting_threads) < 0) {
-    lprintf("create_new_pcb(): Failed to initialize waiting_threads");
-    free(new_pcb);
-    return NULL;
-  }
+  // Initialize the zombie children and waiting children queues
+  stack_queue_init(&new_pcb->zombie_children);
+  stack_queue_init(&new_pcb->waiting_threads);
 
   // Set various fields to their initial value
   new_pcb->return_status = 0;

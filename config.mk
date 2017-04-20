@@ -93,7 +93,7 @@ AUTOSTACK_OBJS = autostack.o page_fault_handler.o
 #
 # Kernel object files you provide in from kern/
 #
-KERNEL_OBJS = virtual_memory_helper.o virtual_memory_asm.o kernel_state.o hash_table.o linked_list.o mutex.o kernel.o loader.o malloc_wrappers.o interrupts.o queue.o page_fault_asm.o page_fault_handler.o virtual_memory.o bitmap.o idt_syscall.o task_create.o context_switch_asm.o context_switch.o static_queue.o scheduler.o cond_var.o dynamic_queue.o atomic_ops.o sw_exception.o
+KERNEL_OBJS = stack_queue.o virtual_memory_helper.o virtual_memory_asm.o kernel_state.o hash_table.o linked_list.o mutex.o kernel.o loader.o malloc_wrappers.o interrupts.o queue.o page_fault_asm.o page_fault_handler.o virtual_memory.o bitmap.o idt_syscall.o task_create.o context_switch_asm.o context_switch.o static_queue.o scheduler.o cond_var.o dynamic_queue.o atomic_ops.o sw_exception.o
 
 # Files in drivers/
 KERNEL_OBJS += drivers/console.o drivers/keyboard.o drivers/keyboard_asm.o drivers/prechecks.o drivers/timer.o drivers/timer_asm.o

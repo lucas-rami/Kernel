@@ -16,6 +16,7 @@
 #include <asm.h>
 #include <scheduler.h>
 #include <malloc.h>
+#include <stack_queue.h>
 
 #define EXITED 5
 #define LAST_THREAD_FALSE 0
@@ -113,17 +114,22 @@ void kern_vanish() {
     // side effect
     linked_list_delete_node(&curr_task->parent->running_children, curr_task);
 
-    if (is_queue_empty(&curr_task->parent->waiting_threads)) {
+    if (is_stack_queue_empty(&curr_task->parent->waiting_threads)) {
       // None of the threads of my parent process are waiting for me.
       // Add myself to the zombie queue of the parent
-      queue_insert_node(&curr_task->parent->zombie_children, curr_task);
+      generic_node_t new_zombie = {curr_task, NULL};
+      stack_queue_enqueue(&curr_task->parent->zombie_children, &new_zombie);
       // lprintf("Adding task %p %d to %p %d zombie children", curr_task, curr_task->tid, curr_task->parent, curr_task->parent->tid);
     } else {
       // At least one thread is waiting in my parent process
-      tcb_t *wait_thread = queue_delete_node(&curr_task->parent->waiting_threads);
+      generic_node_t *wait_thread_node = stack_queue_dequeue(&curr_task->parent->waiting_threads);
+      assert(wait_thread_node != NULL);
+
+      tcb_t* wait_thread = wait_thread_node->value;
       wait_thread->reaped_task = curr_task;
       curr_task->parent->num_running_children--;
       curr_task->parent->num_waiting_threads--;
+
       // kern_make_runnable(wait_thread->tid);
       // lprintf("Current thread %d. Made runnable %d", kernel.current_thread->tid, wait_thread->tid);
      /* < 0) {
