@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <linked_list.h>
 #include <dynamic_queue.h>
+#include <stack_queue.h>
 
 #define TASK_RUNNING 0
 #define TASK_ZOMBIE 1
@@ -54,10 +55,10 @@ typedef struct pcb {
   generic_linked_list_t running_children;
 
   /* @brief Queue of zombie children */
-  generic_queue_t zombie_children;
+  stack_queue_t zombie_children;
 
   /* @brief Queue of waiting threads */
-  generic_queue_t waiting_threads;
+  stack_queue_t waiting_threads;
 
   /** @brief Mutex used to ensure atomicity when changing the above three queues */
   eff_mutex_t list_mutex;
