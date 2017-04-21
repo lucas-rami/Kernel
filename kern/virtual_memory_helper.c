@@ -259,6 +259,11 @@ unsigned int *allocate_frame() {
  *    allocated
  */
 int free_frame(unsigned int* addr) {
+
+  // Do NOT free the zeroed out frame
+  if ((unsigned int)addr == kernel.zeroed_out_frame) {
+    return 0;
+  }
   int frame_index = ((unsigned int)(addr) - USER_MEM_START) / PAGE_SIZE;
   unset_bit(&free_map, frame_index);
   eff_mutex_lock(&kernel.mutex);
@@ -295,8 +300,12 @@ int mark_address_requested(unsigned int address) {
     return -1;
   }
 
+  lprintf("Marking address %p requested", (char*)address);
+  *page_table_entry_addr = (kernel.zeroed_out_frame & PAGE_ADDR_MASK);
   *page_table_entry_addr |= PAGE_TABLE_RESERVED_BIT;
+  *page_table_entry_addr |= PAGE_USER_RO_FLAGS;
 
+  // lprintf("The value at the address now is %p", ((char*)(*(unsigned int *))));
   return 0;
 }
 
@@ -350,11 +359,13 @@ int allocate_frame_if_address_requested(unsigned int address) {
   unsigned int *page_table_entry_addr =
       get_page_table_addr_with_offset(page_directory_entry_addr, address);
 
+  /*
   if (is_entry_present(page_table_entry_addr)) {
     // Should never be true.
     lprintf("check_if_address_requested(): VALID PAGE ENTRY");
     return -1;
   }
+  */
 
   if (is_page_requested(page_table_entry_addr)) {
     if (create_page_table_entry(page_table_entry_addr, PAGE_USER_FLAGS) 
@@ -368,6 +379,7 @@ int allocate_frame_if_address_requested(unsigned int address) {
     return -1;
   }
 
+  invalidate_tlb(address);
   // Zero fill
   memset((char*)((unsigned int)address & ~FRAME_OFFSET_MASK), 0, PAGE_SIZE);
 

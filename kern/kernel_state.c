@@ -47,6 +47,7 @@ int kernel_init() {
   kernel.free_frame_count = machine_phys_frames() - NUM_KERNEL_FRAMES;
   kernel.runnable_head = NULL;
   kernel.runnable_tail = NULL;
+  kernel.zeroed_out_frame = 0;
 
   // Initialize the mutex for the functions in malloc_wrappers.c
   if (mutex_init(&mutex_malloc) < 0) {

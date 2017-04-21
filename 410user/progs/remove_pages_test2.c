@@ -31,19 +31,23 @@ int main() {
     return -1;
   }
 
+  lprintf("HERE");
   if (*(int *)(ADDR + 2 * PAGE_SIZE) != 0) {
     lprintf("allocated page not zeroed at %x", ADDR + 2 * PAGE_SIZE);
     report_end(END_FAIL);
     return -1;
   }
+  lprintf("HERE 2");
   *(int *)(ADDR + 2 * PAGE_SIZE) = 5;
 
+  lprintf("HERE 3");
   if (remove_pages((void *)ADDR) != 0) {
     lprintf("remove_pages failed to remove pages at %x", ADDR);
     report_end(END_FAIL);
     return -1;
   }  
 
+  lprintf("HERE 4");
   report_misc("pages removed");
     
   switch (*(int *)(ADDR + 2 * PAGE_SIZE)) {

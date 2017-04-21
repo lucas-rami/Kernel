@@ -29,9 +29,12 @@
 #include <static_queue.h>
 #include <task_create.h>
 #include <virtual_memory.h>
+#include <virtual_memory_helper.h>
 #include <page_fault_handler.h>
 #include <syscalls.h>
 #include <assert.h>
+#include <string.h>
+#include <page.h>
 
 // tmp
 #include <cr.h>
@@ -74,6 +77,14 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
   }
 
   lprintf("\tkernel_main(): Creating first task");
+
+  kernel.zeroed_out_frame = (unsigned int)allocate_frame();
+  lprintf("The zeroed out frame is %p", (char*)kernel.zeroed_out_frame);
+  if (kernel.zeroed_out_frame == 0) {
+    lprintf("Zeroed out frame couldn't be allocated");
+  }
+  lprintf("The first int at %p is %p", (char*)kernel.zeroed_out_frame, (char*)(*(unsigned int *)kernel.zeroed_out_frame));
+  memset((char*)kernel.zeroed_out_frame, 0, PAGE_SIZE);
 
   // Create the initial task and load everything into memory
   uint32_t entrypoint;
