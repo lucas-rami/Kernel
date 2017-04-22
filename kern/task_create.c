@@ -36,6 +36,9 @@
 // Number of registers poped during a popa instruction
 #define NB_REGISTERS_POPA 8
 
+#define INCREASE_FRAME_COUNT eff_mutex_lock(&kernel.mutex);\
+                             kernel.free_frame_count += num_frames_requested;\
+                             eff_mutex_unlock(&kernel.mutex)
 
 /** @brief Creates a task from an executable. Loads all the different
  *   sections required by the program from the ELF file. Allocates a new
@@ -57,24 +60,10 @@
 unsigned int create_task_from_executable(char *task_name, int is_exec,
     char **argvec, int count) {
 
-  if (task_name == NULL) {
-    lprintf("Invalid argument to function create_task_from_executable()ç");
-    return 0;
-  }
-
-  // Check that the ELF header exists and is valid
-  if (elf_check_header(task_name) == ELF_NOTELF) {
-    lprintf("Could not find ELF header for task \"%s\"", task_name);
-    return 0;
-  }
-
-  // Hold information about the ELF header
   simple_elf_t elf;
 
-  // Populate the simple_elf_t data structure
-  if (elf_load_helper(&elf, task_name) == ELF_NOTELF) {
-    lprintf("ELF header is invalid for task \"%s\"", task_name);
-    return 0;
+  if (load_elf_file(task_name, &elf) < 0) {
+    lprintf("Error loading ELF file");
   }
 
   unsigned num_frames_requested;
@@ -92,12 +81,13 @@ unsigned int create_task_from_executable(char *task_name, int is_exec,
 
   // Setup virtual memory for this task
   // TODO: Free all this virtual space if anything fails
-  unsigned int *cr3, *old_cr3;
-  old_cr3 = (unsigned int *)get_cr3();
+  unsigned int *cr3;
   if ((cr3 = setup_vm(&elf)) == NULL) {
     lprintf("Task creation failed for task \"%s\"", task_name);
     free(stack_kernel);
-    // TODO: Increase the kernel free frame count
+    eff_mutex_lock(&kernel.mutex);
+    kernel.free_frame_count += num_frames_requested;
+    eff_mutex_unlock(&kernel.mutex);
     return 0;
   }
 
@@ -108,56 +98,42 @@ unsigned int create_task_from_executable(char *task_name, int is_exec,
   pcb_t *new_pcb = NULL;
   tcb_t *new_tcb = NULL;
   
-  if (is_exec != TRUE) {
+  // Doing this for the first user task of the system
+  esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
 
-    // Doing this for the first user task of the system
-    esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
+  // Create new PCB/TCB for the task and its root thread
+  new_pcb = create_new_pcb();
+  if (new_pcb == NULL) {
+    lprintf("create_task_from_executable(): PCB initialization failed");
+    // TODO: Increase the kernel free frame count
+    INCREASE_FRAME_COUNT;
+    free(stack_kernel);
+    return 0;
+  }
 
-    // Create new PCB/TCB for the task and its root thread
-    new_pcb = create_new_pcb();
-    if (new_pcb == NULL) {
-      lprintf("create_task_from_executable(): PCB initialization failed");
-      free(stack_kernel);
-      // TODO: Increase the kernel free frame count
-      return 0;
-    }
+  new_tcb = create_new_tcb(new_pcb, esp0, (uint32_t)cr3);
+  if (new_tcb == NULL) {
+    lprintf("create_task_from_executable(): TCB initialization failed");
+    free(stack_kernel);
+    hash_table_remove_element(&kernel.pcbs, new_pcb);
+    // TODO: Increase the kernel free frame count
+    INCREASE_FRAME_COUNT;
+    return 0;
+  }
 
-    new_tcb = create_new_tcb(new_pcb, esp0, (uint32_t)cr3);
-    if (new_tcb == NULL) {
-      lprintf("create_task_from_executable(): TCB initialization failed");
-      free(stack_kernel);
-      hash_table_remove_element(&kernel.pcbs, new_pcb);
-      // TODO: Increase the kernel free frame count
-      return 0;
-    }
+  new_pcb->original_thread_id = new_tcb->tid;
+  new_tcb->task = new_pcb;
 
-    new_pcb->original_thread_id = new_tcb->tid;
+  char *argv[2];
+  argv[0] = task_name;
+  argv[1] = NULL;
+  stack_top = (uint32_t) load_args_for_new_program(argv, (unsigned int *)get_cr3(), 1);
 
-    char *argv[2];
-    argv[0] = task_name;
-    argv[1] = NULL;
-    stack_top = (uint32_t) load_args_for_new_program(argv, (unsigned int *)get_cr3(), 1);
-
-    if (!strcmp(task_name, FIRST_TASK)) {
-      lprintf("\ttask_create(): Setting the init_cr3 as %p", cr3);
-      kernel.init_cr3 = (uint32_t)cr3;
-      kernel.init_task = new_pcb;
-    }
-
-  } else {
-    esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
-    new_tcb = kernel.current_thread;
-    new_tcb->esp0 = esp0;
-    char *new_stack_addr = load_args_for_new_program(argvec, old_cr3, count);
-    stack_top = (uint32_t)new_stack_addr;
-    // TODO: We are not actually freeing the frames right now. We need to 
-    // move this to kern_exec or free up the previous frames here
-    // Exec can't fail now. Increment the kernel free frame count
-    // by the number of frames requested by the current program
-    /* mutex_lock(&kernel.mutex);
-    kernel.free_frame_count += kernel.current_thread->num_of_frames_requested;
-    mutex_unlock(&kernel.mutex);
-    */
+  // TODO: Check if this comparison is needed
+  if (!strcmp(task_name, FIRST_TASK)) {
+    lprintf("\ttask_create(): Setting the init_cr3 as %p", cr3);
+    kernel.init_cr3 = (uint32_t)cr3;
+    kernel.init_task = new_pcb;
   }
 
   // TODO: lock?
@@ -189,27 +165,19 @@ unsigned int create_task_from_executable(char *task_name, int is_exec,
   *stack_addr = (unsigned int) run_first_thread;
   --stack_addr;
   *stack_addr = (unsigned int) init_thread;
-
-  if (is_exec != TRUE) {
-    // It isn't called from exec. The general purpose regs won't be popped
-    stack_addr -= NB_REGISTERS_POPA;
-  }
+  stack_addr -= NB_REGISTERS_POPA;
 
   // Save stack pointer value in TCB
   new_tcb->esp = (uint32_t) stack_addr;
 
-  // Make the thread runnable
-  if (is_exec != TRUE) {  
+  // Mark the thread as runnable
+  new_tcb->thread_state = THR_RUNNABLE;
+  generic_node_t new_tail = {new_tcb, NULL};
+  generic_node_t * node_addr = (generic_node_t *)(new_tcb->esp0 - PAGE_SIZE);
+  *(node_addr) = new_tail;
+  kernel.runnable_head = (kernel.runnable_tail = node_addr);
 
-    // This code is only ran by the first created task
-    new_tcb->thread_state = THR_RUNNABLE;
-    generic_node_t new_tail = {new_tcb, NULL};
-    generic_node_t * node_addr = (generic_node_t *)(new_tcb->esp0 - PAGE_SIZE);
-    *(node_addr) = new_tail;
-    kernel.runnable_head = (kernel.runnable_tail = node_addr);
-
-  }
-
+  lprintf("Returning from task_create");
   return elf.e_entry;
 }
 
@@ -271,3 +239,24 @@ unsigned int request_frames_needed_by_program(simple_elf_t *elf) {
   return total_frames_reqd;
 }
 
+
+int load_elf_file(char *task_name, simple_elf_t *elf) {
+
+  if (task_name == NULL) {
+    lprintf("Invalid argument to function create_task_from_executable()ç");
+    return -1;
+  }
+
+  // Check that the ELF header exists and is valid
+  if (elf_check_header(task_name) == ELF_NOTELF) {
+    lprintf("Could not find ELF header for task \"%s\"", task_name);
+    return -1;
+  }
+
+  // Populate the simple_elf_t data structure
+  if (elf_load_helper(elf, task_name) == ELF_NOTELF) {
+    lprintf("ELF header is invalid for task \"%s\"", task_name);
+    return -1;
+  }
+  return 0;
+}

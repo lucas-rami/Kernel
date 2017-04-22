@@ -33,6 +33,7 @@ int print(int len, char *buf);
 /* Exec calls */
 int kern_exec(char *execname, char **argvec);
 char *load_args_for_new_program(char **argvec, unsigned int *new_ptd, int count);
+int exec_prechecks(char *execname, char **argvec);
 
 /* swexn calls */
 int swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg);

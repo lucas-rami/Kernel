@@ -76,8 +76,6 @@ int kern_fork(unsigned int *esp) {
     lprintf("fork(): PCB initialization failed");
     free(stack_kernel);
     free_address_space(new_cr3, KERNEL_AND_USER_SPACE);
-    // TODO: Increase the kernel free frame count
-    return -1;
   }
 
   tcb_t *new_tcb = create_new_tcb(new_pcb, esp0, (uint32_t)new_cr3);
@@ -91,6 +89,8 @@ int kern_fork(unsigned int *esp) {
   }
   new_pcb->original_thread_id = new_tcb->tid;
   new_pcb->parent = kernel.current_thread->task;
+  lprintf("Setting %p as the task for thread %d", new_pcb, new_tcb->tid);
+  new_tcb->task = new_pcb;
   
 
   // Add the child to the running queue

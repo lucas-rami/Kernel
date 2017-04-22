@@ -21,6 +21,8 @@
 #include <asm.h>
 #include "exec_helper.h"
 #include <virtual_memory_defines.h>
+#include <eflags.h>
+#include <context_switch_asm.h>
 
 #define ERR_INVALID_ARGS -1
 // TODO: What should this value be? How about max no of args
@@ -55,59 +57,59 @@
 int kern_exec(char *execname, char **argvec) {
   lprintf("exec");
 
+  int count = 0;
   // Validate all arguments
-  if (is_valid_string(execname) == FALSE) {
-    lprintf("Execname not valid");
-    return ERR_INVALID_ARGS;
-  }
-
-  if (strcmp(execname, argvec[0])) {
-    // execname doesn't match the first parameter to argvec. Some things
-    // might fail. Hence, returning error now
-    lprintf("First argument should be the name of the program");
+  if ((count = exec_prechecks(execname, argvec)) < 0) {
     return -1;
-  }
-
-  int i = 0;
-  while (argvec[i] != NULL) {
-    if (is_valid_string(argvec[i]) == FALSE || strlen(argvec[i]) > 
-         ARGS_MAX_SIZE) {
-      lprintf("Invalid args");
-      return ERR_INVALID_ARGS;
-    }
-    i++;
   }
 
   unsigned int *old_cr3 = (unsigned int*)get_cr3();
 
-  if (create_task_from_executable(execname, TRUE, argvec, i) == 0) {
-    // Error creating the new task
+  simple_elf_t elf;
+  if (load_elf_file(execname, &elf) <0) {
+    lprintf("Error loading %p from the elf file", execname);
     return -1;
   }
 
-  // Overwrite the cr3 value with the new one
-  kernel.current_thread->cr3 = (uint32_t)get_cr3();
+  unsigned num_frames_requested;
+  if ((num_frames_requested = request_frames_needed_by_program(&elf)) == 0) {
+    lprintf("The program %s needs more memory than is available", task_name);
+    return -1;
+  }
+ 
+  unsigned int *cr3 = NULL;
+  if ((cr3 = setup_vm(&elf)) == NULL) {
+    lprintf("VM setup failed for task \"%s\"", execname);
+    eff_mutex_lock(&kernel.mutex);
+    kernel.free_frame_count += num_frames_requested;
+    eff_mutex_unlock(&kernel.mutex);
+    return -1;
+  }
 
-  // TODO: Why is this needed?
-  disable_interrupts();
+  char *new_stack_addr = load_args_for_new_program(argvec, old_cr3, count);
+  lprintf("Loaded args for new program");
+
+
+  tcb_t *curr_tcb = kernel.current_thread;
+  curr_tcb->num_of_frames_requested = num_frames_requested;
+  curr_tcb->task->num_of_frames_requested = num_frames_requested;
+  curr_tcb->swexn_values.esp3 = NULL;
+  curr_tcb->swexn_values.eip = NULL;
+  curr_tcb->swexn_values.arg = NULL;
+
+
+  lprintf("Calling free address space");
   free_address_space(old_cr3, KERNEL_AND_USER_SPACE);
+  lprintf("Returned from free address space. Should go to execed code");
 
-  // The setup of the second program is complete. Time to switch to it and 
-  // start execution.
-  switch_esp(kernel.current_thread->esp);
 
-  // SHOULD NEVER RETURN HERE
-  // assert(0);
-  lprintf("EXEC RETURNED TO THE CALLING PROGRAM. FATAL ERROR");
+  run_first_thread(elf.e_entry, (uint32_t)new_stack_addr, get_eflags());
+  lprintf("SHOULDNT PRINT");
+
+
+  lprintf("SHOULD NEVER RETURN HERE!!");
   return 0;
   // TODO: Think of a reasonable limit on the number of args in argvec
-  // TODO: On failure, clean up whatever space we have allocated for this 
-  // new task
-  // and return a negative value. Should be handled in task_create
-  // TODO: Garbage collect the kernel stack
-  // TODO: No software exception handler should be registered. Do something to 
-  // make
-  // that happen
 }
 
 /** @brief Transports the number of strings in the argvec and the vector itself
@@ -135,14 +137,17 @@ char *load_args_for_new_program(char **argvec, unsigned int *old_ptd,
     memcpy(buf, argvec[i], len + 1);
     stack_addr -= (len + 1);
     args_addr[i] = stack_addr;
+    kernel.current_thread->cr3 = (uint32_t)new_ptd;
     set_cr3((uint32_t)new_ptd);
     memcpy(stack_addr, buf, len + 1);
+    kernel.current_thread->cr3 = (uint32_t)old_ptd;
     set_cr3((uint32_t)old_ptd);
     i++;
   }
 
   stack_addr -= (sizeof(char*) * (count));
   char *start_of_argv = stack_addr;
+  kernel.current_thread->cr3 = (uint32_t)new_ptd;
   set_cr3((uint32_t)new_ptd);
   memcpy(stack_addr, args_addr, (sizeof(char*) * (count)));
   unsigned int ptr_size = sizeof(void*);
@@ -158,3 +163,34 @@ char *load_args_for_new_program(char **argvec, unsigned int *old_ptd,
   return (stack_addr - sizeof(uint32_t));
 }
   
+int exec_prechecks(char *execname, char **argvec) {
+  
+  if (kernel.current_thread->task->num_of_threads > 1) {
+    lprintf("Exec Error: Multiple threads running while calling exec");
+    return -1;
+  }
+
+  if (is_valid_string(execname) == FALSE) {
+    lprintf("Execname not valid");
+    return ERR_INVALID_ARGS;
+  }
+
+  if (strcmp(execname, argvec[0])) {
+    // execname doesn't match the first parameter to argvec. Some things
+    // might fail. Hence, returning error now
+    lprintf("First argument should be the name of the program");
+    return -1;
+  }
+
+  int i = 0;
+  while (argvec[i] != NULL) {
+    if (is_valid_string(argvec[i]) == FALSE || strlen(argvec[i]) > 
+         ARGS_MAX_SIZE) {
+      lprintf("Invalid args");
+      return ERR_INVALID_ARGS;
+    }
+    i++;
+  }
+
+  return i;
+}
