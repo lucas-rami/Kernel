@@ -3,7 +3,10 @@
 #include <malloc.h>
 #include <malloc_internal.h>
 #include <stddef.h>
+#include <kernel_state.h>
+#include <eff_mutex.h>
 
+/*
 #define LOCKED 0
 #define UNLOCKED 1
 
@@ -13,61 +16,62 @@ static void release_lock();
 static int lock = UNLOCKED;
 mutex_t mutex_malloc;
 cond_t cond_malloc;
+*/
 
 void *malloc(size_t size) {
-  get_lock();
+  eff_mutex_lock(&kernel.malloc_mutex);
   void* ret = _malloc(size);
-  release_lock();
+  eff_mutex_unlock(&kernel.malloc_mutex);
   return ret;
 }
 
 void *memalign(size_t alignment, size_t size) {
-  get_lock();
+  eff_mutex_lock(&kernel.malloc_mutex);
   void* ret = _memalign(alignment, size);
-  release_lock();
+  eff_mutex_unlock(&kernel.malloc_mutex);
   return ret;
 }
 
 void *calloc(size_t nelt, size_t eltsize) {
-  get_lock();
+  eff_mutex_lock(&kernel.malloc_mutex);
   void* ret = _calloc(nelt, eltsize);
-  release_lock();
+  eff_mutex_unlock(&kernel.malloc_mutex);
   return ret;
 }
 
 void *realloc(void *buf, size_t new_size) {
-  get_lock();
+  eff_mutex_lock(&kernel.malloc_mutex);
   void* ret = _realloc(buf, new_size);
-  release_lock();
+  eff_mutex_unlock(&kernel.malloc_mutex);
   return ret;
 }
 
 void free(void *buf) {
-  get_lock();
+  eff_mutex_lock(&kernel.malloc_mutex);
   _free(buf);
-  release_lock();
+  eff_mutex_unlock(&kernel.malloc_mutex);
 }
 
 void *smalloc(size_t size) {
-  get_lock();
+  eff_mutex_lock(&kernel.malloc_mutex);
   void* ret = _smalloc(size);
-  release_lock();
+  eff_mutex_unlock(&kernel.malloc_mutex);
   return ret;
 }
 
 void *smemalign(size_t alignment, size_t size) {
-  get_lock();
+  eff_mutex_lock(&kernel.malloc_mutex);
   void* ret = _smemalign(alignment, size);
-  release_lock();
+  eff_mutex_unlock(&kernel.malloc_mutex);
   return ret;
 }
 
 void sfree(void *buf, size_t size) {
-  get_lock();
+  eff_mutex_lock(&kernel.malloc_mutex);
   _sfree(buf, size);
-  release_lock();
+  eff_mutex_unlock(&kernel.malloc_mutex);
 }
-
+/*
 static void get_lock() {
   mutex_lock(&mutex_malloc);
   while (lock == LOCKED) {
@@ -83,3 +87,4 @@ static void release_lock() {
   cond_signal(&cond_malloc);
   mutex_unlock(&mutex_malloc);
 }
+*/

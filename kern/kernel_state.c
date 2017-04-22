@@ -51,17 +51,17 @@ int kernel_init() {
   kernel.zeroed_out_frame = 0;
 
   // Initialize the mutex for the functions in malloc_wrappers.c
-  if (mutex_init(&mutex_malloc) < 0) {
+  if (eff_mutex_init(&kernel.malloc_mutex) < 0) {
     lprintf("kernel_init(): Failed to initialize mutex for malloc_wrappers.c");
     return -1;
   }
 
   // Initialize the condition variable for the functions in malloc_wrappers.c
-  if (cond_init(&cond_malloc) < 0) {
+  /*if (cond_init(&cond_malloc) < 0) {
     lprintf("kernel_init(): Failed to initialize conditional variable for "
             "malloc_wrappers.c");
     return -1;
-  }
+  }*/
 
   // Initialize the PCBs hash table
   if (hash_table_init(&kernel.pcbs, NB_BUCKETS, find_pcb, hash_function_pcb) <

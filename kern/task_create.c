@@ -136,7 +136,7 @@ unsigned int create_task_from_executable(char *task_name, int is_exec,
     char *argv[2];
     argv[0] = task_name;
     argv[1] = NULL;
-    stack_top = (uint32_t) load_args_for_new_program(argv, old_cr3, 1);
+    stack_top = (uint32_t) load_args_for_new_program(argv, (unsigned int *)get_cr3(), 1);
 
     if (!strcmp(task_name, FIRST_TASK)) {
       lprintf("\ttask_create(): Setting the init_cr3 as %p", cr3);

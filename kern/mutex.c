@@ -45,6 +45,7 @@ int mutex_init(mutex_t *mp) {
   mp->init = MUTEX_INITIALIZED;
   mp->tid_owner = -1;
 
+  lprintf("Init mutex %p", mp);
   return 0;
 }
 

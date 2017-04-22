@@ -51,6 +51,9 @@ typedef struct kernel {
   /** @brief Mutex used to ensure atomicity when changing the kernel state */
   eff_mutex_t mutex;
 
+  /** @brief Mutex used to ensure atomicity when calling malloc */
+  eff_mutex_t malloc_mutex;
+
   /** @brief Count of the number of frames available(not used or requested for) */
   unsigned int free_frame_count;
 

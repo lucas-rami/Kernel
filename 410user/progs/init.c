@@ -14,7 +14,7 @@
 // #define TEST "actual_wait"
 // #define TEST "fork_exit_bomb"
 #define TEST "make_crash"
-// #define TEST "cho"
+// #define TEST "cho_variant"
 // #define TEST "remove_pages_test2"
 
 int main()
