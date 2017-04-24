@@ -12,7 +12,9 @@
 #include <stdio.h>
 #include <syscalls.h>
 #include <cond_var.h>
+#include <stack_queue.h>
 #include <simics.h>
+#include <kernel_state.h>
 
 /** @brief The state of a condition variable which means that a cond_init has
  *   been called but cond_destroy hasn't been called after that
@@ -42,20 +44,21 @@
  */
 int cond_init(cond_t *cv) {
 
-  if (!cv) {
+  if (cv == NULL) {
     // Invalid parameter
     return -1;
   }
-
-  // Initialize the cvar state
-  cv->init = CVAR_INITIALIZED;
-  cv->waiting_head = NULL;
-  cv->waiting_tail = NULL;
-
+  
   // Initialize the cvar mutex
   if (mutex_init(&cv->mp) < 0) {
     return -1;
-  } 
+  }
+
+  // Initialize the waiting queue 
+  stack_queue_init(&cv->waiting_queue);
+
+  // Initialize the cvar state
+  cv->init = CVAR_INITIALIZED;
 
   return 0;
 }
@@ -83,8 +86,8 @@ void cond_destroy(cond_t *cv) {
   // Illegal Operation. Destroy on an uninitalized cvar
   assert(cv->init == CVAR_INITIALIZED);
 
-  // Illegal Operation. Destroy on a cvar for which thread(s) are waiting for
-  assert(cv->waiting_head == NULL);
+  // Destroy the stack queue
+  stack_queue_destroy(&cv->waiting_queue);
 
   // Destroy the cvar mutex
   mutex_destroy(&cv->mp);
@@ -118,19 +121,12 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
   // Illegal Operation. cond_wait on an uninitialized cvar
   assert(cv->init == CVAR_INITIALIZED);
 
-  // Add this thread to the waiting queue of this condition variable
-  generic_node_t new_tail = {(void*) kern_gettid(), NULL};
-
   // Lock the cvar mutex
   mutex_lock(&cv->mp);
 
-  // Enqueue the invoking thread
-  if (cv->waiting_head != NULL) {
-    cv->waiting_tail->next = &new_tail;
-    cv->waiting_tail = &new_tail;
-  } else {
-    cv->waiting_head = (cv->waiting_tail = &new_tail);
-  }
+  // Add this thread to the waiting queue of this condition variable
+  generic_node_t new_tail = {(void*) kernel.current_thread->tid, NULL};
+  stack_queue_enqueue(&cv->waiting_queue, &new_tail);
 
   // Unlock the cvar mutex
   mutex_unlock(&cv->mp);  
@@ -164,19 +160,19 @@ void cond_signal(cond_t *cv) {
   // Illegal operation. cond_signal on an uninitialized cvar
   assert(cv->init == CVAR_INITIALIZED);
 
+  generic_node_t* elem;
+
   // Lock the cvar mutex
   mutex_lock(&cv->mp);
 
-  if (cv->waiting_head != NULL) {
-
-    // Pop the first thread from the queue
-    int tid = (int) cv->waiting_head->value;
-    cv->waiting_head = cv->waiting_head->next;
+  if ((elem = stack_queue_dequeue(&cv->waiting_queue)) != NULL) {
 
     // Unlock the cvar mutex
     mutex_unlock(&cv->mp);  
 
-    // Wake up the descheduled thread 
+    int tid = (int) elem->value;    
+
+    // Make the dequeue thread runnable again
     while (kern_make_runnable(tid) < 0) {
       kern_yield(tid);
     }
@@ -203,33 +199,30 @@ void cond_broadcast(cond_t *cv) {
   // Illegal operation. cond_broadcast on an uninitialized cvar
   assert(cv->init == CVAR_INITIALIZED);
 
-  int tid = -1;
+  generic_node_t* elem;  
+
+  // Lock the cvar mutex
+  mutex_lock(&cv->mp);
 
   // Loop through the whole waiting queue
-  do {  
+  while ((elem = stack_queue_dequeue(&cv->waiting_queue)) != NULL){  
+
+    // Unlock the cvar mutex
+    mutex_unlock(&cv->mp);  
+
+    int tid = (int) elem->value;    
+
+    // Wake up the descheduled thread 
+    while (kern_make_runnable(tid) < 0) {
+      kern_yield(tid);
+    }
+
     // Lock the cvar mutex
     mutex_lock(&cv->mp);
 
-    if (cv->waiting_head != NULL) {
+  }
 
-      // Pop the first thread from the queue
-      int tid = (int) cv->waiting_head->value;
-      cv->waiting_head = cv->waiting_head->next;
-
-      // Unlock the cvar mutex
-      mutex_unlock(&cv->mp);  
-
-      // Wake up the descheduled thread 
-      while (kern_make_runnable(tid) < 0) {
-        kern_yield(tid);
-      }
-
-    } else {
-      // Unlock the cvar mutex and set tid to -1
-      mutex_unlock(&cv->mp);
-      tid = -1;
-    }
-  } while (tid != -1);
-
+  // Unlock the cvar mutex
+  mutex_unlock(&cv->mp);
 
 }
