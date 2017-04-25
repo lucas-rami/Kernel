@@ -73,7 +73,7 @@ int kern_exec(char *execname, char **argvec) {
 
   unsigned num_frames_requested;
   if ((num_frames_requested = request_frames_needed_by_program(&elf)) == 0) {
-    lprintf("The program %s needs more memory than is available", task_name);
+    lprintf("The program %s needs more memory than is available", execname);
     return -1;
   }
  
