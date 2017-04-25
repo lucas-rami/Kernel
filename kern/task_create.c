@@ -175,7 +175,9 @@ unsigned int create_task_from_executable(char *task_name, int is_exec,
   generic_node_t new_tail = {new_tcb, NULL};
   generic_node_t * node_addr = (generic_node_t *)(new_tcb->esp0 - PAGE_SIZE);
   *(node_addr) = new_tail;
-  kernel.runnable_head = (kernel.runnable_tail = node_addr);
+
+  // Enqueue the current thread
+  stack_queue_enqueue(&kernel.runnable_queue, node_addr);
 
   lprintf("Returning from task_create");
   return elf.e_entry;

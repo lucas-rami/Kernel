@@ -76,6 +76,7 @@ int kern_fork(unsigned int *esp) {
     lprintf("fork(): PCB initialization failed");
     free(stack_kernel);
     free_address_space(new_cr3, KERNEL_AND_USER_SPACE);
+    return -1;
   }
 
   tcb_t *new_tcb = create_new_tcb(new_pcb, esp0, (uint32_t)new_cr3);
@@ -148,9 +149,9 @@ static unsigned int * initialize_stack_fork(uint32_t orig_stack,
                       uint32_t new_stack, unsigned int * esp, tcb_t * new_tcb) {
 
   // Copy part of the kernel stack of the original task to the new one's
-  char *orig, *new;
-  for (orig = (char *)orig_stack, new = (char *)new_stack ;
-       (unsigned int)orig >= (unsigned int)esp ; --orig, --new) {
+  char *orig = (char*) (((char *)orig_stack) - 1); 
+  char *new = (char*) (((char *)new_stack) - 1);
+  for ( ; (unsigned int)orig >= (unsigned int)esp ; --orig, --new) {
     *new = *orig;
   }
 

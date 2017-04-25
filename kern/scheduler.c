@@ -25,12 +25,11 @@ tcb_t *next_thread() {
   // Check if the kernel state is initialized
   assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
 
-  generic_node_t *next_thread = kernel.runnable_head;
+  generic_node_t *next_thread = stack_queue_dequeue(&kernel.runnable_queue);
   if (next_thread == NULL) {
     return kernel.idle_thread;
   }
 
-  kernel.runnable_head = next_thread->next;
   return next_thread->value;
 
 }
@@ -44,8 +43,6 @@ void make_runnable_and_switch() {
 
   assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
 
-  generic_node_t new_tail = {kernel.current_thread, NULL};
-
   disable_interrupts();
 
   kernel.current_thread->thread_state = THR_RUNNABLE;
@@ -57,12 +54,8 @@ void make_runnable_and_switch() {
 
   lprintf("\tmake_runnable_and_switch(): Enqueueing %d", kernel.current_thread->tid);  
 
-  if(kernel.runnable_head != NULL) {
-    kernel.runnable_tail->next = &new_tail;
-    kernel.runnable_tail = &new_tail;
-  } else {
-    kernel.runnable_head = (kernel.runnable_tail = &new_tail);
-  }
+  generic_node_t new_tail = {kernel.current_thread, NULL};
+  stack_queue_enqueue(&kernel.runnable_queue, &new_tail);
 
   context_switch(next_thread());
   
@@ -115,8 +108,6 @@ void add_runnable_thread(tcb_t *tcb) {
 
   lprintf("\tadd_runnable_thread(): Thread %d adding %d to runnable queue", kernel.current_thread->tid, tcb->tid);
 
-  generic_node_t new_tail = {tcb, NULL};
-
   disable_interrupts();
 
   // Should not happen
@@ -127,15 +118,13 @@ void add_runnable_thread(tcb_t *tcb) {
 
   tcb->thread_state = THR_RUNNABLE;
 
+  // Create node at the lowest address of the thread's kernel stack
+  generic_node_t new_tail = {tcb, NULL};
   generic_node_t * node_addr = (generic_node_t *)(tcb->esp0 - PAGE_SIZE);
   *(node_addr) = new_tail;
-  
-  if(kernel.runnable_head != NULL) {
-    kernel.runnable_tail->next = node_addr;
-    kernel.runnable_tail = node_addr;
-  } else {
-    kernel.runnable_head = (kernel.runnable_tail = node_addr);
-  }
+
+  // Enqueue the thread
+  stack_queue_enqueue(&kernel.runnable_queue, node_addr);
 
   enable_interrupts();
 
@@ -156,8 +145,6 @@ void force_next_thread(tcb_t *force_next_tcb) {
   assert(kernel.current_thread != NULL && force_next_tcb != NULL &&
          kernel.init == KERNEL_INIT_TRUE);
 
-  generic_node_t new_tail = {kernel.current_thread, NULL};
-
   disable_interrupts();    
   eff_mutex_unlock(&force_next_tcb->mutex);  
 
@@ -171,18 +158,17 @@ void force_next_thread(tcb_t *force_next_tcb) {
     return;
   }
 
-  if(kernel.runnable_head != NULL) {
-    kernel.runnable_tail->next = &new_tail;
-    kernel.runnable_tail = &new_tail;
-  } else {
-    kernel.runnable_head = (kernel.runnable_tail = &new_tail);
-  }
+  // Create new node for runnable queue
+  generic_node_t new_tail = {kernel.current_thread, NULL};
 
-  generic_node_t *it = kernel.runnable_head, *prev = NULL;
+  // Enqueue the current thread
+  stack_queue_enqueue(&kernel.runnable_queue, &new_tail);
+
+  generic_node_t *it = kernel.runnable_queue.head, *prev = NULL;
   while (it != NULL) {
     if (it->value == force_next_tcb) {
       if (prev == NULL) {
-        kernel.runnable_head = it->next;
+        kernel.runnable_queue.head = it->next;
       } else {
         prev->next = it->next;
       }

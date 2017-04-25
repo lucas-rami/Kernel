@@ -12,6 +12,7 @@
 #include <generic_node.h>
 #include <tcb.h>
 #include <pcb.h>
+#include <stack_queue.h>
 
 #define KERNEL_INIT_FALSE 0
 #define KERNEL_INIT_TRUE 1
@@ -37,10 +38,8 @@ typedef struct kernel {
    * thread created, the value is incremented each time a thread is created */
   int thread_id;
 
-  /** @brief HEAD and TAIL pointers for the queue of runnable threads
-   * TODO: should we move these fields in scheduler.c (and make them static) ? 
-   * We don't use them elsewhere... */
-  generic_node_t *runnable_head, *runnable_tail;
+  /** @brief Queue of runnable threads */
+  stack_queue_t runnable_queue;
 
   /** @brief Idle thread (ran when there is nothing to run) */
   tcb_t *idle_thread;

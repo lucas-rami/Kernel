@@ -46,9 +46,10 @@ int kernel_init() {
   kernel.thread_id = 1;
   kernel.cpu_idle = CPU_IDLE_TRUE;
   kernel.free_frame_count = machine_phys_frames() - NUM_KERNEL_FRAMES;
-  kernel.runnable_head = NULL;
-  kernel.runnable_tail = NULL;
   kernel.zeroed_out_frame = 0;
+
+  // Initialize the runnable thread queue
+  stack_queue_init(&kernel.runnable_queue);
 
   // Initialize the mutex for the functions in malloc_wrappers.c
   if (eff_mutex_init(&kernel.malloc_mutex) < 0) {
