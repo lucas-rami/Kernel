@@ -75,7 +75,7 @@ void make_runnable_and_switch() {
  *
  *  @return void
  */
-void block_and_switch(int holding_mutex) {
+void block_and_switch(int holding_mutex, eff_mutex_t *mp) {
 
   assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
 
@@ -84,7 +84,7 @@ void block_and_switch(int holding_mutex) {
   lprintf("\tblock_and_switch(): Blocking thread %d", kernel.current_thread->tid);
 
   if (holding_mutex == HOLDING_MUTEX_TRUE) {
-    eff_mutex_unlock(&kernel.current_thread->mutex);
+    eff_mutex_unlock(mp);
   }
 
   if (kernel.cpu_idle == CPU_IDLE_TRUE) {

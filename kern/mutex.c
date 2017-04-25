@@ -103,11 +103,12 @@ void mutex_lock(mutex_t *mp) {
   int my_ticket = atomic_add_and_update(&mp->next_ticket, j);
 
   while((mp->prev + 1) != my_ticket) {
+    lprintf("Yielding as the owner is %d. Thread %d should run", mp->tid_owner, mp->prev + 1);
     kern_yield(-1);
   }
 
   // We own the mutex, make owner_tid our tid for yield()
-  // mp->tid_owner = kern_gettid();
+  mp->tid_owner = kern_gettid();
 
 }
 
@@ -129,7 +130,7 @@ void mutex_unlock(mutex_t *mp) {
   assert(mp && mp->init == MUTEX_INITIALIZED);
   
   // We don't own the mutex anymore, make the tid -1 for yield()
-  // mp->tid_owner = -1;
+  mp->tid_owner = -1;
 
   // Increment the prev value which stores the ticket of the last run thread
   mp->prev++;

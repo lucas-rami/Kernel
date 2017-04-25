@@ -300,7 +300,7 @@ int mark_address_requested(unsigned int address) {
     return -1;
   }
 
-  lprintf("Marking address %p requested", (char*)address);
+  // lprintf("Marking address %p requested", (char*)address);
   *page_table_entry_addr = (kernel.zeroed_out_frame & PAGE_ADDR_MASK);
   *page_table_entry_addr |= PAGE_TABLE_RESERVED_BIT;
   *page_table_entry_addr |= PAGE_USER_RO_FLAGS;

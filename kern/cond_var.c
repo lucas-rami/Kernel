@@ -13,6 +13,7 @@
 #include <syscalls.h>
 #include <cond_var.h>
 #include <simics.h>
+#include <asm.h>
 
 /** @brief The state of a condition variable which means that a cond_init has
  *   been called but cond_destroy hasn't been called after that
@@ -132,11 +133,12 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
     cv->waiting_head = (cv->waiting_tail = &new_tail);
   }
 
-  // Unlock the cvar mutex
-  mutex_unlock(&cv->mp);  
-
   // Release the mutex so that other threads can run now
   mutex_unlock(mp);
+
+  disable_interrupts();
+  // Unlock the cvar mutex
+  mutex_unlock(&cv->mp);  
 
   // Tell the scheduler to not run this thread
   int dont_run = DONT_RUN;
@@ -177,8 +179,9 @@ void cond_signal(cond_t *cv) {
     mutex_unlock(&cv->mp);  
 
     // Wake up the descheduled thread 
-    while (kern_make_runnable(tid) < 0) {
-      kern_yield(tid);
+    if (kern_make_runnable(tid) < 0) {
+      lprintf("Mke runnable failed in cv");
+      kern_yield(-1);
     }
 
   } else {

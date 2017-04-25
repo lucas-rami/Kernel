@@ -30,7 +30,7 @@ int main()
     
     while (pid != wait(&exitstatus));
     // while(1);
-    // MAGIC_BREAK;
+    MAGIC_BREAK;
     // printf("Shell exited with status %d; starting it back up...", exitstatus);
   }
 }

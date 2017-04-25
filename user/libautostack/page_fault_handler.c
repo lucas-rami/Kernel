@@ -36,6 +36,7 @@ void singlethread_handler(void* arg, ureg_t *ureg) {
     // Check if the page fault is in the stack limit for this task
     if (ureg->cr2 < ((unsigned int)task.stack_highest - MAX_STACK_SIZE)) {
       // Not a page fault for the stack
+      lprintf("Here Exiting as not in the stack limit");
       set_status(-2);
       vanish();
     }
@@ -51,6 +52,7 @@ void singlethread_handler(void* arg, ureg_t *ureg) {
          growth_size) < 0) {
       // Can't grow the stack further. Something went really wrong
       // Revert back to default behaviour
+      lprintf("Here Exiting as new pages returned less than 0");
       set_status(-2);
       vanish();
     }
@@ -77,6 +79,7 @@ void singlethread_handler(void* arg, ureg_t *ureg) {
  *  @return void
  */
  void multithread_handler(void* arg, ureg_t *ureg) {
+   lprintf("Here Exiting as multi thread handler called");
    set_status(-2);
    vanish();
  }

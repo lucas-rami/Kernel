@@ -58,7 +58,7 @@ int kern_deschedule(int *reject) {
 
   if (r == 0) {    
     // The mutex will be unlocked in block_and_switch
-    block_and_switch(HOLDING_MUTEX_TRUE);
+    block_and_switch(HOLDING_MUTEX_TRUE, &kernel.current_thread->mutex);
   } else {
     eff_mutex_unlock(&kernel.current_thread->mutex);
   }
