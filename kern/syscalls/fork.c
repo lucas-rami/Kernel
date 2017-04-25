@@ -200,8 +200,11 @@ static unsigned int * copy_memory_regions() {
                       create_page_table(new_dir_entry, DIRECTORY_FLAGS, FIRST_TASK_FALSE);
 
       if (new_page_table_addr == NULL) {
-        lprintf("copy_memory_regions(): Unable to allocate new page table\n");
-        // TODO: free everything previously allocated
+        lprintf("copy_memory_regions(): Unable to allocate new page table");
+        free(buffer);    
+
+        // Free everything previously allocated
+        free_address_space(new_cr3, KERNEL_AND_USER_SPACE);
         return NULL;
       }
 
@@ -218,11 +221,18 @@ static unsigned int * copy_memory_regions() {
             // This is direct mapped kernel memory
             *new_tab_entry = *orig_tab_entry;
           } else {
-            // This is user space memory, we have to allocated a new frame
+            // This is user space memory, we have to allocate a new frame
 
             // Create a new page table entry
-            create_page_table_entry(new_tab_entry,
-                                    get_entry_flags(orig_tab_entry));
+            if (create_page_table_entry(new_tab_entry,
+                                    get_entry_flags(orig_tab_entry)) == NULL) {
+              lprintf("copy_memory_regions(): Unable to allocate frame");
+              free(buffer);    
+
+              // Free everything previously allocated
+              free_address_space(new_cr3, KERNEL_AND_USER_SPACE);
+              return NULL;        
+            }
 
             // Get the virtual address associated with the frame in the original
             // task
@@ -236,7 +246,7 @@ static unsigned int * copy_memory_regions() {
             // Copy the frame content to the buffer
             memcpy(buffer, (unsigned int *)orig_virtual_address, PAGE_SIZE);
 
-            // Copy the frame to the new task user spce
+            // Copy the frame to the new task user space
             set_cr3((uint32_t)new_cr3);
             memcpy((unsigned int *)new_virtual_address, buffer, PAGE_SIZE);
             set_cr3((uint32_t)orig_cr3);

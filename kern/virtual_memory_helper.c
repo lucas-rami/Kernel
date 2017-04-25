@@ -244,7 +244,6 @@ unsigned int *allocate_frame() {
     if (set_bit(&free_map, i) >= 0) {
       return (void *)(USER_MEM_START + (i * PAGE_SIZE));
     }
-    //}
   }
   return NULL;
 }

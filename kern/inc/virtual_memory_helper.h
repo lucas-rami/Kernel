@@ -34,6 +34,7 @@ int mark_address_range_requested(unsigned int address, unsigned int len);
 int allocate_frame_if_address_requested(unsigned int address);
 int is_page_requested(unsigned int *addr);
 
+// TODO: doc
 void invalidate_tlb(unsigned int addr);
 
 #endif /* _VIRTUAL_MEMORY_HELPER_H_ */

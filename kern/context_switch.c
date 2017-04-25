@@ -26,7 +26,7 @@ void context_switch(tcb_t* to) {
 
   tcb_t *me = kernel.current_thread;
 
-  lprintf("\t\tCONTEXT SWITCH: %d -> %d", me->tid, to->tid);
+  custom_print("\t\tCONTEXT SWITCH: %d -> %d", me->tid, to->tid);
 
   // Context switch to the other thread
   context_switch_asm(&kernel.current_thread->esp, &to->esp);
