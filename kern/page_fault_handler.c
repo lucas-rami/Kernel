@@ -22,11 +22,12 @@ void page_fault_c_handler(char *stack_ptr)
 
   if (allocate_frame_if_address_requested(get_cr2()) < 0) {
     create_stack_sw_exception(SWEXN_CAUSE_PAGEFAULT, stack_ptr);
+    lprintf("Page fault not handled! Setting status -2 and killing the thread");
     kern_set_status(-2);
     kern_vanish();
   }
   
-  lprintf("\tpage_fault_c_handler(): The frame allocation was successfull");
+ lprintf("\tpage_fault_c_handler(): The frame allocation was successfull");
   // Re run the instruction
 
   // Get the page table base register from the register cr3

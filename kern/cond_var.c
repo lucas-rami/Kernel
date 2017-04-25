@@ -14,6 +14,7 @@
 #include <cond_var.h>
 #include <stack_queue.h>
 #include <simics.h>
+#include <asm.h>
 #include <kernel_state.h>
 
 /** @brief The state of a condition variable which means that a cond_init has
@@ -128,11 +129,12 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
   generic_node_t new_tail = {(void*) kernel.current_thread->tid, NULL};
   stack_queue_enqueue(&cv->waiting_queue, &new_tail);
 
-  // Unlock the cvar mutex
-  mutex_unlock(&cv->mp);  
-
   // Release the mutex so that other threads can run now
   mutex_unlock(mp);
+
+  disable_interrupts();
+  // Unlock the cvar mutex
+  mutex_unlock(&cv->mp);  
 
   // Tell the scheduler to not run this thread
   int dont_run = DONT_RUN;

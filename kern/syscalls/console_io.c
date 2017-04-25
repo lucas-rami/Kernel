@@ -119,7 +119,7 @@ int kern_readline(int len, char *buf) {
       disable_interrupts();
       if (input_available == CONSOLE_IO_FALSE) {
         waiting_input_tcb = kernel.current_thread;
-        block_and_switch(HOLDING_MUTEX_FALSE);
+        block_and_switch(HOLDING_MUTEX_FALSE, NULL);
         waiting_input_tcb = NULL;
       } else {
         enable_interrupts();

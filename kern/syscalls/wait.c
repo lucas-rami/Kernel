@@ -9,6 +9,7 @@
 #include <syscalls.h>
 #include <malloc.h>
 #include <stack_queue.h>
+#include <scheduler.h>
 
 int kern_wait(int *status_ptr) {
   
@@ -27,7 +28,10 @@ int kern_wait(int *status_ptr) {
   
   
   lprintf("Wait %d", kernel.current_thread->tid);
-
+  /*if (kernel.current_thread->tid == 20) {
+    // MAGIC_BREAK;
+  }
+*/
   // Check if this thread will wait infinitely 
   pcb_t *curr_task = kernel.current_thread->task;
   lprintf("Taking list mutex %p for task", &curr_task->list_mutex);
@@ -80,11 +84,11 @@ int kern_wait(int *status_ptr) {
   generic_node_t new_waiting = {kernel.current_thread, NULL};
   stack_queue_enqueue(&curr_task->waiting_threads, &new_waiting);
   
-  eff_mutex_unlock(&curr_task->list_mutex);
+  // eff_mutex_unlock(&curr_task->list_mutex);
   lprintf("Reaching there");
-  int x = 0;
   lprintf("Calling kern_deschedule waiting for thread %d", kernel.current_thread->tid);
-  kern_deschedule(&x);
+  block_and_switch(HOLDING_MUTEX_TRUE, &curr_task->list_mutex);
+  // kern_deschedule(&x);
   lprintf("SHOULDNT PRINT UNTIL THE FIRST ONE EXITS");
   
   if (status_ptr != NULL) {

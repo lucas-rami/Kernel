@@ -84,7 +84,7 @@ int kern_sleep(int ticks) {
 
   // Block the thread and context switch
   // (interrupts will be enabled after context switch)
-  block_and_switch(HOLDING_MUTEX_FALSE);
+  block_and_switch(HOLDING_MUTEX_FALSE, NULL);
 
   return 0;
 }

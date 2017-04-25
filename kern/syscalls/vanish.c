@@ -151,7 +151,7 @@ void kern_vanish() {
     eff_mutex_unlock(&curr_task->parent->list_mutex);
   }
 
-  block_and_switch(HOLDING_MUTEX_FALSE);
+  block_and_switch(HOLDING_MUTEX_FALSE, NULL);
 
   lprintf("kern_vanish(): Should never have reached here");
   assert(0);
