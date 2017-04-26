@@ -18,6 +18,8 @@
 #define KERNEL_INIT_TRUE 1
 #define CPU_IDLE_FALSE 0
 #define CPU_IDLE_TRUE 1
+#define KERNEL_READY_FALSE 0
+#define KERNEL_READY_TRUE 1
 
 #define FIRST_TASK "init"
 
@@ -66,6 +68,8 @@ typedef struct kernel {
 
   /** @brief INIT's pcb */
   pcb_t *init_task;
+
+  uint32_t kernel_ready;
 
   /* ------------------------- */
 

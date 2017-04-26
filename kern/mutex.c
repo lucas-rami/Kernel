@@ -10,6 +10,11 @@
 #include <assert.h>
 #include <syscalls.h>
 #include <eff_mutex.h>
+#include <asm.h>
+#include <kernel_state.h>
+#include <stddef.h>
+#include <scheduler.h>
+
 
 /** @brief A state of the mutex which means that mutex_init hasn't been called
  *   after a mutex_destroy
@@ -145,9 +150,7 @@ int eff_mutex_init(eff_mutex_t *mp) {
     return -1;
   }
 
-  if (mutex_init(&mp->mp) < 0 || cond_init(&mp->cv) < 0) {
-    return -1;
-  }
+  stack_queue_init(&mp->mutex_queue);
 
   mp->state = MUTEX_UNLOCKED;
   return 0;
@@ -159,30 +162,48 @@ void eff_mutex_destroy(eff_mutex_t *mp) {
   // Invalid parameter
   assert(mp);
 
-  mutex_destroy(&mp->mp);
-
-  cond_destroy(&mp->cv);
+  disable_interrupts();
+  assert(is_stack_queue_empty(&mp->mutex_queue));
+  stack_queue_destroy(&mp->mutex_queue);
+  enable_interrupts();
 
 }
 
 
 void eff_mutex_lock(eff_mutex_t *mp) {
+  if (kernel.kernel_ready != KERNEL_READY_TRUE) {
+    return;
+  }
 
+  // lprintf("eff_mutex_lock");
+  // MAGIC_BREAK;
   // Validate parameter and the fact that the mutex is initialized
   assert(mp);
-  mutex_lock(&mp->mp);
-  while(mp->state == MUTEX_LOCKED) {
-    cond_wait(&mp->cv, &mp->mp);
+  disable_interrupts();
+  while (mp->state == MUTEX_LOCKED) {
+    disable_interrupts();
+    generic_node_t tmp;
+    tmp.value = (void *)kernel.current_thread;
+    tmp.next = NULL;
+    stack_queue_enqueue(&mp->mutex_queue, &tmp);
+    // This call will enable interrupts
+    block_and_switch(HOLDING_MUTEX_FALSE, NULL);
   }
   mp->state = MUTEX_LOCKED;
-  mutex_unlock(&mp->mp);
+  enable_interrupts();
 }
 
 
 void eff_mutex_unlock(eff_mutex_t *mp) {
+  if (kernel.kernel_ready != KERNEL_READY_TRUE) {
+    return;
+  }
   assert(mp);
-  mutex_lock(&mp->mp);
+  // disable_interrupts();
+  generic_node_t *tmp = stack_queue_dequeue(&mp->mutex_queue);
+  if (tmp) {
+    kern_make_runnable(((tcb_t*)tmp->value)->tid);
+  }
   mp->state = MUTEX_UNLOCKED;
-  cond_signal(&mp->cv);
-  mutex_unlock(&mp->mp);
+  // enable_interrupts();
 }

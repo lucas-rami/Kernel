@@ -103,6 +103,8 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
 
   lprintf("\tkernel_main(): Running idle thread...");
 
+  kernel.kernel_ready = KERNEL_READY_TRUE;
+
   // Run the idle thread
   run_idle(kernel.idle_thread->esp);
 

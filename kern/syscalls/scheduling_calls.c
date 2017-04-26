@@ -79,7 +79,7 @@ int kern_make_runnable(int tid) {
   // Try to get the TCB with the given tid
   tcb_t *tcb = hash_table_get_element(&kernel.tcbs, &tmp);
   if (tcb == NULL) {
-    lprintf("Can't find element in hash table");
+    lprintf("Can't find element in hash table for thread %d", tid);
     return -1;
   }
 

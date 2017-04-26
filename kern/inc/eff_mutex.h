@@ -14,9 +14,9 @@
 #define MUTEX_UNLOCKED 0
 
 typedef struct eff_mutex {
-  mutex_t mp;
-
-  cond_t cv;
+  // mutex_t mp;
+  stack_queue_t mutex_queue;
+  // cond_t cv;
   int state;
 
 } eff_mutex_t; 

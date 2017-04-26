@@ -41,6 +41,7 @@ extern mutex_t mutex_malloc;
 int kernel_init() {
 
   // Set various fields of the state to their initial value
+  kernel.kernel_ready = KERNEL_READY_FALSE;
   kernel.current_thread = NULL;
   kernel.task_id = 1;
   kernel.thread_id = 1;
