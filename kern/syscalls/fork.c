@@ -31,7 +31,24 @@ static unsigned int * copy_memory_regions(void);
 static unsigned int * initialize_stack_fork(uint32_t orig_stack, 
                       uint32_t new_stack, unsigned int * esp, tcb_t * new_tcb);
 
-// TODO: doc
+/** @brief  Creates a new task by copying the invoking task's memory regions 
+ *
+ *  The new task receives an exact, coherent copy of all memory regions of the 
+ *  invoking task. The new task contains a single thread which is a copy of the
+ *  thread invoking fork() except for the return value of the system call.
+ *  The exit status of a newly-created task is 0. If a thread in the task 
+ *  invoking fork() has a software exception handler registered, the corresponding
+ *  thread in the newly-created task will have exactly the same handler 
+ *  registered.
+ *
+ *  @param  esp   The limit address on the invoking thread's stack used for
+ *                creating the child thread's stack
+ *
+ *  @return If fork() succeeds, the invoking thread will receive the ID of the 
+ *          new task’s thread and the newly created thread will receive the 
+ *          value zero. Errors are reported via a negative return value, in 
+ *          which case no new task has been created.
+ */
 int kern_fork(unsigned int *esp) {
 
   // TODO: Reject call if more than one thread in the task ?
@@ -112,7 +129,21 @@ int kern_fork(unsigned int *esp) {
   return new_tcb->tid;
 }
 
-// TODO: doc
+/** @brief  Creates a new thread in the current task
+ *
+ *  All registers (except %eax) in the new thread will be initialized to the
+ *  same values as the corresponding registers in the old thread. A thread newly 
+ *  created by thread fork has no software exception handler registered. threads
+ *  are runnable as soon as they are created.
+ *
+ *  @param  esp   The limit address on the invoking thread's stack used for
+ *                creating the child thread's stack
+ *
+ *  @return The invoking thread’s return value in %eax is the thread ID of the 
+ *          newly-created thread; the new thread’s return value is zero. 
+ *          Errors are reported via a negative return value, in which case no 
+ *          new thread has been created.
+ */
 int kern_thread_fork(unsigned int * esp) {
   
   pcb_t * current_task = kernel.current_thread->task;
