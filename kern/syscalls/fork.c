@@ -145,6 +145,22 @@ int kern_thread_fork(unsigned int * esp) {
   return new_tcb->tid;
 }
 
+/** @brief  Initializes the child thread's stack for the fork() and 
+ *          thread_fork() system calls
+ *
+ *  This function copy part of the parent thread's stack onto the child thread's
+ *  stack. Then the function manually creates stack frames for the child thread
+ *  in order for it to be ready for the first context switch.  
+ *
+ *  @param  orig_stack  The highest address of the parent's thread task
+ *  @param  new_stack   The highest address of the child's thread stack 
+ *  @param  esp         The limit on the parent's stack at which the copy
+ *                      should stop (inclusive)
+ *  @param  new_tcb     A pointer to the child thread's TCB
+ *
+ *  @return A pointer to an unsigned int indicating the virtual address on the
+ *          child thread's new stack above which we can start pushing data 
+ */
 static unsigned int * initialize_stack_fork(uint32_t orig_stack, 
                       uint32_t new_stack, unsigned int * esp, tcb_t * new_tcb) {
 
@@ -168,9 +184,20 @@ static unsigned int * initialize_stack_fork(uint32_t orig_stack,
   return stack_addr;                    
 }
 
-// TODO: doc
+/** @brief  Creates a copy of the invoking task entire address space, in order
+ *          to be used by a newly created child task
+ *
+ *  This function will fail if the copy buffer can't be allocated or if there
+ *  isn't enough memory in user space to copy the entire address space. In that
+ *  case the function returns NULL and the previously allocated frames (if any)
+ *  are deallocated before returning.
+ *
+ *  @return A pointer to the page directory address for the child task on 
+ *          success, NULL on error
+ */
 static unsigned int * copy_memory_regions() {
 
+  // Create a copy buffer
   char *buffer = malloc(PAGE_SIZE);
   if (buffer == NULL) {
     lprintf("copy_memory_regions(): Unable to allocate buffer");
@@ -178,12 +205,15 @@ static unsigned int * copy_memory_regions() {
   }
 
   unsigned int *orig_cr3 = (unsigned int *)get_cr3();
+
+  // Create a new page directory
   unsigned int *new_cr3 = (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
   if (new_cr3 == NULL) {
     free(buffer);
     return NULL;
   }
 
+  // Memset the page directory to 0
   memset(new_cr3, 0, PAGE_SIZE);
 
   unsigned int nb_entries = PAGE_SIZE / SIZE_ENTRY_BYTES;
