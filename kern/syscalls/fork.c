@@ -31,7 +31,24 @@ static unsigned int * copy_memory_regions(void);
 static unsigned int * initialize_stack_fork(uint32_t orig_stack, 
                       uint32_t new_stack, unsigned int * esp, tcb_t * new_tcb);
 
-// TODO: doc
+/** @brief  Creates a new task by copying the invoking task's memory regions 
+ *
+ *  The new task receives an exact, coherent copy of all memory regions of the 
+ *  invoking task. The new task contains a single thread which is a copy of the
+ *  thread invoking fork() except for the return value of the system call.
+ *  The exit status of a newly-created task is 0. If a thread in the task 
+ *  invoking fork() has a software exception handler registered, the corresponding
+ *  thread in the newly-created task will have exactly the same handler 
+ *  registered.
+ *
+ *  @param  esp   The limit address on the invoking thread's stack used for
+ *                creating the child thread's stack
+ *
+ *  @return If fork() succeeds, the invoking thread will receive the ID of the 
+ *          new task’s thread and the newly created thread will receive the 
+ *          value zero. Errors are reported via a negative return value, in 
+ *          which case no new task has been created.
+ */
 int kern_fork(unsigned int *esp) {
 
   // TODO: Reject call if more than one thread in the task ?
@@ -112,7 +129,21 @@ int kern_fork(unsigned int *esp) {
   return new_tcb->tid;
 }
 
-// TODO: doc
+/** @brief  Creates a new thread in the current task
+ *
+ *  All registers (except %eax) in the new thread will be initialized to the
+ *  same values as the corresponding registers in the old thread. A thread newly 
+ *  created by thread fork has no software exception handler registered. threads
+ *  are runnable as soon as they are created.
+ *
+ *  @param  esp   The limit address on the invoking thread's stack used for
+ *                creating the child thread's stack
+ *
+ *  @return The invoking thread’s return value in %eax is the thread ID of the 
+ *          newly-created thread; the new thread’s return value is zero. 
+ *          Errors are reported via a negative return value, in which case no 
+ *          new thread has been created.
+ */
 int kern_thread_fork(unsigned int * esp) {
   
   pcb_t * current_task = kernel.current_thread->task;
@@ -145,6 +176,22 @@ int kern_thread_fork(unsigned int * esp) {
   return new_tcb->tid;
 }
 
+/** @brief  Initializes the child thread's stack for the fork() and 
+ *          thread_fork() system calls
+ *
+ *  This function copy part of the parent thread's stack onto the child thread's
+ *  stack. Then the function manually creates stack frames for the child thread
+ *  in order for it to be ready for the first context switch.  
+ *
+ *  @param  orig_stack  The highest address of the parent's thread task
+ *  @param  new_stack   The highest address of the child's thread stack 
+ *  @param  esp         The limit on the parent's stack at which the copy
+ *                      should stop (inclusive)
+ *  @param  new_tcb     A pointer to the child thread's TCB
+ *
+ *  @return A pointer to an unsigned int indicating the virtual address on the
+ *          child thread's new stack above which we can start pushing data 
+ */
 static unsigned int * initialize_stack_fork(uint32_t orig_stack, 
                       uint32_t new_stack, unsigned int * esp, tcb_t * new_tcb) {
 
@@ -168,9 +215,20 @@ static unsigned int * initialize_stack_fork(uint32_t orig_stack,
   return stack_addr;                    
 }
 
-// TODO: doc
+/** @brief  Creates a copy of the invoking task entire address space, in order
+ *          to be used by a newly created child task
+ *
+ *  This function will fail if the copy buffer can't be allocated or if there
+ *  isn't enough memory in user space to copy the entire address space. In that
+ *  case the function returns NULL and the previously allocated frames (if any)
+ *  are deallocated before returning.
+ *
+ *  @return A pointer to the page directory address for the child task on 
+ *          success, NULL on error
+ */
 static unsigned int * copy_memory_regions() {
 
+  // Create a copy buffer
   char *buffer = malloc(PAGE_SIZE);
   if (buffer == NULL) {
     lprintf("copy_memory_regions(): Unable to allocate buffer");
@@ -178,12 +236,15 @@ static unsigned int * copy_memory_regions() {
   }
 
   unsigned int *orig_cr3 = (unsigned int *)get_cr3();
+
+  // Create a new page directory
   unsigned int *new_cr3 = (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
   if (new_cr3 == NULL) {
     free(buffer);
     return NULL;
   }
 
+  // Memset the page directory to 0
   memset(new_cr3, 0, PAGE_SIZE);
 
   unsigned int nb_entries = PAGE_SIZE / SIZE_ENTRY_BYTES;

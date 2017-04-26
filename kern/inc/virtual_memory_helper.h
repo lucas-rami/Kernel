@@ -34,7 +34,16 @@ int mark_address_range_requested(unsigned int address, unsigned int len);
 int allocate_frame_if_address_requested(unsigned int address);
 int is_page_requested(unsigned int *addr);
 
-// TODO: doc
+/** @brief Invalidates a page stored in the TCB
+ *
+ *  If the page indicated by the virtual address does not exist in the TLB,
+ *  the function has no effect.
+ *
+ *  @param addr A virtual address in the range of virtual addresses of the page
+ *    that should be invalidated
+ *
+ *  @return void
+ */
 void invalidate_tlb(unsigned int addr);
 
 #endif /* _VIRTUAL_MEMORY_HELPER_H_ */
