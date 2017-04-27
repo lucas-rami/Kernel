@@ -34,7 +34,10 @@ unsigned int num_user_frames;
 /* Bitmap holding the set of (un)allocated frames */ 
 bitmap_t free_map;
 
-/** @brief Initialize the virtual memory system
+/** @brief  Initializes the virtual memory system
+ *
+ *  This function should be called once before any other function acting on
+ *  virtual memory.
  *
  *  @return 0 on success, a negative number on error
  */
@@ -49,20 +52,25 @@ int vm_init() {
   return 0;
 }
 
-/** @brief Setup the virtual memory for a single task
+/** @brief  Setup the virtual memory for a single task
  *
  *  @param elf_info Data strucure holding the important features
- *  of the task's ELF header
+ *                  of the task's ELF header
  *
  *  @return The page table directory address on success, NULL on error
  */
 unsigned int *setup_vm(const simple_elf_t *elf_info) {
 
+  // Check the argument
+  if (elf_info == NULL) {
+    return NULL;
+  }
+
+  // Allocate a page directory
   unsigned int *page_dir =
       (unsigned int *)smemalign(PAGE_SIZE, PAGE_SIZE);
 
-  // TODO: check NULL pointer
-
+  // Memset the page directory to 0
   memset(page_dir, 0, PAGE_SIZE);
 
   int is_first_task = FIRST_TASK_FALSE;
@@ -130,13 +138,13 @@ int load_every_segment(const simple_elf_t *elf, unsigned int *cr3) {
   return 0;
 }
 
-/** @brief Load one segment of a task into virtual memory
+/** @brief  Load one segment of a task into virtual memory
  *
- *  @param fname Task's filename
- *  @param offset Offset in the file where the segment is located
- *  @param size Size of the segment in the file
- *  @param start_addr Starting address of segment in virtual memory
- *  @param type Segment's type
+ *  @param  fname       Task's filename
+ *  @param  offset      Offset in the file where the segment is located
+ *  @param  size        Size of the segment in the file
+ *  @param  start_addr  Starting address of segment in virtual memory
+ *  @param  type        Segment's type
  *
  *  @return 0 on success, a negative number on error
  */
@@ -195,12 +203,12 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
   return 0;
 }
 
-/** @brief Get the physical address associated with a virtual address, if the
- *    page directory/table entries for this virtual address do not exist yet, 
- *    create them 
+/** @brief  Get the physical address associated with a virtual address, if the
+ *          page directory/table entries for this virtual address do not exist 
+ *          yet, create them 
  *
- *  @param address A virtual address
- *  @param type The address's type (e.g. code, data...)
+ *  @param  address A virtual address
+ *  @param  type    The address's type (e.g. code, data...)
  *
  *  @return 0 The physical address associated with the virtual one
  */
@@ -298,7 +306,6 @@ void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3,
 int free_address_space(unsigned int *page_directory_addr, 
                         int free_kernel_space) {
 
-  // MAGIC_BREAK;
   unsigned int nb_entries = PAGE_SIZE / SIZE_ENTRY_BYTES;
   unsigned int *page_directory_entry_addr;
   int something_remaining = 0;
