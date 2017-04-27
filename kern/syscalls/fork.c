@@ -259,7 +259,11 @@ static unsigned int * copy_memory_regions() {
       unsigned int *orig_page_table_addr = get_page_table_addr(orig_dir_entry);
       unsigned int *new_page_table_addr = 
                       create_page_table(new_dir_entry, DIRECTORY_FLAGS, FIRST_TASK_FALSE);
-
+      
+      if (is_entry_present(orig_page_table_addr) && 
+          (unsigned int)get_frame_addr(orig_page_table_addr) < USER_MEM_START) {
+        continue;
+      }
       if (new_page_table_addr == NULL) {
         lprintf("copy_memory_regions(): Unable to allocate new page table");
         free(buffer);    
@@ -279,6 +283,7 @@ static unsigned int * copy_memory_regions() {
         if (is_entry_present(orig_tab_entry)) {
 
           if ((unsigned int)get_frame_addr(orig_tab_entry) < USER_MEM_START) {
+            // TODO: Redundant?
             // This is direct mapped kernel memory
             *new_tab_entry = *orig_tab_entry;
           } else {

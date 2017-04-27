@@ -8,7 +8,7 @@
 #include <simics.h>
 
 str:	
-	.string	"(%p) = %p"
+	.string	"(%p) = %p. Return value %d"
 
 .global save_state
 .global restore_state_and_iret
@@ -40,12 +40,15 @@ restore_state_and_iret:
   popl %gs
   movl %eax, 28(%esp)   // Replace the value of %eax on the stack
 
+  movl 28(%esp), %edx
   movl 36(%esp), %edi   // DEBUG: edi contains eip in user space
   movl (%edi), %esi     // DEBUG: esi contains the instruction @ edi
+  pushl %edx
   pushl %esi
   pushl %edi
   pushl $str
   call custom_print
+  popl %edi
   popl %edi
   popl %edi
   popl %edi
