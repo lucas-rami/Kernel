@@ -30,7 +30,7 @@
 #include <task_create.h>
 #include <virtual_memory.h>
 #include <virtual_memory_helper.h>
-#include <page_fault_handler.h>
+#include <exception_handlers.h>
 #include <syscalls.h>
 #include <assert.h>
 #include <string.h>
@@ -62,7 +62,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
 
   // Initialize the IDT
   handler_install(wake_up_threads);
-  page_fault_init();
+  exception_handlers_init();
  
   if (idt_syscall_install() < 0) {
     lprintf("kernel_main(): Failed to register syscall handlers");
