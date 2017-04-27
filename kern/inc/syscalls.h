@@ -55,6 +55,9 @@ void kern_set_status(int status);
 /* Get ticks*/
 unsigned int kern_get_ticks();
 
+/* Readfile */
+int kern_readfile(char *filename, char *buf, int count, int offset);
+
 /* Helper function */
 char *get_esp();
 int create_stack_sw_exception(unsigned int cause, char *stack_ptr);

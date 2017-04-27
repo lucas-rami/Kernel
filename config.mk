@@ -34,7 +34,7 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the 410user/progs
 # directory.
 #
-410TESTS = mem_permissions readline_basic print_basic exec_basic exec_basic_helper knife peon merchant coolness fork_bomb new_pages remove_pages_test1 remove_pages_test2 swexn_basic_test swexn_cookie_monster swexn_dispatch swexn_regs swexn_stands_for_swextensible swexn_uninstall_test stack_test1 actual_wait fork_wait_bomb fork_wait wait_getpid minclone_mem sleep_test1 fork_exit_bomb make_crash make_crash_helper cho cho2 cho_variant wild_test1 yield_desc_mkrun loader_test1 loader_test2 getpid_test1
+410TESTS = cat mem_permissions readline_basic print_basic exec_basic exec_basic_helper knife peon merchant coolness fork_bomb new_pages remove_pages_test1 remove_pages_test2 swexn_basic_test swexn_cookie_monster swexn_dispatch swexn_regs swexn_stands_for_swextensible swexn_uninstall_test stack_test1 actual_wait fork_wait_bomb fork_wait wait_getpid minclone_mem sleep_test1 fork_exit_bomb make_crash make_crash_helper cho cho2 cho_variant wild_test1 yield_desc_mkrun loader_test1 loader_test2 getpid_test1
 
 ###########################################################################
 # Test programs you have written which you wish to run
@@ -99,10 +99,10 @@ KERNEL_OBJS = stack_queue.o virtual_memory_helper.o virtual_memory_asm.o kernel_
 KERNEL_OBJS += drivers/console.o drivers/keyboard.o drivers/keyboard_asm.o drivers/prechecks.o drivers/timer.o drivers/timer_asm.o
 
 # Files in syscalls/
-KERNEL_OBJS += syscalls/set_status.o syscalls/get_ticks.o syscalls/sleep.o syscalls/gettid.o syscalls/scheduling_calls.o syscalls/fork.o syscalls/exec.o syscalls/pages.o syscalls/console_io.o syscalls/vanish.o syscalls/wait.o syscalls/swexn.o
+KERNEL_OBJS += syscalls/readfile.o syscalls/set_status.o syscalls/get_ticks.o syscalls/sleep.o syscalls/gettid.o syscalls/scheduling_calls.o syscalls/fork.o syscalls/exec.o syscalls/pages.o syscalls/console_io.o syscalls/vanish.o syscalls/wait.o syscalls/swexn.o
 
 # Files in syscalls/wrappers/
-KERNEL_OBJS += syscalls/wrappers/set_status.o syscalls/wrappers/get_ticks.o syscalls/wrappers/halt.o syscalls/wrappers/sleep.o syscalls/wrappers/gettid.o syscalls/wrappers/scheduling_calls.o syscalls/wrappers/fork.o syscalls/wrappers/syscalls_helper.o syscalls/wrappers/exec.o syscalls/wrappers/pages.o syscalls/wrappers/console_io.o syscalls/wrappers/vanish.o syscalls/wrappers/wait.o syscalls/wrappers/exec.o syscalls/wrappers/swexn.o
+KERNEL_OBJS += syscalls/wrappers/readfile.o syscalls/wrappers/set_status.o syscalls/wrappers/get_ticks.o syscalls/wrappers/halt.o syscalls/wrappers/sleep.o syscalls/wrappers/gettid.o syscalls/wrappers/scheduling_calls.o syscalls/wrappers/fork.o syscalls/wrappers/syscalls_helper.o syscalls/wrappers/exec.o syscalls/wrappers/pages.o syscalls/wrappers/console_io.o syscalls/wrappers/vanish.o syscalls/wrappers/wait.o syscalls/wrappers/exec.o syscalls/wrappers/swexn.o
 
 ###########################################################################
 # WARNING: Do not put **test** programs into the REQPROGS variables.  Your
