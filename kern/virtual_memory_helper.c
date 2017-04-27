@@ -299,7 +299,7 @@ int mark_address_requested(unsigned int address) {
     return -1;
   }
 
-  // lprintf("Marking address %p requested", (char*)address);
+  lprintf("Marking address %p requested", (char*)address);
   *page_table_entry_addr = (kernel.zeroed_out_frame & PAGE_ADDR_MASK);
   *page_table_entry_addr |= PAGE_TABLE_RESERVED_BIT;
   *page_table_entry_addr |= PAGE_USER_RO_FLAGS;
@@ -367,6 +367,7 @@ int allocate_frame_if_address_requested(unsigned int address) {
   */
 
   if (is_page_requested(page_table_entry_addr)) {
+    lprintf("Address requested earlier %p",(char*)address );
     if (create_page_table_entry(page_table_entry_addr, PAGE_USER_FLAGS) 
         < 0) {
       // Error while allocating a frame
@@ -375,6 +376,7 @@ int allocate_frame_if_address_requested(unsigned int address) {
       return -1;
     }
   } else {
+    lprintf("Address not requested earlier %p",(char*)address );
     return -1;
   }
 

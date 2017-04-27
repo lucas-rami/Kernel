@@ -99,8 +99,8 @@ unsigned int *setup_vm(const simple_elf_t *elf_info) {
   // TODO: Make this atomic and reverse the changes if something goes bad
   // set cr3 to this value;
 
-  set_cr3((uint32_t)page_dir);
   kernel.current_thread->cr3 = (uint32_t)page_dir;
+  set_cr3((uint32_t)page_dir);
 
   return page_dir;
 }
@@ -185,6 +185,7 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
                                       ? (PAGE_SIZE - temp_offset)
                                       : max_size;
 
+    kernel.current_thread->cr3 = (uint32_t)page_table_directory;
     set_cr3((uint32_t)page_table_directory);
     if (type == SECTION_BSS) {
       memset((char*)addr, 0, size_allocated);
@@ -199,6 +200,7 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
   if (type != SECTION_STACK && type != SECTION_BSS) {
     free(buf);
   }
+  kernel.current_thread->cr3 = old_cr3;
   set_cr3(old_cr3);
   return 0;
 }
@@ -266,8 +268,10 @@ void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3,
       // Zero out old frame
       // TODO: should we do this every time or only for SECTION_BSS ?
       uint32_t old_cr3 = get_cr3();
+      kernel.current_thread->cr3 = (uint32_t)cr3;
       set_cr3((uint32_t)cr3);
       memset((char*)((address/PAGE_SIZE) * PAGE_SIZE), 0, PAGE_SIZE);
+      kernel.current_thread->cr3 = (uint32_t)old_cr3;
       set_cr3(old_cr3);
     
     } else {
@@ -539,7 +543,6 @@ int is_valid_string(char *addr) {
 
     // If there is no page table associated with this entry, return false
     if (!is_entry_present(page_directory_entry_addr)) {
-      lprintf("page_directory_entry_addr not present");
       return FALSE;
     }
 

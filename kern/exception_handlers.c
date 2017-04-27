@@ -6,6 +6,7 @@
 #include <exception_handlers.h>
 #include <simics.h>
 #include "exception_handlers_asm.h"
+#include <cr.h>
 
 int exception_handlers_init() {
 
@@ -36,7 +37,7 @@ int exception_handlers_init() {
   for (i = 0; i < nb_exceptions; i++) {
     if (register_handler((uintptr_t)exception_handlers[i], TRAP_GATE,
         exception_idt_indices[i], USER_PRIVILEGE_LEVEL, SEGSEL_KERNEL_CS) <0) {
-      lprintf("Failed to register %u in IDT", (unsigned int)idt_indices[i]);
+      lprintf("Failed to register %u in IDT", (unsigned int)exception_idt_indices[i]);
       return -1;
     }
   }
@@ -44,7 +45,7 @@ int exception_handlers_init() {
 }
 
 void generic_exception_handler(int cause, char *stack_ptr) {
-  lprintf("Exception other than Page fault. Cause %d", cause);
+  lprintf("Exception other than Page fault. Cause %d at address %p", cause, (char*)get_cr2());
   create_stack_sw_exception(cause, stack_ptr);
   kern_set_status(-2);
   kern_vanish();

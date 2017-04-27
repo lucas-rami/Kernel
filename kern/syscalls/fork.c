@@ -255,6 +255,7 @@ static unsigned int * copy_memory_regions() {
 
     // If the page directory entry is present
     if (is_entry_present(orig_dir_entry)) {
+      lprintf("Copying directory entry %p to %p", orig_dir_entry, new_dir_entry);
 
       unsigned int *orig_page_table_addr = get_page_table_addr(orig_dir_entry);
       unsigned int *new_page_table_addr = 
@@ -313,8 +314,10 @@ static unsigned int * copy_memory_regions() {
             memcpy(buffer, (unsigned int *)orig_virtual_address, PAGE_SIZE);
 
             // Copy the frame to the new task user space
+            kernel.current_thread->cr3 = (uint32_t)new_cr3;
             set_cr3((uint32_t)new_cr3);
             memcpy((unsigned int *)new_virtual_address, buffer, PAGE_SIZE);
+            kernel.current_thread->cr3 = (uint32_t)orig_cr3;
             set_cr3((uint32_t)orig_cr3);
           }
         }

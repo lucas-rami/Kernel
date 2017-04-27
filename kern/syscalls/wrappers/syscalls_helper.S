@@ -40,6 +40,7 @@ restore_state_and_iret:
   popl %gs
   movl %eax, 28(%esp)   // Replace the value of %eax on the stack
 
+/*
   movl 28(%esp), %edx
   movl 36(%esp), %edi   // DEBUG: edi contains eip in user space
   movl (%edi), %esi     // DEBUG: esi contains the instruction @ edi
@@ -52,7 +53,7 @@ restore_state_and_iret:
   popl %edi
   popl %edi
   popl %edi
-
+*/
   popa                  // Pop general purpose registers
 
   addl $4, %esp         // Put back the stack pointer to where it was when the
