@@ -29,6 +29,7 @@ void __attribute__((noreturn)) slaughter(char **cmd, unsigned int depth)
 
   if ( ! depth )
   {
+    lprintf("Depth is 0");
     if (exec(cmd[0], cmd))
     {
       lprintf("=====> exec failed from %d!", curtid);
@@ -43,9 +44,23 @@ void __attribute__((noreturn)) slaughter(char **cmd, unsigned int depth)
 
     for (i = 0; i != 2*width; ++i)
     {
+      // MAGIC_BREAK;
+      /* lprintf("tid %d cmd[0] %p cmd[1] %p cmd[2] %p", gettid(), cmd[0], cmd[1], cmd[2]);
+      int k = 0;
+      while(cmd[k] != NULL) {
+        lprintf("Arg %d is %s", k, cmd[k]);
+        k++;
+      }*/
       if ( ! (threads[i] = fork()) )
       {
         /* alternate immediate exec and slaughter */
+        /* lprintf("tid %d cmd[0] %p cmd[1] %p cmd[2] %p", gettid(), cmd[0], cmd[1], cmd[2]);
+        lprintf("Child calling slaughter again");
+        int j = 0;
+        while(cmd[j] != NULL) {
+          lprintf("Arg %d is %s", j, cmd[j]);
+          j++;
+        }*/
         slaughter(cmd, (i % 2) * (depth - 1));
       }
       else if (threads[i] < 0) {
@@ -138,7 +153,20 @@ int main(int argc, char *argv[])
     exit_status = strtol(argv[3], NULL, 10);
     cmd = &argv[4];
   }
+  /* lprintf("Arg %p argv[0] %s argv[1] %s argv[2] %s argv[3] %s argv[4] %s argv[5] %d", argv, argv[0], argv[1], argv[2], argv[3], argv[4], (int)argv[5]);
 
+  MAGIC_BREAK;
+  lprintf("cmd %p, value at cmd %s.", cmd, *cmd); 
+  lprintf("cmd+1 %p", cmd+1);
+  MAGIC_BREAK;
+  *(cmd+1) = 0;
+  lprintf("Value at cmd+1 %s", *(cmd + 1));
+  // cmd[1] = 0;
+  int i = 0;
+  while (cmd[i] != NULL) {
+    lprintf("i %d cmd[i] %s", i, cmd[i]);
+    i++;
+  }*/
   slaughter(cmd, initial_depth);
   return 0;
 }

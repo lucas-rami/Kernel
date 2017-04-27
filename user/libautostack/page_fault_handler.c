@@ -36,7 +36,7 @@ void singlethread_handler(void* arg, ureg_t *ureg) {
     // Check if the page fault is in the stack limit for this task
     if (ureg->cr2 < ((unsigned int)task.stack_highest - MAX_STACK_SIZE)) {
       // Not a page fault for the stack
-      lprintf("Here Exiting as not in the stack limit");
+      lprintf("Here Exiting as not in the stack limit ureg->cr2 %p limit %p", (char*)ureg->cr2, (char*)((unsigned int)task.stack_highest - MAX_STACK_SIZE));
       set_status(-2);
       vanish();
     }

@@ -76,6 +76,7 @@ int kern_exec(char *execname, char **argvec) {
     return -1;
   }
  
+  lprintf("Setting up vm for tid %d", kernel.current_thread->tid);
   unsigned int *cr3 = NULL;
   if ((cr3 = setup_vm(&elf)) == NULL) {
     lprintf("VM setup failed for task \"%s\"", execname);
@@ -84,6 +85,7 @@ int kern_exec(char *execname, char **argvec) {
     eff_mutex_unlock(&kernel.mutex);
     return -1;
   }
+  lprintf("Set up vm complete for tid %d", kernel.current_thread->tid);
 
   char *new_stack_addr = load_args_for_new_program(argvec, old_cr3, count);
   lprintf("Loaded args for new program");
@@ -125,9 +127,10 @@ char *load_args_for_new_program(char **argvec, unsigned int *old_ptd,
   unsigned int *new_ptd = (unsigned int *)get_cr3();
   char *stack_addr = (char *)STACK_TOP;
   char *buf = malloc(sizeof(char) * (ARGS_MAX_SIZE + 1));
-  char **args_addr = malloc(sizeof(char*) * (count));
+  char **args_addr = malloc(sizeof(char*) * (count + 1));
   int i = 0, len;
   
+  kernel.current_thread->cr3 = (uint32_t)old_ptd;
   set_cr3((uint32_t)old_ptd);
   while (argvec[i] != NULL) {
     // TODO: Is this a TOCTOU problem?
@@ -142,12 +145,15 @@ char *load_args_for_new_program(char **argvec, unsigned int *old_ptd,
     set_cr3((uint32_t)old_ptd);
     i++;
   }
+  free(buf);
 
-  stack_addr -= (sizeof(char*) * (count));
+  args_addr[i] = 0;
+  stack_addr -= (sizeof(char*) * (count+1));
   char *start_of_argv = stack_addr;
   kernel.current_thread->cr3 = (uint32_t)new_ptd;
   set_cr3((uint32_t)new_ptd);
-  memcpy(stack_addr, args_addr, (sizeof(char*) * (count)));
+  memcpy(stack_addr, args_addr, (sizeof(char*) * (count+1)));
+  free(args_addr);
   unsigned int ptr_size = sizeof(void*);
   stack_addr -= ptr_size;
   *(char **)stack_addr = (char*)STACK_START_ADDR;
