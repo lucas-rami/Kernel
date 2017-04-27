@@ -19,7 +19,7 @@
 
 #define IDT_ENTRY_SIZE_BYTES 8 /* The size of an entry in the IDT */
 
-/** @brief Register the software interrupt handlers in the IDT
+/** @brief  Register the software interrupt handlers in the IDT
  *
  *  @return 0 on success, a negative number of error
  */
@@ -35,7 +35,8 @@ int idt_syscall_install() {
                           (uintptr_t)swexn,
                           (uintptr_t)vanish, (uintptr_t)wait,
                           (uintptr_t)sleep, (uintptr_t)set_status,
-                          (uintptr_t)get_ticks, (uintptr_t)halt
+                          (uintptr_t)get_ticks, (uintptr_t)halt,
+                          (uintptr_t)readfile
                           };
 
   // List of offsets in the IDT corresponding to syscalls
@@ -43,10 +44,11 @@ int idt_syscall_install() {
                             YIELD_INT, FORK_INT, EXEC_INT, THREAD_FORK_INT,
                             NEW_PAGES_INT, REMOVE_PAGES_INT, READLINE_INT, 
                             PRINT_INT, SWEXN_INT, VANISH_INT, WAIT_INT, 
-                            SLEEP_INT, SET_STATUS_INT, GET_TICKS_INT, HALT_INT
+                            SLEEP_INT, SET_STATUS_INT, GET_TICKS_INT, HALT_INT,
+                            READFILE_INT
                             };
 
-  // TODO: create a similar array to differnetiate between TRAP and INTERRUPT
+  // TODO: create a similar array to differentiate between TRAP and INTERRUPT
   // gates
 
   int nb_syscalls = sizeof(syscalls) / sizeof(uintptr_t);
