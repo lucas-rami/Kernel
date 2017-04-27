@@ -12,9 +12,9 @@
 #include <simics.h>
 
 // #define TEST "actual_wait"
-#define TEST "fork_wait_bomb"
+// #define TEST "fork_wait_bomb"
 // #define TEST "make_crash"
-// #define TEST "cho_variant"
+#define TEST "cho2"
 // #define TEST "loader_test2"
 
 int main()

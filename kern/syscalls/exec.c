@@ -25,8 +25,7 @@
 #include <context_switch_asm.h>
 
 #define ERR_INVALID_ARGS -1
-// TODO: What should this value be? How about max no of args
-#define ARGS_MAX_SIZE 128
+#define ARGS_MAX_SIZE 256
 #define STACK_TOP 0xFFFFFFFF
 #define STACK_START_ADDR 0xfffff000
 #define TRUE 1
@@ -109,7 +108,6 @@ int kern_exec(char *execname, char **argvec) {
 
   lprintf("SHOULD NEVER RETURN HERE!!");
   return 0;
-  // TODO: Think of a reasonable limit on the number of args in argvec
 }
 
 /** @brief Transports the number of strings in the argvec and the vector itself
