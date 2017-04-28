@@ -35,6 +35,10 @@ typedef struct pcb {
   /* @brief Task's original thread's tid */
   int original_thread_id;
 
+  /* @brief The stack pointer to the kernel stack of the last thread 
+   *  of this task */
+  uint32_t last_thread_esp0;
+
   /* @brief Holds the number of frames requested by this process(includes 
    *  the ones that have not been allocated yet as well */
   uint32_t num_of_frames_requested;

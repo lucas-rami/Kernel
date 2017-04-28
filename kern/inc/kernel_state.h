@@ -13,6 +13,7 @@
 #include <tcb.h>
 #include <pcb.h>
 #include <stack_queue.h>
+#include <syscalls.h>
 
 #define KERNEL_INIT_FALSE 0
 #define KERNEL_INIT_TRUE 1
@@ -70,6 +71,8 @@ typedef struct kernel {
   pcb_t *init_task;
 
   uint32_t kernel_ready;
+
+  garbage_collector_t gc;
 
   /* ------------------------- */
 

@@ -110,6 +110,7 @@ int kern_fork(unsigned int *esp) {
   lprintf("Setting %p as the task for thread %d", new_pcb, new_tcb->tid);
   new_tcb->task = new_pcb;
   
+  lprintf("TID %d kernel stack %p", new_tcb->tid, (char*)stack_kernel);
 
   // Add the child to the running queue
   eff_mutex_lock(&kernel.current_thread->task->list_mutex);

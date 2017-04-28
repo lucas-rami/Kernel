@@ -17,6 +17,7 @@
 #include <scheduler.h>
 #include <malloc.h>
 #include <stack_queue.h>
+#include <page.h>
 
 #define EXITED 5
 #define LAST_THREAD_FALSE 0
@@ -34,6 +35,15 @@ void kern_vanish() {
   // Add the kernel stack for this thread to the garbage collector
   lprintf("Vanish %d", kernel.current_thread->tid);
 
+  // Garbage collect all tcbs and kernel stacks added to the queues
+  /*eff_mutex_lock(&kernel.gc.mp);
+  generic_node_t *delete_me;
+  while((delete_me = stack_queue_dequeue(&kernel.gc.zombie_memory)) != NULL) {
+    lprintf("Freeing %p", (tcb_t*)delete_me->value);
+    free((tcb_t*)delete_me->value);
+  }
+  eff_mutex_unlock(&kernel.gc.mp);
+  */
   int is_last_thread = LAST_THREAD_FALSE;
 
   pcb_t *curr_task = kernel.current_thread->task;
@@ -131,6 +141,7 @@ void kern_vanish() {
       // Add myself to the zombie queue of the parent
       generic_node_t new_zombie = {curr_task, NULL};
       stack_queue_enqueue(&curr_task->parent->zombie_children, &new_zombie);
+      curr_task->last_thread_esp0 = kernel.current_thread->esp0 - PAGE_SIZE;
       // lprintf("Adding task %p %d to %p %d zombie children", curr_task, curr_task->tid, curr_task->parent, curr_task->parent->tid);
     } else {
       // At least one thread is waiting in my parent process
@@ -138,6 +149,7 @@ void kern_vanish() {
       assert(wait_thread_node != NULL);
 
       tcb_t* wait_thread = wait_thread_node->value;
+      curr_task->last_thread_esp0 = kernel.current_thread->esp0 - PAGE_SIZE;
       wait_thread->reaped_task = curr_task;
       curr_task->parent->num_running_children--;
       curr_task->parent->num_waiting_threads--;
@@ -159,7 +171,35 @@ void kern_vanish() {
   hash_table_remove_element(&kernel.tcbs, kernel.current_thread);
   lprintf("Removed tcb for thread %d", kernel.current_thread->tid);
   // TODO: What about the PCB and the kernel stack. How do you delete those?
+  eff_mutex_lock(&kernel.gc.mp);
+
+  generic_node_t *delete_zombie_mem;
+  while((delete_zombie_mem = stack_queue_dequeue(&kernel.gc.zombie_memory)) != NULL) {
+    lprintf("Freeing %p", (tcb_t*)delete_zombie_mem->value);
+    free((tcb_t*)delete_zombie_mem->value);
+  }
+
+  generic_node_t tmp_delete;
+  tmp_delete.value = kernel.current_thread;
+  tmp_delete.next = NULL;
+  stack_queue_enqueue(&kernel.gc.zombie_memory, &tmp_delete);
+  lprintf("Adding %p to gc list", (char*)(kernel.current_thread->esp0 & ~(PAGE_SIZE - 1)));
+  if (is_last_thread != LAST_THREAD_TRUE) {
+    // The stack of the last thread will be freed by the wait call
+    generic_node_t tmp_delete2;
+    tmp_delete2.value = (char*)(kernel.current_thread->esp0 - PAGE_SIZE);
+    tmp_delete2.next = NULL;
+    stack_queue_enqueue(&kernel.gc.zombie_memory, &tmp_delete2);
+  }
+  lprintf("The queue now is. Kernel stack is %p ", (char*)kernel.current_thread->esp0);
+  generic_node_t *print_tmp = kernel.gc.zombie_memory.head;
+  while(print_tmp) {
+    lprintf("The value is %p", (char*)print_tmp->value);
+    print_tmp = print_tmp->next;
+  }
   disable_interrupts();
+  // Interrupts are disabled so no one can delete this kernel stack/tcb before context switch
+  eff_mutex_unlock(&kernel.gc.mp);
   if (is_last_thread == LAST_THREAD_TRUE) {
     lprintf("Unlocking parent's list mutex %p", &curr_task->parent->list_mutex);
     eff_mutex_unlock(&curr_task->parent->list_mutex);

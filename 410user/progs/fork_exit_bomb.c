@@ -28,10 +28,11 @@ int main(int argc, char *argv[]) {
 			exit(42);
 		}
 		if(pid < 0) {
+                        lprintf("Fork failed");
 			break;
 		}
     count++;
-        report_fmt("child: %d", pid);
+        report_fmt("child: %d Parent pid %d count %d", pid, gettid(), count - 1);
 	}
 
     report_end(END_SUCCESS);

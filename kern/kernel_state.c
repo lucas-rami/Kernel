@@ -87,6 +87,12 @@ int kernel_init() {
   }
   lprintf("Kernel mutex is %p", &kernel.mutex);
 
+  if (eff_mutex_init(&kernel.gc.mp) < 0) {
+    lprintf("kernel_init(): Failed to initialize the garbage collector");
+    return -1;
+  }
+  stack_queue_init(&kernel.gc.zombie_memory);
+
   // Configure the idle task
   kernel.idle_thread = create_idle_thread();
   if (kernel.idle_thread == NULL) {
@@ -201,6 +207,7 @@ pcb_t *create_new_pcb() {
   new_pcb->original_thread_id = 0;
   new_pcb->num_running_children = 0;
   new_pcb->num_waiting_threads = 0;
+  new_pcb->last_thread_esp0 = 0;
 
   // Assign a unique id to the PCB
   eff_mutex_lock(&kernel.mutex);

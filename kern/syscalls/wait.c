@@ -69,7 +69,20 @@ int kern_wait(int *status_ptr) {
     // TODO: Free kernel stack of the last thread
     // TODO: Destroy the mutexes and everything?
     lprintf("Freeing the pcb %p of thread %d. My tid %d.", zombie_child, zombie_child->original_thread_id, kernel.current_thread->tid);
+    hash_table_remove_element(&kernel.pcbs, zombie_child);
+    eff_mutex_lock(&kernel.gc.mp);
+    generic_node_t *delete_zombie_mem;
+    while((delete_zombie_mem = stack_queue_dequeue(&kernel.gc.zombie_memory)) != NULL) {
+      lprintf("Freeing %p", (tcb_t*)delete_zombie_mem->value);
+      free((tcb_t*)delete_zombie_mem->value);
+    }
+    eff_mutex_unlock(&kernel.gc.mp);
+
+    lprintf("Freeing %p", (char*)zombie_child->last_thread_esp0);
+    char *delete_me = (char*)zombie_child->last_thread_esp0;
+    lprintf("Freeing %p", zombie_child);
     free(zombie_child);
+    free(delete_me);
     lprintf("Free returned");
  
     return ret;
@@ -98,7 +111,18 @@ int kern_wait(int *status_ptr) {
 
   // TODO: Free kernel stack of the last thread
   lprintf("Freeing pcb of the reaped task. My tid %d", kernel.current_thread->tid);
+  hash_table_remove_element(&kernel.pcbs, kernel.current_thread->reaped_task);
+  eff_mutex_lock(&kernel.gc.mp);
+  generic_node_t *delete_zombie_mem;
+  while((delete_zombie_mem = stack_queue_dequeue(&kernel.gc.zombie_memory)) != NULL) {
+    lprintf("Freeing %p", (tcb_t*)delete_zombie_mem->value);
+    free((tcb_t*)delete_zombie_mem->value);
+  }
+  eff_mutex_unlock(&kernel.gc.mp);
+  char *delete_me = (char*)kernel.current_thread->reaped_task->last_thread_esp0;
+  lprintf("Will free kernel stack %p for thread %d", (char*)kernel.current_thread->reaped_task->last_thread_esp0, kernel.current_thread->tid);
   free(kernel.current_thread->reaped_task);
+  free(delete_me);
   lprintf("Free returned");
 
   return ret;

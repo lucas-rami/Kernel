@@ -44,6 +44,13 @@ int kern_wait(int *status_ptr);
 
 /* Vanish call */
 void kern_vanish(void);
+typedef struct {
+
+  eff_mutex_t mp;
+
+  stack_queue_t zombie_memory;
+
+} garbage_collector_t;
 
 /* Sleep */
 int kern_sleep(int ticks);
