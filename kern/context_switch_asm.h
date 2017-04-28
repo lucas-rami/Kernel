@@ -26,5 +26,3 @@ void context_switch_asm(uint32_t *addr_from_esp, uint32_t *to_esp);
  *  @return void
  */
 void run_first_thread(uint32_t entry_point, uint32_t esp, uint32_t eflags);
-
-void run_idle(uint32_t esp);

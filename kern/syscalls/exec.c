@@ -78,7 +78,7 @@ int kern_exec(char *execname, char **argvec) {
  
   lprintf("Setting up vm for tid %d", kernel.current_thread->tid);
   unsigned int *cr3 = NULL;
-  if ((cr3 = setup_vm(&elf)) == NULL) {
+  if ((cr3 = setup_vm(&elf, FIRST_TASK_FALSE)) == NULL) {
     lprintf("VM setup failed for task \"%s\"", execname);
     eff_mutex_lock(&kernel.mutex);
     kernel.free_frame_count += num_frames_requested;
@@ -174,7 +174,7 @@ int exec_prechecks(char *execname, char **argvec) {
     return -1;
   }
 
-  if (is_valid_string(execname) == FALSE) {
+  if (is_valid_string(execname) < 0) {
     lprintf("Execname not valid");
     return ERR_INVALID_ARGS;
   }
@@ -188,7 +188,7 @@ int exec_prechecks(char *execname, char **argvec) {
 
   int i = 0;
   while (argvec[i] != NULL) {
-    if (is_valid_string(argvec[i]) == FALSE || strlen(argvec[i]) > 
+    if (is_valid_string(argvec[i]) < 0 || strlen(argvec[i]) > 
          ARGS_MAX_SIZE) {
       lprintf("Invalid args");
       return ERR_INVALID_ARGS;

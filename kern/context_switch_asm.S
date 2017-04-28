@@ -9,7 +9,6 @@
 
 .global context_switch_asm
 .global run_first_thread
-.global run_idle
 
 context_switch_asm:
 
@@ -48,8 +47,3 @@ run_first_thread:
   pushl $SEGSEL_USER_CS             // CS
   pushl %eax                        // EIP
   iret                              // Return from "interrupt"
-
-run_idle:
-  movl 4(%esp), %ecx
-  movl %ecx, %esp
-  ret

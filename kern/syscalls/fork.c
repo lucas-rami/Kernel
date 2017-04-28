@@ -96,7 +96,8 @@ int kern_fork(unsigned int *esp) {
     return -1;
   }
 
-  tcb_t *new_tcb = create_new_tcb(new_pcb, esp0, (uint32_t)new_cr3);
+  tcb_t *new_tcb = create_new_tcb(new_pcb, esp0, (uint32_t)new_cr3, NULL,
+                                  ROOT_THREAD_TRUE);
   if (new_tcb == NULL) {
     lprintf("fork(): TCB initialization failed");
     free(stack_kernel);
@@ -105,10 +106,8 @@ int kern_fork(unsigned int *esp) {
     // TODO: Increase the kernel free frame count
     return -1;
   }
-  new_pcb->original_thread_id = new_tcb->tid;
   new_pcb->parent = kernel.current_thread->task;
   lprintf("Setting %p as the task for thread %d", new_pcb, new_tcb->tid);
-  new_tcb->task = new_pcb;
   
 
   // Add the child to the running queue
@@ -159,7 +158,8 @@ int kern_thread_fork(unsigned int * esp) {
 
   // Create new TCB
   tcb_t * new_tcb = create_new_tcb(current_task, esp0, 
-                                      kernel.current_thread->cr3);
+                                      kernel.current_thread->cr3, NULL,
+                                      ROOT_THREAD_FALSE);
 
   // Craft the kernel stack for the new thread  
   new_tcb->esp = (uint32_t) initialize_stack_fork(kernel.current_thread->esp0,

@@ -35,18 +35,20 @@
 #include <assert.h>
 #include <string.h>
 #include <page.h>
+#include <exception_handlers.h>
 
 // tmp
 #include <cr.h>
-#include <eflags.h>
+
+static void idle();
 
 void tick(unsigned int numTicks);
 
-/** @brief Kernel entrypoint.
+/** @brief  Kernel entrypoint
  *
  *  This is the entrypoint for the kernel.
  *
- * @return Does not return
+ *  @return Does not return
  */
 int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
 
@@ -76,7 +78,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
     lprintf("VM init failed");
   }
 
-  lprintf("\tkernel_main(): Creating first task");
+  // lprintf("\tkernel_main(): Creating first task");
 
   kernel.zeroed_out_frame = (unsigned int)allocate_frame();
   lprintf("The zeroed out frame is %p", (char*)kernel.zeroed_out_frame);
@@ -87,8 +89,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
   memset((char*)kernel.zeroed_out_frame, 0, PAGE_SIZE);
 
   // Create the initial task and load everything into memory
-  uint32_t entrypoint;
-  if ( (entrypoint = create_task_from_executable(FIRST_TASK, FALSE, NULL, 0)) == 0 ) {
+  if (create_task_from_executable(FIRST_TASK, FALSE, NULL, 0) < 0 ) {
     lprintf("Failed to create user task");
     while (1) {
       continue;
@@ -98,24 +99,27 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
   // Clear the console before running anything
   clear_console();
 
-  // Enable interrupts
-  // enable_interrupts();
-
   lprintf("\tkernel_main(): Running idle thread...");
 
   kernel.kernel_ready = KERNEL_READY_TRUE;
 
   // Run the idle thread
-  run_idle(kernel.idle_thread->esp);
+  idle();
 
-  // We never get here
-  lprintf("kernel_main(): THIS IS REALLY BAD");
+  // We never reach here
   assert(0);
-
-  while (1) {
-    continue;
-  }
 
   return 0;
 }
 
+/** @brief  Idle function for the idle thread
+ *
+ *  @return Does not return
+ */
+static void idle() {
+  lprintf("\tidle(): Idle task running");
+  enable_interrupts();
+  while (1) {
+    continue;
+  }
+}

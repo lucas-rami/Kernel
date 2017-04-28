@@ -6,18 +6,6 @@
 #include <kernel_state.h>
 #include <eff_mutex.h>
 
-/*
-#define LOCKED 0
-#define UNLOCKED 1
-
-static void get_lock();
-static void release_lock();
-
-static int lock = UNLOCKED;
-mutex_t mutex_malloc;
-cond_t cond_malloc;
-*/
-
 void *malloc(size_t size) {
   eff_mutex_lock(&kernel.malloc_mutex);
   void* ret = _malloc(size);
@@ -71,20 +59,3 @@ void sfree(void *buf, size_t size) {
   _sfree(buf, size);
   eff_mutex_unlock(&kernel.malloc_mutex);
 }
-/*
-static void get_lock() {
-  mutex_lock(&mutex_malloc);
-  while (lock == LOCKED) {
-    cond_wait(&cond_malloc, &mutex_malloc);
-  }
-  lock = LOCKED;
-  mutex_unlock(&mutex_malloc);
-}
-
-static void release_lock() {
-  mutex_lock(&mutex_malloc);
-  lock = UNLOCKED;
-  cond_signal(&cond_malloc);
-  mutex_unlock(&mutex_malloc);
-}
-*/
