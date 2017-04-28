@@ -38,14 +38,17 @@ void kern_vanish() {
 
   pcb_t *curr_task = kernel.current_thread->task;
 
+  lprintf("Taking curr task's mutex %p", &curr_task->mutex);
   eff_mutex_lock(&curr_task->mutex);
   if (curr_task->num_of_threads <= 1) {
     is_last_thread = LAST_THREAD_TRUE;
     curr_task->task_state = EXITED;
   }
+  lprintf("Unlocking curr task's mutex %p", &curr_task->mutex);
   eff_mutex_unlock(&curr_task->mutex);
 
   if (is_last_thread == LAST_THREAD_TRUE) {
+    lprintf("Taking curr task's list mutex %p", &curr_task->list_mutex);
     eff_mutex_lock(&curr_task->list_mutex);
     // Mark all running children's parent as init
     generic_node_t *temp = curr_task->running_children.head;
@@ -56,11 +59,14 @@ void kern_vanish() {
       free(temp);
       temp = next;
     }
+    lprintf("Leaving curr task's list mutex %p", &curr_task->list_mutex);
     eff_mutex_unlock(&curr_task->list_mutex);
 
     // Update number of running children for init
+    lprintf("Taking init's list mutex %p", &kernel.init_task->list_mutex);
     eff_mutex_lock(&kernel.init_task->list_mutex);
     kernel.init_task->num_running_children += curr_task->num_running_children;
+    lprintf("Unlocking init's list mutex %p", &kernel.init_task->list_mutex);
     eff_mutex_unlock(&kernel.init_task->list_mutex);
     
     // Free up the virtual memory. Switch to the init's cr3 to make kernel code
@@ -74,12 +80,14 @@ void kern_vanish() {
     // disable_interrupts();
     // enable_interrupts();
     set_cr3(kernel.init_cr3);
-    // lprintf("Free address space called with cr3 %p", cr3);
+    lprintf("Free address space called with cr3 %p", cr3);
     // enable_interrupts();
     free_address_space(cr3, KERNEL_AND_USER_SPACE);
-    // lprintf("Freed address space");
+    lprintf("Freed address space");
+    lprintf("Taking kernel mutex %p", &kernel.mutex);
     eff_mutex_lock(&kernel.mutex);
     kernel.free_frame_count += curr_task->num_of_frames_requested;
+    lprintf("Leaving kernel mutex %p", &kernel.mutex);
     eff_mutex_unlock(&kernel.mutex);
 
     // TODO: Delete the linked list allocations which we store for new pages
@@ -87,11 +95,13 @@ void kern_vanish() {
     // lprintf("Linked list deleted for new_pages");
     // MAGIC_BREAK;
 
+    lprintf("Taking curr taksk's list mutex %p", &curr_task->list_mutex);
     eff_mutex_lock(&curr_task->list_mutex);
 
     generic_node_t *curr_zombie_list = curr_task->zombie_children.head;
 
     if (curr_zombie_list != NULL) {
+      lprintf("Taking init's list mutex %p", &kernel.init_task->list_mutex);
       eff_mutex_lock(&kernel.init_task->list_mutex);
       generic_node_t *init_zombie_tail = kernel.init_task->zombie_children.tail;
       if (init_zombie_tail == NULL) {
@@ -99,15 +109,17 @@ void kern_vanish() {
       } else {
         init_zombie_tail->next = curr_zombie_list;
       }
+      lprintf("Unlocking init's list mutex %p", &kernel.init_task->list_mutex);
       eff_mutex_unlock(&kernel.init_task->list_mutex);
     }
 
+    lprintf("Leaving curr taksk's list mutex %p", &curr_task->list_mutex);
     eff_mutex_unlock(&curr_task->list_mutex);
 
 
-    // lprintf("Modifying the parent now. Mutex %p", &curr_task->parent->list_mutex);
+    lprintf("Modifying the parent now. Mutex %p", &curr_task->parent->list_mutex);
     eff_mutex_lock(&curr_task->parent->list_mutex);
-    // lprintf("Took a lock on parent");
+    lprintf("Took a lock on parent");
     
     // Remove yourself from the running queue of the parent
     // Even if I am not in the linked list, this function will have no 
@@ -143,11 +155,13 @@ void kern_vanish() {
     }
   } 
 
-  // lprintf("Removing tcb for thread %d", kernel.current_thread->tid);
+  lprintf("Removing tcb for thread %d", kernel.current_thread->tid);
   hash_table_remove_element(&kernel.tcbs, kernel.current_thread);
+  lprintf("Removed tcb for thread %d", kernel.current_thread->tid);
   // TODO: What about the PCB and the kernel stack. How do you delete those?
   disable_interrupts();
   if (is_last_thread == LAST_THREAD_TRUE) {
+    lprintf("Unlocking parent's list mutex %p", &curr_task->parent->list_mutex);
     eff_mutex_unlock(&curr_task->parent->list_mutex);
   }
 

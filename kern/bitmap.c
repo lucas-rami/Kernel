@@ -30,6 +30,7 @@ int bitmap_init(bitmap_t *map, int length) {
     free(map->arr);
     return -1;
   }
+  lprintf("Bitmpa mutex is %p", &map->mp);
   memset(map->arr, BITMAP_UNALLOCATED, sizeof(uint8_t) * length);
   return 0;
 }

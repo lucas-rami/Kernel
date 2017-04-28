@@ -54,6 +54,7 @@ restore_state_and_iret:
   popl %edi
   popl %edi
 */
+
   popa                  // Pop general purpose registers
 
   addl $4, %esp         // Put back the stack pointer to where it was when the

@@ -121,7 +121,6 @@ int main(int argc, char **argv)
       ++reap_count;
       for (p = progs, matched = 0; p < fence; ++p) {
         if (p->pid == pid) {
-          lprintf("There");
           matched = 1;
           lprintf("%s%s After wait(): pid = %d, prog = %s", 
                         TEST_PFX, test_name, pid, p->name);
@@ -151,7 +150,6 @@ int main(int argc, char **argv)
       }
       if ( matched == 0 )
       {
-        lprintf("Here");
         report_fmt("unexpected waited pid %d (status %d)", pid, status);
         report_end(END_FAIL);
         if ( magic_break )
@@ -166,6 +164,5 @@ int main(int argc, char **argv)
   }
 
     report_end(END_SUCCESS);
-   MAGIC_BREAK;
   exit(0);
 }
