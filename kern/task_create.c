@@ -40,119 +40,98 @@
                              kernel.free_frame_count += num_frames_requested;\
                              eff_mutex_unlock(&kernel.mutex)
 
-/** @brief Creates a task from an executable. Loads all the different
- *   sections required by the program from the ELF file. Allocates a new
- *   pcb/tcb if needed. This only happens when the first task for the system
- *   is being created. After that, all the calls are from exec and as they
- *   already have a tcb/pcb, we do not allocate new ones.
+/** @brief  Creates a task from an executable, should only be used for the first
+ *          task created in the kernel
  *
- *  @param task_name     A string specifying the name of the program to be 
+ *  The function creates evertying necessary for the first task in the kernel
+ *  to run. The function get the ELF header for the given task name, allocates
+ *  a kernel stack and user-space memory, create a new PCB/TCB and manually 
+ *  craft an initial stack for the first task.
+ *
+ *  @param  task_name    A string specifying the name of the program to be 
  *                       loaded
- *  @param is_exec       An int value specifying whether this function is 
- *                       being called from exec or not. 
- *  @param argvec        A char** to the argument vector passed to exec.
- *                       It is NULL in the case of the first task
- *  @param count         The count of arguments in argvec
  *
- *  @return unsigned int The starting instruction pointer of the program 
- *                       that is being loaded on success, 0 otherwise
+ *  @return 0 on success, a negative number on error
  */
-unsigned int create_task_from_executable(char *task_name, int is_exec,
-    char **argvec, int count) {
+int create_task_from_executable(char *task_name) {
 
   simple_elf_t elf;
 
+  // Populate the simple_elf_t data structure
   if (load_elf_file(task_name, &elf) < 0) {
     lprintf("Error loading ELF file");
   }
 
+  // Request the number of frames needed for this task
   unsigned num_frames_requested;
   if ((num_frames_requested = request_frames_needed_by_program(&elf)) == 0) {
     lprintf("The program %s needs more memory than is available", task_name);
-    return 0;
+    return -1;
   }
 
   // Allocate a kernel stack for the root thread
   void *stack_kernel = malloc(PAGE_SIZE);
   if (stack_kernel == NULL) {
     lprintf("Could not allocate kernel stack for task's root thread");
-    return 0;
+    return -1;
   }
 
   // Setup virtual memory for this task
-  // TODO: Free all this virtual space if anything fails
   unsigned int *cr3;
-  if ((cr3 = setup_vm(&elf)) == NULL) {
+  if ((cr3 = setup_vm(&elf, FIRST_TASK_TRUE)) == NULL) {
     lprintf("Task creation failed for task \"%s\"", task_name);
     free(stack_kernel);
-    eff_mutex_lock(&kernel.mutex);
-    kernel.free_frame_count += num_frames_requested;
-    eff_mutex_unlock(&kernel.mutex);
-    return 0;
+    INCREASE_FRAME_COUNT;
+    return -1;
   }
-
-  // SIMICS Debugging 
-  // sim_reg_process(cr3, task_name);
-
-  uint32_t esp0, stack_top;
-  pcb_t *new_pcb = NULL;
-  tcb_t *new_tcb = NULL;
   
   // Doing this for the first user task of the system
-  esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
+  uint32_t esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
 
-  // Create new PCB/TCB for the task and its root thread
-  new_pcb = create_new_pcb();
+  // Create new PCB for the task
+  pcb_t *new_pcb = create_new_pcb();
   if (new_pcb == NULL) {
     lprintf("create_task_from_executable(): PCB initialization failed");
-    // TODO: Increase the kernel free frame count
-    INCREASE_FRAME_COUNT;
     free(stack_kernel);
-    return 0;
+    INCREASE_FRAME_COUNT;
+    return -1;
   }
 
-  new_tcb = create_new_tcb(new_pcb, esp0, (uint32_t)cr3);
+  // Create new TCB for the root thread
+  tcb_t *new_tcb = create_new_tcb(new_pcb, esp0, (uint32_t)cr3, NULL, 
+                                  ROOT_THREAD_TRUE);
   if (new_tcb == NULL) {
     lprintf("create_task_from_executable(): TCB initialization failed");
     free(stack_kernel);
     hash_table_remove_element(&kernel.pcbs, new_pcb);
-    // TODO: Increase the kernel free frame count
     INCREASE_FRAME_COUNT;
-    return 0;
+    return -1;
   }
 
-  new_pcb->original_thread_id = new_tcb->tid;
-  new_tcb->task = new_pcb;
-
+  // Loads the arguments for the new task
   char *argv[2];
   argv[0] = task_name;
   argv[1] = NULL;
-  stack_top = (uint32_t) load_args_for_new_program(argv, (unsigned int *)get_cr3(), 1);
+  uint32_t stack_top = (uint32_t) load_args_for_new_program(argv, (unsigned int *)get_cr3(), 1);
 
-  // TODO: Check if this comparison is needed
-  if (!strcmp(task_name, FIRST_TASK)) {
-    lprintf("\ttask_create(): Setting the init_cr3 as %p", cr3);
-    kernel.init_cr3 = (uint32_t)cr3;
-    kernel.init_task = new_pcb;
-  }
+  lprintf("\ttask_create(): Setting the init_cr3 as %p", cr3);
 
-  // TODO: lock?
-  // Not adding as this is the final value. The value before this should be 0
-  // as in any case this task is starting anew.
+  // Set the created task as the kernel's init task
+  kernel.init_cr3 = (uint32_t)cr3;
+  kernel.init_task = new_pcb;
+
+  // Set the number of frames requested by the task and root thread
   new_tcb->num_of_frames_requested = num_frames_requested;
   new_tcb->task->num_of_frames_requested = num_frames_requested;
 
   // Create EFLAGS for the user task
-  // TODO: IOPL ?
   uint32_t eflags = get_eflags();
   eflags |= EFL_RESV1;       // Set bit 1
   eflags &= ~EFL_AC;         // Alignment checking off
-  // eflags &= ~EFL_IOPL_RING3; // Clear current privilege level
-  // eflags |= EFL_IOPL_RING3;  // Set privilege level to 3
   eflags |= EFL_IF;          // Enable interrupts
 
+  // Manually craft the stack
   unsigned int * stack_addr = (unsigned int *) esp0;
-
   --stack_addr;
   *stack_addr = eflags;
   --stack_addr;
@@ -179,11 +158,21 @@ unsigned int create_task_from_executable(char *task_name, int is_exec,
   // Enqueue the current thread
   stack_queue_enqueue(&kernel.runnable_queue, node_addr);
 
-  lprintf("Returning from task_create");
-  return elf.e_entry;
+  return 0;
 }
 
-
+/** @brief  Computes the number of frames that is needed for a given progam
+ *
+ *  The function also takes care of updating the value of frames available in
+ *  user-space memory if enough frames were available before the call, if not
+ *  the number of remaining frames is left unchanged.
+ *
+ *  @param  elf A data structure holding information (length, offset) about
+ *              each section of a program
+ *  
+ *  @return The number of frames requested by the program if enough frames are
+ *          available in user-space memory, 0 otherwise
+ */
 unsigned int request_frames_needed_by_program(simple_elf_t *elf) {
   if (elf == NULL) {
     lprintf("frames_needed_by_program(): Invalid argument");
@@ -225,7 +214,8 @@ unsigned int request_frames_needed_by_program(simple_elf_t *elf) {
   total_frames_reqd += (bssend/PAGE_SIZE) + 1 - (bssstart/PAGE_SIZE);
 
   // lprintf("The number of frames reqd are %u", total_frames_reqd - reduce_count + 1);
-  // Adding 1 frame for the stack
+  
+  // Adding one frame for the stack
   total_frames_reqd++;
   total_frames_reqd -= reduce_count;
 
@@ -237,15 +227,28 @@ unsigned int request_frames_needed_by_program(simple_elf_t *elf) {
     return 0;
   }
   eff_mutex_unlock(&kernel.mutex);
-  // TODO: Test the code when two sections overlap
+
   return total_frames_reqd;
 }
 
-
+/** @brief  Loads the ELF header of a given task
+ *
+ *  The function checks that the task exists and that the ELF header associated 
+ *  to this task is valid. It returns an error if the ELF does not exists or is
+ *  invalid. On success the elf argument is populated with the task sections
+ *  information.
+ *
+ *  @param  task_name   The task's name
+ *  @param  elf         A simple_elf_t data structure that will be populated by
+ *                      the function
+ *
+ *  @return 0 on success, a negative number on error
+ */
 int load_elf_file(char *task_name, simple_elf_t *elf) {
 
-  if (task_name == NULL) {
-    lprintf("Invalid argument to function create_task_from_executable()ç");
+  // Check validity of arguments
+  if (task_name == NULL || elf == NULL) {
+    lprintf("Invalid argument to function create_task_from_executable()");
     return -1;
   }
 
@@ -260,5 +263,6 @@ int load_elf_file(char *task_name, simple_elf_t *elf) {
     lprintf("ELF header is invalid for task \"%s\"", task_name);
     return -1;
   }
+
   return 0;
 }

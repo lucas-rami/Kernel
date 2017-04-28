@@ -1,9 +1,7 @@
 /** @file cond_var.c
- *
  *  @brief This file contains the definitions for condition variable functions
- *   It implements cvar_init, cvar_wait, cvar_signal and cvar_broadcast which
- *   can be used by applications for synchronization
- *
+ *         It implements cvar_init, cvar_wait, cvar_signal and cvar_broadcast
+ *         which can be used by applications for synchronization
  *  @author akanjani, lramire1
  */
 
@@ -18,35 +16,32 @@
 #include <kernel_state.h>
 
 /** @brief The state of a condition variable which means that a cond_init has
- *   been called but cond_destroy hasn't been called after that
- */
+ *         been called but cond_destroy hasn't been called after that */
 #define CVAR_INITIALIZED 1
 
 /** @brief The state of a condition variable which means that a cond_destroy
- *   has been called but cond_init hasn't been called after that
- */
+ *         has been called but cond_init hasn't been called after that */
 #define CVAR_UNINITIALIZED 0
 
 /** @brief The parameter to deschedule to put a thread from the running queu to
- *   the waiting queue of the scheduler.
- */
+ *         the waiting queue of the scheduler */
 #define DONT_RUN 0
 
-/** @brief Initializes a condition variable
+/** @brief  Initializes a condition variable
  *
  *  This function initializes the condition variable pointed to by cv.
  *  The effects of using a condition variable before it has been initialized,
  *  or of initializing it when it is already initialized and in use
  *  are undefined.
  *
- *  @param cv The condition variable to initialize
+ *  @param  cv  The condition variable to initialize
  *
  *  @return Zero on success, a negative number on error
  */
 int cond_init(cond_t *cv) {
 
+  // Check parameter
   if (cv == NULL) {
-    // Invalid parameter
     return -1;
   }
   
@@ -64,7 +59,7 @@ int cond_init(cond_t *cv) {
   return 0;
 }
 
-/** @brief Destroys a condition variable
+/** @brief  Destroys a condition variable
  *
  *  This function deactivates the condition variable pointed to by cv.
  *  It is illegal for an application to use a condition variable after it has
@@ -72,20 +67,14 @@ int cond_init(cond_t *cv) {
  *  illegal for an application to invoke cond destroy() on a condition
  *  variable while threads are blocked waiting on it.
  *
- *  @param cv A pointer to the condition variable to deactivate
+ *  @param  cv A pointer to the condition variable to deactivate
  *
  *  @return void
  */
 void cond_destroy(cond_t *cv) {
 
   // Invalid parameter
-  assert(cv);
-
-  if (cv->init != CVAR_INITIALIZED) {
-    lprintf("Not init %p", cv);
-  }
-  // Illegal Operation. Destroy on an uninitalized cvar
-  assert(cv->init == CVAR_INITIALIZED);
+  assert(cv != NULL && cv->init == CVAR_INITIALIZED);
 
   // Destroy the stack queue
   stack_queue_destroy(&cv->waiting_queue);
@@ -98,7 +87,7 @@ void cond_destroy(cond_t *cv) {
   
 }
 
-/** @brief Waits for a condition to be true associated with cv
+/** @brief  Waits for a condition to be true associated with cv
  *
  *  It allows a thread to wait for a condition and release the associated
  *  mutex that it needs to hold to check that condition. The calling thread
@@ -106,21 +95,16 @@ void cond_destroy(cond_t *cv) {
  *  cond signal() or a cond broadcast(). Upon return from cond wait(), *mp
  *  has been re-acquired on behalf of the calling thread.
  *
- *  @param cv A pointer to the condition variable
- *  @param mp A pointer to the mutex held by the thread
+ *  @param  cv  A pointer to the condition variable
+ *  @param  mp  A pointer to the mutex held by the thread
  *
  *  @return void
  */
 void cond_wait(cond_t *cv, mutex_t *mp) {
 
   // Invalid parameter
-  assert(cv && mp);
-
-  if (cv->init != CVAR_INITIALIZED) {
-    lprintf("Not init %p", cv);
-  }
-  // Illegal Operation. cond_wait on an uninitialized cvar
-  assert(cv->init == CVAR_INITIALIZED);
+  assert(cv != NULL && mp != NULL && cv->init == CVAR_INITIALIZED &&
+          mp->init == MUTEX_INITIALIZED);
 
   // Lock the cvar mutex
   mutex_lock(&cv->mp);
@@ -144,23 +128,19 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
   mutex_lock(mp);
 }
 
-/** @brief Wakes up a thread waiting on the condition variable pointed to
- *   by cv, if one exists
+/** @brief  Wakes up a thread waiting on the condition variable
  *
- *  @param cv A pointer to the condition variable
+ *  If no thread is waiting on the condition variable, then the function has no
+ *  effect.
+ *
+ *  @param  cv  A pointer to the condition variable
  *
  *  @return void
  */
 void cond_signal(cond_t *cv) {
 
   // Invalid parameter
-  assert(cv);
-
-  if (cv->init != CVAR_INITIALIZED) {
-    lprintf("Not init %p", cv);
-  }
-  // Illegal operation. cond_signal on an uninitialized cvar
-  assert(cv->init == CVAR_INITIALIZED);
+  assert(cv != NULL && cv->init == CVAR_INITIALIZED);
 
   generic_node_t* elem;
 
@@ -186,20 +166,19 @@ void cond_signal(cond_t *cv) {
 
 }
 
-/** @brief Wakes up all threads waiting on the condition variable pointed to
- *   by cv
+/** @brief  Wakes up all threads waiting on the condition variable
  *
- *  @param cv A pointer to the condition variable
+ *  If no thread is waiting on the condition variable, then the function has no
+ *  effect.
+ *
+ *  @param  cv  A pointer to the condition variable
  *
  *  @return void
  */
 void cond_broadcast(cond_t *cv) {
 
   // Invalid parameter
-  assert(cv);
-
-  // Illegal operation. cond_broadcast on an uninitialized cvar
-  assert(cv->init == CVAR_INITIALIZED);
+  assert(cv != NULL && cv->init == CVAR_INITIALIZED);
 
   generic_node_t* elem;  
 

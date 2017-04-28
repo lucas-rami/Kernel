@@ -16,6 +16,7 @@
 #define THR_RUNNING 1
 #define THR_BLOCKED 2
 #define THR_ZOMBIE 3
+#define THR_UNINITALIZED 4
 
 typedef void (*swexn_handler_t)(void *arg, ureg_t *ureg);
 
@@ -33,8 +34,8 @@ typedef struct tcb {
   /* @brief The thread's kernel issued TID */
   int tid;
 
-  /* @brief Thread's current state: may be one of [RUNNABLE, RUNNING, BLOCKED,
-   * ZOMBIE] */
+  /* @brief Thread's current state: may be one of [THR_RUNNABLE, THR_RUNNING, 
+   *  THR_BLOCKED, THR_ZOMBIE, THR_UNINITALIZED] */
   int thread_state;
 
   /* @brief Hold the value of %esp for this thread when context switching */

@@ -5,12 +5,12 @@
  *  @author Anirudh Kanjani
  */
 
-#ifndef __TIMER_H_
-#define __TIMER_H_
+#ifndef _TIMER_H_
+#define _TIMER_H_
 
 void timer_c_handler();
 
 int timer_init( void ( *tickback )( unsigned int ) );
 unsigned int get_global_counter();
 
-#endif
+#endif /* _TIMER_H_ */

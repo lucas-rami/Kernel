@@ -194,4 +194,3 @@ static void release_lock(mutex_t* mutex, cond_t* cond, int lock) {
   cond_signal(cond);
   mutex_unlock(mutex);
 }
-

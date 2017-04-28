@@ -1,8 +1,6 @@
 /** @file stack_queue.c
- *
- *  @brief This file contains the implementation of funnctions used to modify a 
- *    stack_queue_t structure.
- *
+ *  @brief  This file contains the implementation of functions used to modify a 
+ *          stack_queue_t data structure.
  *  @author akanjani, lramire1
  */
 
@@ -10,9 +8,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
-/** @brief Initializes the queue
+/** @brief  Initializes the queue
  *
- *  @param queue  The stack queue  
+ *  @param  queue  The stack queue  
  *
  *  @return void 
  */
@@ -26,9 +24,9 @@ void stack_queue_init(stack_queue_t* queue) {
 
 }
 
-/** @brief Destroys the queue
+/** @brief  Destroys the queue
  *
- *  @param queue  The stack queue  
+ *  @param  queue  The stack queue  
  *
  *  @return void 
  */
@@ -41,10 +39,10 @@ void stack_queue_destroy(stack_queue_t* queue) {
 
 }
 
-/** @brief Inserts a new element at the queue's tail 
+/** @brief  Inserts a new element at the queue's tail 
  *
- *  @param queue      The stack queue  
- *  @param new_elem   A pointer to the new element to insert
+ *  @param  queue      The stack queue  
+ *  @param  new_elem   A pointer to the new element to insert
  *
  *  @return void 
  */
@@ -65,12 +63,12 @@ void stack_queue_enqueue(stack_queue_t* queue, generic_node_t* new_elem) {
 
 }
 
-/** @brief Dequeues an element at the queue's head 
+/** @brief  Dequeues an element at the queue's head 
  *
- *  @param queue      The stack queue  
+ *  @param  queue      The stack queue  
  *
  *  @return The element at the queue's head if the queue was non-empty, NULL
- *    otherwise
+ *          otherwise
  */
 generic_node_t* stack_queue_dequeue(stack_queue_t* queue) {
 
@@ -91,9 +89,9 @@ generic_node_t* stack_queue_dequeue(stack_queue_t* queue) {
   return ret;
 }
 
-/** @brief Checks whether the queue is empty 
+/** @brief  Checks whether the queue is empty 
  *
- *  @param queue      The stack queue  
+ *  @param  queue      The stack queue  
  *
  *  @return 1 if the queue is empty, 0 otherwise
  */

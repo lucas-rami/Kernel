@@ -19,22 +19,53 @@
 /* Debugging */
 #include <simics.h>
 
-#define QUEUE_SIZE 32
+/* Number of buckets for hash tables*/
 #define NB_BUCKETS 8
 
-static void idle() {
-  lprintf("\tidle(): Idle task running");
-  enable_interrupts();
-  while (1) {
-    continue;
+/* Static functions prototypes */
+static tcb_t *create_idle_thread();
+
+/** @brief  Creates the kernel's idle thread
+ *
+ *  The function created a particular TCB for the idle thread which does not
+ *  have an englobing task and is not added to the TCBs hash table.
+ *  Only some fields of the TCB data structure are filled with meaningful data.
+ *
+ *  @return The idle thread's TCB on success, NULL otherwise
+ */
+static tcb_t *create_idle_thread() {
+
+  // Allocate space for the new TCB
+  tcb_t *new_tcb = malloc(sizeof(tcb_t));
+  if (new_tcb == NULL) {
+    return NULL;
   }
+
+  // Initialize the mutex on this TCB
+  if (eff_mutex_init(&new_tcb->mutex) < 0) {
+    lprintf("create_idle_thread(): Failed to initialize TCB mutex");
+    free(new_tcb);
+    return NULL;
+  }
+
+  // Set various fields to their initial value (only the one that matters for
+  // the idle thread)
+  new_tcb->task = NULL;
+  new_tcb->thread_state = THR_RUNNING;
+  new_tcb->tid = 0; // No other thread is allowed to have this tid
+  new_tcb->esp0 = get_esp0();
+  new_tcb->cr3 = get_cr3();
+
+  return new_tcb;
 }
 
-// Conditional variable for malloc wrappers
-extern cond_t cond_malloc;
-extern mutex_t mutex_malloc;
-
-/** @brief Initialize the kernel state
+/** @brief  Initializes the kernel state
+ *
+ *  The function initalizes all the data structures needed by the kernel and
+ *  creates the idle thread that is run when there is nothing else to run.
+ *
+ *  The function must be called once before using any field of the kernel_t
+ *  data structure. The function should not be called more than once.
  *
  *  @return 0 on success, a negative number on error
  */
@@ -58,13 +89,6 @@ int kernel_init() {
     return -1;
   }
   lprintf("Kernel malloc mutex is %p", &kernel.malloc_mutex);
-
-  // Initialize the condition variable for the functions in malloc_wrappers.c
-  /*if (cond_init(&cond_malloc) < 0) {
-    lprintf("kernel_init(): Failed to initialize conditional variable for "
-            "malloc_wrappers.c");
-    return -1;
-  }*/
 
   // Initialize the PCBs hash table
   if (hash_table_init(&kernel.pcbs, NB_BUCKETS, find_pcb, hash_function_pcb) <
@@ -106,65 +130,24 @@ int kernel_init() {
   return 0;
 }
 
-tcb_t *create_idle_thread() {
-
-  // Allocate space for the new PCB
-  pcb_t *new_pcb = malloc(sizeof(pcb_t));
-
-  // Initialize the mutex on this PCB
-  if (eff_mutex_init(&new_pcb->mutex) < 0) {
-    lprintf("create_idle_thread(): Failed to initialize PCB mutex");
-    free(new_pcb);
-    return NULL;
-  }
-
-  // Set various fields to their initial value
-  new_pcb->return_status = 0;
-  new_pcb->task_state = TASK_RUNNING;
-  new_pcb->tid = 0; // Okay since no other task is allowed to have this tid
-
-  // Allocate space for the new PCB
-  tcb_t *new_tcb = malloc(sizeof(tcb_t));
-
-  // Initialize the mutex on this PCB
-  if (eff_mutex_init(&new_tcb->mutex) < 0) {
-    lprintf("create_idle_thread(): Failed to initialize TCB mutex");
-    free(new_pcb);
-    free(new_tcb);
-    return NULL;
-  }
-
-  // Set various fields to their initial value
-  new_tcb->task = new_pcb;
-  new_tcb->thread_state = THR_RUNNING;
-  new_pcb->num_of_frames_requested = 0;  
-  new_tcb->tid = 0; // Fine since no other thread is allowed to have this tid
-
-  // Allocate a kernel stack for the root thread
-  void *stack_kernel = malloc(PAGE_SIZE);
-  if (stack_kernel == NULL) {
-    lprintf("create_idle_thread(): Failed to allocate kernel stack");
-    return NULL;
-  }
-
-  new_tcb->esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
-  unsigned int * stack_addr = (unsigned int *) new_tcb->esp0;
-  --stack_addr;
-  *stack_addr = (unsigned int) idle;
-  new_tcb->esp = (unsigned int) stack_addr;
-  new_tcb->cr3 = get_cr3();
-
-  return new_tcb;
-
-}
-
-// TODO: doc
+/** @brief  Creates a new PCB and add it to the PCBs hash table
+ *
+ *  The number of frames requested is set to 0 and the task's state is set to
+ *  TASK_RUNNING. When a PCB is created it has no child thread. The original 
+ *  thread id is set to 0, and should be modified when the root thread is
+ *  created for this task. The new PCB is added to the hash table of PCBs.
+ *
+ *  @return A pointer to the newly created PCB on success, NULL otherwise
+ */
 pcb_t *create_new_pcb() {
 
   assert(kernel.init == KERNEL_INIT_TRUE);
 
   // Allocate space for the new PCB
   pcb_t *new_pcb = malloc(sizeof(pcb_t));
+  if (new_pcb == NULL) {
+    return NULL;
+  }
 
   // Initialize the mutex on this PCB
   if (eff_mutex_init(&new_pcb->mutex) < 0) {
@@ -227,13 +210,34 @@ pcb_t *create_new_pcb() {
   return new_pcb;
 }
 
-// TODO: doc
-tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3) {
+/** @brief  Creates a new TCB and add it to the TCBs hash table
+ *  
+ *  The number of frames requested is set to 0 and the thread's state to 
+ *  THR_UNINITALIZED. The esp field is set to 0 and should be modified when the 
+ *  thread's stack is manually crafted. The new TCB is added to the hash table 
+ *  of TCBs. If the handler argument is not NULL, an exception handler is
+ *  registered for the new thread.
+ *
+ *  @param  pcb         The task to which the new TCB will belong to
+ *  @param  esp0        The esp0 value for the new thread
+ *  @param  cr3         The cr3 value for the new thread
+ *  @param  handler     A pointer to a structure representing a user defined
+ *                      exception handler
+ *  @param  root_thread A value indicating whether the created TCB is for the
+ *                      root thread of the task 
+ *
+ *  @return A pointer to the newly created TCB on success, NULL otherwise
+ */
+tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3, 
+                      swexn_struct_t* handler, int root_thread) {
 
   assert(kernel.init == KERNEL_INIT_TRUE && pcb != NULL);
 
   // Allocate space for the new PCB
   tcb_t *new_tcb = malloc(sizeof(tcb_t));
+  if (new_tcb == NULL) {
+    return NULL;
+  }
 
   // Initialize the mutex on this PCB
   if (eff_mutex_init(&new_tcb->mutex) < 0) {
@@ -244,17 +248,25 @@ tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3) {
 
   // Set various fields to their initial value
   new_tcb->task = pcb;
-  new_tcb->thread_state = THR_BLOCKED; // NOTE: not really, just not ready...
-  new_tcb->esp = 0; // NOTE: should be modified when the stack is crafted
+  new_tcb->thread_state = THR_UNINITALIZED; 
+  new_tcb->esp = 0; // Should be modified when the new thread's stack is created
   new_tcb->esp0 = esp0;
   new_tcb->cr3 = cr3;
   new_tcb->num_of_frames_requested = 0;
-  new_tcb->swexn_values.esp3 = NULL;
-  new_tcb->swexn_values.eip = NULL;
-  new_tcb->swexn_values.arg = NULL;
+
+  // Register an exception handler for this thread if the handler argument is 
+  // not NULL
+  if (handler != NULL) {
+    new_tcb->swexn_values = *handler;
+  } else {
+    new_tcb->swexn_values.esp3 = NULL;
+    new_tcb->swexn_values.eip = NULL;
+    new_tcb->swexn_values.arg = NULL;
+  }
 
   // TODO: Change this into an atomic op.
   // No need for a mutex
+
   // Assign a unique id to the TCB
   eff_mutex_lock(&kernel.mutex);
   new_tcb->tid = kernel.thread_id;
@@ -262,6 +274,11 @@ tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3) {
     kernel.thread_id = 1;
   }
   eff_mutex_unlock(&kernel.mutex);
+
+  // If this is the root thread, update the task original thread id
+  if (root_thread == ROOT_THREAD_TRUE) {
+    pcb->original_thread_id = new_tcb->tid;
+  }
 
   // Add the new PCB to the hash table
   if (hash_table_add_element(&kernel.tcbs, new_tcb) < 0) {
@@ -293,11 +310,9 @@ unsigned int hash_function_pcb(void *pcb, unsigned int nb_buckets) {
  *  @return 1 if the PCB is the good one (its tid is tid), 0 otherwise
  */
 int find_pcb(void *pcb1, void *pcb2) {
-
   if (((pcb_t*)pcb1)->tid == ((pcb_t*)pcb2)->tid) {
     return 1;
   }
-  
   return 0;
 }
 

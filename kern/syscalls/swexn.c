@@ -15,25 +15,25 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
 
   // lprintf("swexn esp %p, eip %p, arg %p, ureg %p", esp3, eip, arg, newureg);
   // lprintf("cause %p, cr2 %p, ds %p, es %p, fs %p, gs %p, esp %p", (uint32_t*)newureg->cause, (uint32_t*)newureg->cr2, (uint32_t*)newureg->ds, (uint32_t*)newureg->es, (uint32_t*)newureg->fs, (uint32_t*)newureg->gs, (uint32_t*)newureg->esp);
+  
   char *stack_pointer = (char*)&esp3;
-  // lprintf("sp %p", stack_pointer);
-  int ret = 0;
-  // Move the stack pointer to the 
   stack_pointer += ((NUM_ARGS) * sizeof(void*));
-  // lprintf("New sp %p", stack_pointer);
-  if ((eip && (unsigned)eip < USER_MEM_START) || (esp3 && (unsigned)esp3 < USER_MEM_START)) {
+
+  int ret = 0;
+
+  if ((eip != NULL && (unsigned int)eip < USER_MEM_START) || 
+      (esp3 != NULL && (unsigned int)esp3 < USER_MEM_START)) {
     // Invalid args
     // TODO: More validation. Check if eip is in text section
     // Check if esp3 looks like the correct value
     return -1;
   }
 
-  // PRECHECKS
   if (newureg != NULL) {
 
-    // Chech that the ureg_t structure is in user address space
-    // TODO: check ureg not in kernel space
-    if (is_buffer_valid((unsigned int)newureg, sizeof(ureg_t)) < 0) {
+    // Check that the ureg_t structure is in user address space
+    if ((unsigned int)newureg < USER_MEM_START || 
+        is_buffer_valid((unsigned int)newureg, sizeof(ureg_t)) < 0) {
       lprintf("\tkern_swexn(): Invalid newureg buffer");
       return -1;
     }
@@ -47,7 +47,6 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
     }
 
     // Check EFLAGS 
-    // TODO: IOPL ?
     uint32_t eflags = newureg->eflags;
     if ( !(eflags & EFL_RESV1) || (eflags & EFL_AC) ||
         eflags & EFL_IOPL_RING3 || !(eflags & EFL_IF) ) {
@@ -58,28 +57,18 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
   }
 
   if (newureg != NULL) {
-
+    // If the user specified new registers, copy them on the kernel stack 
+    // before returning to user space
     ret = (int)newureg->eax;
-
-    // lprintf("Memcpy");
-    // lprintf("swexn esp %p, eip %p, arg %p, ureg %p", esp3, eip, arg, newureg);
-    // lprintf("Newureg ds address %p", &newureg->ds);
-    // lprintf("Memcpy donw");
-    // lprintf("swexn esp %p, eip %p, arg %p, ureg %p", esp3, eip, arg, newureg);
-
-    // memcpy(stack_pointer, &newureg->ds, 12 * sizeof(unsigned int));
-    // stack_pointer += 13;
-    // memcpy(stack_pointer, &newureg->eip, 5 * sizeof(unsigned int));
-    
-    memcpy(stack_pointer, &newureg->ds, (sizeof(ureg_t) - (2 * sizeof(unsigned int))));
-
+    memcpy(stack_pointer, &newureg->ds, 
+            (sizeof(ureg_t) - (2 * sizeof(unsigned int))));
   }
 
   // Store the current esp of the exception stack and the eip to restore in
   // case something goes bad
   eff_mutex_lock(&kernel.current_thread->mutex);
   if (esp3 == NULL || eip == NULL) {
-    // Deregister the current handlewexn_handler_t eip
+    // Deregister the current exception handler
     kernel.current_thread->swexn_values.esp3 = NULL;
     kernel.current_thread->swexn_values.eip = NULL;
     kernel.current_thread->swexn_values.arg = NULL;

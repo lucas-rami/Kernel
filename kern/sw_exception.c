@@ -1,3 +1,9 @@
+/** @file sw_exception.c
+ *  @brief  This file contains the definition for the function used to create
+ *          the stack for a user-registered exception handler 
+ *  @author akanjani, lramire1
+ */
+
 #include <kernel_state.h>
 #include <stddef.h>
 #include <simics.h>
@@ -8,7 +14,26 @@
 #include <assert.h>
 #include <string.h>
 
+/** @brief  Creates the exception stack for a user defined exception handler
+ *
+ *  The function first checks whether there is an exception handler registered
+ *  for this thread. If there is one, then the function manually crafts an
+ *  exception stack in user-space for the exception handler to run on. The
+ *  function also crafts a trap frame on the kernel stack of the invoking thread
+ *  so that IRET returns on the exception stack and executes the user defined
+ *  handler.
+ *
+ *  @param  cause     The cause for the exception
+ *  @param  stack_ptr   The address on the invoking thread's kernel stack where
+ *                      we should start constructing the stack for executing 
+ *                      the potential user-registered handler
+ *
+ *  @return 0 if there is no used-defined exception handler registered, does
+ *          not return otherwise
+ */
 int create_stack_sw_exception(unsigned int cause, char *stack_start) {
+  
+  // Check if there is an exception handler registered
   if (kernel.current_thread->swexn_values.esp3 == NULL ||
       kernel.current_thread->swexn_values.eip == NULL) {
     lprintf("No exception handler installed");
@@ -22,15 +47,18 @@ int create_stack_sw_exception(unsigned int cause, char *stack_start) {
 
   char *ureg_start = stack_ptr - ureg_size;
 
+  // Craft the kernel stack to return to user space 
   *(unsigned int *)(ureg_start) = cause;
   *(unsigned int *)(ureg_start + unsigned_int_size) = (unsigned int)get_cr2();
   memcpy(ureg_start + (2 * unsigned_int_size), stack_start, ureg_size - (8 * unsigned_int_size));
   stack_start += ureg_size - (8 * unsigned_int_size);
   stack_start += pointer_size;
   memcpy(ureg_start + (14 * unsigned_int_size), stack_start, 6 * unsigned_int_size);
+
   // lprintf("The value at stack_start is %p", (uint32_t*)*(unsigned int*)(stack_start));
   // lprintf("The stack address during page fault handler is %p", (void *)(*(unsigned int *)(ureg_start + (18 * unsigned_int_size))));
-  // MAGIC_BREAK;
+
+  // Craft the exception stack for the handler
   stack_ptr = ureg_start - pointer_size;
   *(unsigned int **)stack_ptr = (unsigned int *)ureg_start;
   stack_ptr -= pointer_size;
@@ -39,16 +67,20 @@ int create_stack_sw_exception(unsigned int cause, char *stack_start) {
   
   // lprintf("ureg_start %p, stack start %p", ureg_start, kernel.current_thread->swexn_values.esp3);
   unsigned int *sw_eip = (unsigned int *)kernel.current_thread->swexn_values.eip;
+
+  // Deregister the handler
   kernel.current_thread->swexn_values.esp3 = NULL;
   kernel.current_thread->swexn_values.eip = NULL;
   kernel.current_thread->swexn_values.arg = NULL;
 
   // lprintf("Running first thread with the correct values");
   // lprintf("eip %p stack %p", sw_eip, stack_ptr);
+
   // Make the sw exception handler run now by creating a trap frame
   run_first_thread((uint32_t)sw_eip, (uint32_t)stack_ptr, (uint32_t)get_eflags());
 
   // lprintf("create_stack_sw_exception(): ERROR! Should never reach here");
   assert(0);
+
   return 0;
 }

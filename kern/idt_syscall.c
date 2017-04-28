@@ -1,6 +1,6 @@
 /** @file idt_syscall.h
- *  @brief This file contains the defintions for functions used to register
- *  the system calls handlers into the IDT.
+ *  @brief  This file contains the defintions for functions used to register
+ *          the system calls handlers into the IDT.
  *  @author akanjani, lramire1
  */
 
@@ -19,7 +19,10 @@
 
 #define IDT_ENTRY_SIZE_BYTES 8 /* The size of an entry in the IDT */
 
-/** @brief  Register the software interrupt handlers in the IDT
+/** @brief  Registers the software interrupt handlers in the IDT
+ *
+ *  In case of error, the number of handlers registered when the function 
+ *  returns is undefined.
  *
  *  @return 0 on success, a negative number of error
  */
@@ -53,6 +56,8 @@ int idt_syscall_install() {
 
   int nb_syscalls = sizeof(syscalls) / sizeof(uintptr_t);
   int i;
+
+  // Register the handlers
   for (i = 0; i < nb_syscalls; ++i) {
     if (register_syscall_handler((uint32_t)TRAP_GATE_IDENTIFIER, syscalls[i],
                                  idt_indexes[i]) < 0) {
@@ -65,11 +70,11 @@ int idt_syscall_install() {
   return 0;
 }
 
-/** @brief Register an handler in the IDT for a software interrupt
+/** @brief  Registers an handler in the IDT for a software interrupt
  *
- *  @param gate_type    Type of the interrupt gate
- *  @param handler_addr Address of the handler function
- *  @param idt_index    Gate index in the IDT
+ *  @param  gate_type    Type of the interrupt gate
+ *  @param  handler_addr Address of the handler function
+ *  @param  idt_index    Gate index in the IDT
  *
  *  @return 0 on success, a negative number on error
  */
@@ -78,8 +83,6 @@ int register_syscall_handler(uint32_t gate_type, uintptr_t handler_addr,
 
   if (gate_type != TRAP_GATE_IDENTIFIER &&
       gate_type != INTERRUPT_GATE_IDENTIFIER) {
-    lprintf("Invalid argument to register_syscall_handler(): Gate type is "
-            "neither TRAP nor INTERRUPT");
     return -1;
   }
 

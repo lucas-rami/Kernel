@@ -27,11 +27,8 @@ int kern_wait(int *status_ptr) {
   }
   
   
-  lprintf("Wait %d", kernel.current_thread->tid);
-  /*if (kernel.current_thread->tid == 20) {
-    // MAGIC_BREAK;
-  }
-*/
+  lprintf("\tkern_wait(): Thread %d waiting", kernel.current_thread->tid);
+  
   // Check if this thread will wait infinitely 
   pcb_t *curr_task = kernel.current_thread->task;
   lprintf("Taking list mutex %p for task", &curr_task->list_mutex);

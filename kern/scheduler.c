@@ -1,6 +1,6 @@
-  /** @file scheduler.c
- *  @brief This file contains the definition for the functions related to
- *  thread scheduling
+/** @file scheduler.c
+ *  @brief  This file contains the definition for the functions related to
+ *          thread scheduling
  *  @author akanjani, lramire1
  */
 
@@ -16,7 +16,10 @@
 #include <assert.h>
 #include <simics.h>
 
-/** @brief Return the next thread to run from the queue of runnable threads
+/** @brief  Returns the next thread to run from the queue of runnable threads
+ *
+ *  If the queue of runnable threads is empty, then the function returns the
+ *  TCB of the idle thread
  *
  *  @return The next thread's TCB
  */
@@ -27,6 +30,7 @@ tcb_t *next_thread() {
 
   generic_node_t *next_thread = stack_queue_dequeue(&kernel.runnable_queue);
   if (next_thread == NULL) {
+    // If the queue is empty, run the idle thread
     return kernel.idle_thread;
   }
 
@@ -34,8 +38,11 @@ tcb_t *next_thread() {
 
 }
 
-/** @brief Change the invoking thread's state to runnable and then context
- *  switch to another thread
+/** @brief  Enqueues the invoking thread in the queue of runnable threads and
+ *          context switch to the next thread in the queue
+ *
+ *  If the invoking thread is the idle thread, then it is not added to the queue
+ *  of runnable threads. 
  *
  *  @return void
  */
@@ -61,10 +68,12 @@ void make_runnable_and_switch() {
   
 }
 
-/** @brief Block the invoking thread and then context switch to another thread
+/** @brief  Blocks the invoking thread and then context switch to another thread
  *
- *  @param holding_mutex Indicates whether the function should unlock the mutex
- *    on the invoking thread's state
+ *  @param  holding_mutex Indicates whether the function should unlock the mutex
+ *                        on the invoking thread's state
+ *  @param  mp            A pointer to an eff_mutex to unlock depending on the
+ *                        value of holding_mutex
  *
  *  @return void
  */
@@ -91,9 +100,12 @@ void block_and_switch(int holding_mutex, eff_mutex_t *mp) {
 
 }
 
-/** @brief Make a thread runnable
+/** @brief  Makes a thread runnable by adding it to the runnable queue
  *
- *  @param tcb The TCB of the thread we want to make runnable
+ *  If the thread that we are trying to make runnable is already in the 
+ *  THR_RUNNABLE state, then the function has no effect.
+ *
+ *  @param  tcb The TCB of the thread to make runnable
  *
  *  @return void
  */
@@ -112,8 +124,7 @@ void add_runnable_thread(tcb_t *tcb) {
 
   // Should not happen
   if (tcb == kernel.idle_thread) {
-    enable_interrupts();    
-    return;
+    assert(0);
   }
 
   tcb->thread_state = THR_RUNNABLE;
@@ -130,13 +141,13 @@ void add_runnable_thread(tcb_t *tcb) {
 
 }
 
-/** @brief Forces the kernel to run a particular thread
+/** @brief  Forces the kernel to run a particular thread
  *
  *  The function performs a context switch to a particular thread given as
  *  argument, overriding the scheduler's normal behavior. The invoking thread is
  *  put in the queue of runnable threads.
- *
- *  @param force_next_tcb The TCB of the thread we want to run next
+ *  
+ *  @param  force_next_tcb The TCB of the thread to run next
  *
  *  @return void
  */
@@ -146,6 +157,7 @@ void force_next_thread(tcb_t *force_next_tcb) {
          kernel.init == KERNEL_INIT_TRUE);
 
   disable_interrupts();    
+
   eff_mutex_unlock(&force_next_tcb->mutex);  
 
   lprintf("force_next_thread(): Forcing thread %d", force_next_tcb->tid);
@@ -154,8 +166,7 @@ void force_next_thread(tcb_t *force_next_tcb) {
 
   // Should not happen 
   if (kernel.cpu_idle == CPU_IDLE_TRUE) {
-    context_switch(force_next_tcb);
-    return;
+    assert(0);
   }
 
   // Create new node for runnable queue
@@ -164,6 +175,8 @@ void force_next_thread(tcb_t *force_next_tcb) {
   // Enqueue the current thread
   stack_queue_enqueue(&kernel.runnable_queue, &new_tail);
 
+  // Traverse the queue of runnable threads and delete any occurence of the
+  // forced thread
   generic_node_t *it = kernel.runnable_queue.head, *prev = NULL;
   while (it != NULL) {
     if (it->value == force_next_tcb) {
@@ -176,7 +189,6 @@ void force_next_thread(tcb_t *force_next_tcb) {
     prev = it;
     it = it->next;
   }
-
 
   context_switch(force_next_tcb);
 

@@ -1,3 +1,9 @@
+/** @file exception_handlers_asm.S
+ *  @brief  This file contains the definitiaons for all the exception handlers
+ *          wrappers
+ *  @author akanjani, lramire1
+ */
+
 .global divide_handler
 .global debug_handler
 .global breakpoint_handler
