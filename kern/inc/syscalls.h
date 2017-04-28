@@ -61,4 +61,5 @@ int kern_readfile(char *filename, char *buf, int count, int offset);
 /* Helper function */
 char *get_esp();
 int create_stack_sw_exception(unsigned int cause, char *stack_ptr);
+
 #endif /* _SYSCALLS_H_ */

@@ -6,31 +6,30 @@
 #ifndef _MUTEX_H
 #define _MUTEX_H
 
-/** @brief A state of the mutex which means that mutex_init hasn't been called
- *   after a mutex_destroy */
+/** @brief  A state of the mutex which means that mutex_init hasn't been called
+ *          after a mutex_destroy */
 #define MUTEX_UNINITIALIZED 0
 
-/** @brief A state of the mutex which means that mutex_destroy hasn't been called
- *   after a mutex_init */
+/** @brief  A state of the mutex which means that mutex_destroy hasn't been
+ *          called after a mutex_init */
 #define MUTEX_INITIALIZED 1
 
 /** @brief The structure of a mutex */
 typedef struct mutex {
 
   /** @brief An int which stores the ticket number of the thread which ran last
-   */
+    */
   int prev;
 
   /** @brief An int which stores the ticket number which should be given to the
-   *   next thread which tries to acquire this lock
-   */
+   *   next thread which tries to acquire this lock */
   int next_ticket;
 
   /** @brief An int which stores whether the miutex has been initialized or not
    */
   int init;
 
-  /* @brief Hold the tid of the thread holding the mutex*/
+  /* @brief Hold the tid of the thread holding the mutex */
   int tid_owner;
 
 } mutex_t;

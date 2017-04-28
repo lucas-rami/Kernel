@@ -50,16 +50,13 @@
  *
  *  @param  task_name    A string specifying the name of the program to be 
  *                       loaded
- *  @param  is_exec      An int value specifying whether this function is 
- *                       being called from exec or not. 
  *  @param  argvec       A char** to the argument vector passed to exec.
  *                       It is NULL in the case of the first task
  *  @param  count        The count of arguments in argvec
  *
  *  @return 0 on success, a negative number on error
  */
-int create_task_from_executable(char *task_name, int is_exec,
-    char **argvec, int count) {
+int create_task_from_executable(char *task_name, char **argvec, int count) {
 
   simple_elf_t elf;
 

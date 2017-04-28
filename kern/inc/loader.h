@@ -1,21 +1,11 @@
-/* The 15-410 kernel project
- *
- *     loader.h
- *
- * Structure definitions, #defines, and function prototypes
- * for the user process loader.
+/** @file loader.h
+ *  @brief This file contains the declaration for the get_bytes() function
+ *  @author akanjani, lramire1
  */
 
-#ifndef _LOADER_H
-#define _LOADER_H
+#ifndef _LOADER_H_
+#define _LOADER_H_
      
-
-/* --- Prototypes --- */
-
 int getbytes( const char *filename, int offset, int size, char *buf );
 
-/*
- * Declare your loader prototypes here.
- */
-
-#endif /* _LOADER_H */
+#endif /* _LOADER_H_ */

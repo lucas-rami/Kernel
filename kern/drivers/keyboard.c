@@ -67,8 +67,8 @@ int keyboard_init(void) {
 void keyboard_c_handler(void) {
   // Read the byte from the port
   uint8_t character = ( int )inb( KEYBOARD_PORT );
-  //
-  // // Store it in the static buf
+
+  // Store it in the static buf
   enqueue( character );
 
   // Signal new input available for readline()

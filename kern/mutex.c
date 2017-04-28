@@ -104,7 +104,7 @@ void mutex_lock(mutex_t *mp) {
 
 }
 
-/** @brief  ives up the lock on a mutex
+/** @brief  Gives up the lock on a mutex
  *
  *  The calling thread gives up its claim to the lock. It is illegal
  *  for an application to unlock a mutex that is not locked.
@@ -177,8 +177,7 @@ void eff_mutex_destroy(eff_mutex_t *mp) {
 /** @brief  Acquires the lock on an eff_mutex
  *
  *  If another thread is already holding this mutex, the invoking thread's is
- *  descheduled until the mutex is available for it. The invoking thread should
- *  not be holding the mutex before calling this function.
+ *  descheduled until the mutex is available for it.
  *
  *  @param  mp  A pointer to an eff_mutex
  *

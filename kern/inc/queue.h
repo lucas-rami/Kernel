@@ -6,12 +6,12 @@
  *  @author Anirudh Kanjani
  */
 
-#ifndef __QUEUE_H_
-#define __QUEUE_H_
+#ifndef _QUEUE_H_
+#define _QUEUE_H_
 
 #include <stdint.h>
 
 int enqueue( uint8_t ch );
 int dequeue();
 
-#endif
+#endif /* _QUEUE_H_ */

@@ -1,6 +1,6 @@
 /** @file kernel_state.h
- *  @brief This file contains the declaration for the kernel_state_t data
- *  structure and the functions to act on it.
+ *  @brief  This file contains the declarations for the kerne internal data
+ *          structures, as welle as functions to act on these
  *  @author akanjani, lramire1
  */
 
@@ -79,8 +79,6 @@ typedef struct kernel {
 
   // TODO
   uint32_t kernel_ready;
-
-  /* ------------------------- */
 
   /** @brief Hash table holding all the PCBs */
   generic_hash_table_t pcbs;

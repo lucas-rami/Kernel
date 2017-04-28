@@ -9,14 +9,12 @@
 #include <mutex.h>
 #include <stack_queue.h>
 
-/** @brief A structure representing a condition variable
- */
+/** @brief A structure representing a condition variable */
 typedef struct cond {
 
   /** @brief Stores the current state of the condition variable
    *   It is either CVAR_INITIALIZED when cond_init has been called
-   *   or CVAR_UNINITIALIZED if a cond_destroy has been called
-   */
+   *   or CVAR_UNINITIALIZED if a cond_destroy has been called */
   int init;
 
   /** @brief Waiting queue */

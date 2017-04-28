@@ -1,4 +1,3 @@
-
 /** @file mutex.h
  *  @brief This file defines the type for mutex.
  *  @author akanjani, lramire1
@@ -13,12 +12,16 @@
 #define MUTEX_LOCKED 1
 #define MUTEX_UNLOCKED 0
 
+/** @brief A mutex implementation using a waiting queue */
 typedef struct eff_mutex {
-  // mutex_t mp;
+  
+  /** @brief A waiting queue for threads waiting for the mutex to be unlocked */
   stack_queue_t mutex_queue;
-  // cond_t cv;
+
+  /** @brief The mutex's state, either MUTEX_LOCKED or MUTEX_UNLOCKED */
   int state;
 
+  /** @brief The tid of the mutex's owner */
   int owner;
 
 } eff_mutex_t; 
@@ -28,4 +31,4 @@ void eff_mutex_destroy(eff_mutex_t *mp);
 void eff_mutex_lock(eff_mutex_t *mp);
 void eff_mutex_unlock(eff_mutex_t *mp);
 
-#endif
+#endif /* _EFF_MUTEX_H_ */
