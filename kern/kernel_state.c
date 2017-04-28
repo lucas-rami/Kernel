@@ -88,6 +88,7 @@ int kernel_init() {
     lprintf("kernel_init(): Failed to initialize mutex for malloc_wrappers.c");
     return -1;
   }
+  lprintf("Kernel malloc mutex is %p", &kernel.malloc_mutex);
 
   // Initialize the PCBs hash table
   if (hash_table_init(&kernel.pcbs, NB_BUCKETS, find_pcb, hash_function_pcb) <
@@ -108,6 +109,7 @@ int kernel_init() {
     lprintf("kernel_init(): Failed to initialize mutex");
     return -1;
   }
+  lprintf("Kernel mutex is %p", &kernel.mutex);
 
   // Configure the idle task
   kernel.idle_thread = create_idle_thread();

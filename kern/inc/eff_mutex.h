@@ -19,6 +19,8 @@ typedef struct eff_mutex {
   // cond_t cv;
   int state;
 
+  int owner;
+
 } eff_mutex_t; 
 
 int eff_mutex_init(eff_mutex_t *mp);

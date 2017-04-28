@@ -59,7 +59,6 @@ int main()
 
 					args[0] = p->name;
 					args[1] = 0;
-                                        lprintf("Execing %s", p->name);
 					exec(p->name, args);
                     report_misc("exec() failed (missing object?)");
                     report_end(END_FAIL);
@@ -95,6 +94,5 @@ int main()
 	}
 
     report_end(END_SUCCESS);
-    MAGIC_BREAK;
 	exit(0);
 }

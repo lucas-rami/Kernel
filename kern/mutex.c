@@ -153,6 +153,7 @@ int eff_mutex_init(eff_mutex_t *mp) {
   stack_queue_init(&mp->mutex_queue);
 
   mp->state = MUTEX_UNLOCKED;
+  mp->owner = -1;
   return 0;
 }
 
@@ -180,16 +181,23 @@ void eff_mutex_lock(eff_mutex_t *mp) {
   // Validate parameter and the fact that the mutex is initialized
   assert(mp);
   disable_interrupts();
+  if (mp->owner == kernel.current_thread->tid) {
+    enable_interrupts();
+    return;
+  }
   while (mp->state == MUTEX_LOCKED) {
     disable_interrupts();
     generic_node_t tmp;
     tmp.value = (void *)kernel.current_thread;
     tmp.next = NULL;
+    lprintf("Blocking current thread %d for mutex %p as the owner is %d", kernel.current_thread->tid, mp, mp->owner);
     stack_queue_enqueue(&mp->mutex_queue, &tmp);
     // This call will enable interrupts
     block_and_switch(HOLDING_MUTEX_FALSE, NULL);
   }
   mp->state = MUTEX_LOCKED;
+  mp->owner = kernel.current_thread->tid;
+  // lprintf("Thread %d has the mutex %p", kernel.current_thread->tid, mp);
   enable_interrupts();
 }
 
@@ -203,7 +211,10 @@ void eff_mutex_unlock(eff_mutex_t *mp) {
   generic_node_t *tmp = stack_queue_dequeue(&mp->mutex_queue);
   if (tmp) {
     kern_make_runnable(((tcb_t*)tmp->value)->tid);
+    // if (kernel.current_thread->tid != 1)
+    lprintf("Made runnable thread %d for mutex %p", ((tcb_t*)tmp->value)->tid, mp);
   }
+  mp->owner = -1;
   mp->state = MUTEX_UNLOCKED;
   // enable_interrupts();
 }

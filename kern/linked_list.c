@@ -100,6 +100,7 @@ void *linked_list_delete_node(generic_linked_list_t *list, void *value) {
     return NULL;
   }
 
+  // lprintf("Thread %d taking linked list lock %p", kern_gettid(), &list->mp);
   eff_mutex_lock(&list->mp);
 
   // Iterator on the list's elements

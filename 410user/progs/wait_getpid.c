@@ -33,9 +33,7 @@ int main()
     exit(pid);
     report_end(END_FAIL);
   }
-  int temp = wait(&status);
-  lprintf("Wait return value %d status %d Expected %d", temp, status, pid);
-  if (temp != pid) {
+  if (wait(&status) != pid) {
     report_end(END_FAIL);
     exit(-1);
   }
