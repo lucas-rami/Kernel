@@ -78,7 +78,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
   memset((char*)kernel.zeroed_out_frame, 0, PAGE_SIZE);
 
   // Create the initial task and load everything into memory
-  if (create_task_from_executable(FIRST_TASK, NULL, 0) < 0 ) {
+  if (create_task_from_executable(FIRST_TASK) < 0 ) {
     lprintf("Failed to create user task");
     assert(0);
   }

@@ -50,13 +50,10 @@
  *
  *  @param  task_name    A string specifying the name of the program to be 
  *                       loaded
- *  @param  argvec       A char** to the argument vector passed to exec.
- *                       It is NULL in the case of the first task
- *  @param  count        The count of arguments in argvec
  *
  *  @return 0 on success, a negative number on error
  */
-int create_task_from_executable(char *task_name, char **argvec, int count) {
+int create_task_from_executable(char *task_name) {
 
   simple_elf_t elf;
 
@@ -251,7 +248,7 @@ int load_elf_file(char *task_name, simple_elf_t *elf) {
 
   // Check validity of arguments
   if (task_name == NULL || elf == NULL) {
-    lprintf("Invalid argument to function create_task_from_executable()ç");
+    lprintf("Invalid argument to function create_task_from_executable()");
     return -1;
   }
 
