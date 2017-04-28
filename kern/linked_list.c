@@ -1,9 +1,7 @@
 /** @file linked_list.c
- *
- *  @brief This file contains the definitions for functions which can be used
- *   to insert or delete elements from the generic linked kist with elements
- *   of type void*
- *
+ *  @brief  This file contains the definitions for functions which can be used
+ *          to insert or delete elements from the generic linked list with
+ *          elements of type void*
  *  @author akanjani, lramire1
  */
 
@@ -11,13 +9,13 @@
 #include <eff_mutex.h>
 #include <stdlib.h>
 
-/** @brief Initialize the linked list
+/** @brief  Initializes the linked list
  *
  *  The function must be called once before any other function in this file,
  *  otherwise the list's behavior is undefined.
  *
- *  @param list  The linked list to initialize
- *  @param find   Generic function to find a particular element in the list
+ *  @param  list    The linked list to initialize
+ *  @param  find   Generic function to find a particular element in the list
  *
  *  @return 0 on success, a negative error code on failure
  */
@@ -41,10 +39,10 @@ int linked_list_init(generic_linked_list_t *list, int (*find)(void *, void *)) {
   return 0;
 }
 
-/** @brief Insert a new node at the end of the list
+/** @brief  Inserts a new node at the end of the list
  *
- *  @param list   A linked list
- *  @param value  The new node's value
+ *  @param  list   A linked list
+ *  @param  value  The new node's value
  *
  *  @return 0 on success, a negative error code on failure
  */
@@ -80,10 +78,10 @@ int linked_list_insert_node(generic_linked_list_t *list, void *value) {
   return 0;
 }
 
-/** @brief Delete a node in the linked list
+/** @brief  Deletes a node in the linked list
  *
- *  @param list   A linked list
- *  @param value  The element to delete
+ *  @param  list   A linked list
+ *  @param  value  The element to delete
  *
  *  @return The deleted node's value if the element was found in the list.
  *  NULL otherwise
@@ -138,10 +136,10 @@ void *linked_list_delete_node(generic_linked_list_t *list, void *value) {
   return NULL;
 }
 
-/** @brief Get a node in the linked list
+/** @brief  Gets a node in the linked list
  *
- *  @param list   A linked list
- *  @param value  The element to ger
+ *  @param  list   A linked list
+ *  @param  value  The element to ger
  *
  *  @return The element if it was found in the list. NULL otherwise.
  */
@@ -175,9 +173,9 @@ void *linked_list_get_node(generic_linked_list_t *list, void *value) {
   return NULL;
 }
 
-/** @brief Deletes a linked list. Frees the value in every node and every node
+/** @brief  Deletes a linked list. Frees the value in every node and every node
  *
- *  @param list   A linked list
+ *  @param  list   A linked list
  *
  *  @return void
  */

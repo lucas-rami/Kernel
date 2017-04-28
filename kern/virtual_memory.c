@@ -43,7 +43,7 @@ bitmap_t free_map;
  */
 int vm_init() {
 
-  // Figure out the number of user frames
+  // Figure out the number of user frames in the system
   num_user_frames = kernel.free_frame_count;
 
   int size = (kernel.free_frame_count / BITS_IN_UINT8_T) + 1;
@@ -220,20 +220,37 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
   return 0;
 }
 
-/** @brief  Get the physical address associated with a virtual address, if the
+/** @brief  Gets the physical address associated with a virtual address, if the
  *          page directory/table entries for this virtual address do not exist 
  *          yet, create them 
  *
- *  @param  address A virtual address
- *  @param  type    The address's type (e.g. code, data...)
+ *  @param  address       A virtual address
+ *  @param  type          The address's type (e.g. code, data...)
+ *  @param  cr3           The page directory's address
+ *  @param  is_first_task A boolean indicating whether we are allocating 
+ *                        frames for the first task
  *
- *  @return 0 The physical address associated with the virtual one
+ *  @return The physical address associated with the virtual one on success,
+ *          NULL otherwise
  */
 void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3,
                  int is_first_task) {
 
-  unsigned int *page_directory_entry_addr = get_page_directory_addr(
-                                            (unsigned int*)address, cr3);
+  // Temporary set the current thread's cr3 to the new page directory 
+  // address
+  uint32_t old_cr3 = get_cr3();
+  kernel.current_thread->cr3 = (uint32_t)cr3;
+  set_cr3((uint32_t)cr3);
+
+  // Get the page directory entry
+  unsigned int *page_directory_entry_addr = 
+                                  get_page_dir_entry((unsigned int)address);
+
+  // Reset the current's thread cr3
+  kernel.current_thread->cr3 = (uint32_t)old_cr3;
+  set_cr3(old_cr3);
+
+
 
   int page_table_allocated = 0;
 
@@ -247,13 +264,17 @@ void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3,
 
     if (is_first_task == FIRST_TASK_TRUE && type == SECTION_KERNEL) {
       if (address == 0) {
-        kernel_page_table_1 = (unsigned int)get_page_table_addr_with_offset(page_directory_entry_addr, address);
+        kernel_page_table_1 = (unsigned int)
+          get_page_table_entry(page_directory_entry_addr, address);
       } else if (address == (USER_MEM_START/4)) {
-        kernel_page_table_2 = (unsigned int)get_page_table_addr_with_offset(page_directory_entry_addr, address);
+        kernel_page_table_2 = (unsigned int)
+          get_page_table_entry(page_directory_entry_addr, address);
       } else if (address == (USER_MEM_START/2)) {
-        kernel_page_table_3 = (unsigned int)get_page_table_addr_with_offset(page_directory_entry_addr, address);
+        kernel_page_table_3 = (unsigned int)
+          get_page_table_entry(page_directory_entry_addr, address);
       } else if (address == ((USER_MEM_START/4)*3)) {
-        kernel_page_table_4 = (unsigned int)get_page_table_addr_with_offset(page_directory_entry_addr, address);
+        kernel_page_table_4 = (unsigned int)
+          get_page_table_entry(page_directory_entry_addr, address);
       }
     }
 
@@ -261,7 +282,7 @@ void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3,
   }
 
   unsigned int *page_table_entry = 
-        get_page_table_addr_with_offset(page_directory_entry_addr, address);
+            get_page_table_entry(page_directory_entry_addr, address);
 
   // If there is no physical frame associated with this entry, allocate it
   if (!is_entry_present(page_table_entry)) {
@@ -282,7 +303,7 @@ void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3,
 
       // Temporary set the current thread's cr3 to the new page directory 
       // address
-      uint32_t old_cr3 = get_cr3();
+      old_cr3 = get_cr3();
       kernel.current_thread->cr3 = (uint32_t)cr3;
 
       // Zero out old frame
@@ -444,13 +465,12 @@ void free_frames_range(unsigned int address, unsigned int nb_frames) {
   for (i = 0 ; i < nb_frames ; ++i, address += PAGE_SIZE) {
 
     // Get page directory entry address
-    unsigned int *page_dir_entry_addr = 
-        get_page_directory_addr_with_offset(address);
+    unsigned int *page_dir_entry_addr = get_page_dir_entry(address);
 
     if (is_entry_present(page_dir_entry_addr)) {
 
       unsigned int *page_table_entry_addr =
-        get_page_table_addr_with_offset(page_dir_entry_addr, address);
+                        get_page_table_entry(page_dir_entry_addr, address);
 
       if (is_entry_present(page_table_entry_addr)) {
         
@@ -489,8 +509,7 @@ void vm_enable() {
 int is_buffer_valid(unsigned int address, int len) {
 
   // Get page directory entry of starting address
-  unsigned int * page_dir_entry_addr = 
-              get_page_directory_addr_with_offset(address);
+  unsigned int * page_dir_entry_addr = get_page_dir_entry(address);
 
   // Check that the entry is valid 
   if (!is_entry_present(page_dir_entry_addr)) {
@@ -499,7 +518,7 @@ int is_buffer_valid(unsigned int address, int len) {
 
   // Get page table entry of starting address
   unsigned int * page_table_entry_addr =
-              get_page_table_addr_with_offset(page_dir_entry_addr, address);
+                        get_page_table_entry(page_dir_entry_addr, address);
 
   // Check that the entry is valid 
   if (!is_entry_present(page_table_entry_addr)) {
@@ -550,17 +569,17 @@ int is_buffer_valid(unsigned int address, int len) {
  *  @return 0 if the buffer is valid, a negative number otherwise
  */
 int is_valid_string(char *addr) {
-  unsigned int *base_addr = (unsigned int*)get_cr3();
+
   do {
-    unsigned int *page_directory_entry_addr = get_page_directory_addr(
-                                              (unsigned int*)addr, base_addr);
+    unsigned int *page_directory_entry_addr = 
+                                  get_page_dir_entry((unsigned int)addr);
 
     // If there is no page table associated with this entry, return false
     if (!is_entry_present(page_directory_entry_addr)) {
       return -1;
     }
 
-    unsigned int *page_table_entry = get_page_table_addr_with_offset(
+    unsigned int *page_table_entry = get_page_table_entry(
                                      page_directory_entry_addr,
                                      (unsigned int)addr);
 

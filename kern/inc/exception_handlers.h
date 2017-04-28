@@ -1,7 +1,14 @@
+/** @file exception_handlers.h
+ *  @brief  This file contains the declarations for all the exception handlers
+ *          nd the function used to register the handlers in the IDT
+ *  @author akanjani, lramire1
+ */
+
 #ifndef _EXCEPTION_HANDLERS_H_
 #define _EXCEPTION_HANDLERS_H_
 
 int exception_handlers_init();
+
 void generic_exception_handler(int cause, char *stack_ptr);
 void divide_c_handler(char *stack_ptr);
 void debug_c_handler(char *stack_ptr);

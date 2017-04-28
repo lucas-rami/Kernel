@@ -1,6 +1,9 @@
+/** @file page_fault_asm.S
+ *  @brief This file contains the definition for the page fault handler wrapper
+ *  @author akanjani, lramire1
+ */
 
 .global page_fault_handler
-
 
 page_fault_handler:
   call save_state

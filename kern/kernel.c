@@ -1,12 +1,6 @@
 /** @file kernel.c
- *  @brief An initial kernel.c
- *
- *  You should initialize things in kernel_main(),
- *  and then run stuff.
- *
- *  @author Harry Q. Bovik (hqbovik)
- *  @author Fred Hacker (fhacker)
- *  @bug No known bugs.
+ *  @brief This file contains the entrypoint function for the kernel.
+ *  @author akanjani, lramire1
  */
 
 #include <common_kern.h>
@@ -26,7 +20,6 @@
 #include <idt_syscall.h>
 #include <interrupts.h>
 #include <kernel_state.h>
-#include <static_queue.h>
 #include <task_create.h>
 #include <virtual_memory.h>
 #include <virtual_memory_helper.h>
@@ -37,9 +30,7 @@
 #include <page.h>
 #include <exception_handlers.h>
 
-// tmp
-#include <cr.h>
-
+/* Static functions prototypes */
 static void idle();
 
 void tick(unsigned int numTicks);
@@ -57,9 +48,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
   // Initialize kernel state
   if (kernel_init() < 0) {
     lprintf("kernel_main(): Failed to initialize kernel state");
-    while (1) {
-      continue;
-    }
+    assert(0);
   }
 
   // Initialize the IDT
@@ -68,32 +57,30 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
  
   if (idt_syscall_install() < 0) {
     lprintf("kernel_main(): Failed to register syscall handlers");
-    while (1) {
-      continue;
-    }
+    assert(0);
   }
 
   // Virtual memory initialized
   if (vm_init() < 0) {
     lprintf("VM init failed");
+    assert(0);
   }
 
   // lprintf("\tkernel_main(): Creating first task");
 
-  kernel.zeroed_out_frame = (unsigned int)allocate_frame();
+  kernel.zeroed_out_frame = (unsigned int) allocate_frame();
   lprintf("The zeroed out frame is %p", (char*)kernel.zeroed_out_frame);
   if (kernel.zeroed_out_frame == 0) {
     lprintf("Zeroed out frame couldn't be allocated");
+    assert(0);
   }
-  lprintf("The first int at %p is %p", (char*)kernel.zeroed_out_frame, (char*)(*(unsigned int *)kernel.zeroed_out_frame));
+  // lprintf("The first int at %p is %p", (char*)kernel.zeroed_out_frame, (char*)(*(unsigned int *)kernel.zeroed_out_frame));
   memset((char*)kernel.zeroed_out_frame, 0, PAGE_SIZE);
 
   // Create the initial task and load everything into memory
   if (create_task_from_executable(FIRST_TASK, FALSE, NULL, 0) < 0 ) {
     lprintf("Failed to create user task");
-    while (1) {
-      continue;
-    }
+    assert(0);
   }
 
   // Clear the console before running anything

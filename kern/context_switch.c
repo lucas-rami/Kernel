@@ -1,6 +1,6 @@
 /** @file context_switch.h
- *  @brief This file contains the definitions for functions related to context
- *  switching
+ *  @brief  This file contains the definitions for functions related to context
+ *          switching
  *  @author akanjani, lramire1
  */
 
@@ -24,9 +24,10 @@ void context_switch(tcb_t* to) {
 
   assert(kernel.current_thread != NULL && to != NULL);
 
+  // Get the invoking thred's TCB
   tcb_t *me = kernel.current_thread;
 
-  lprintf("\t\tCONTEXT SWITCH: %d -> %d", me->tid, to->tid);
+  // lprintf("\t\tCONTEXT SWITCH: %d -> %d", me->tid, to->tid);
 
   // Context switch to the other thread
   context_switch_asm(&kernel.current_thread->esp, &to->esp);
@@ -36,7 +37,7 @@ void context_switch(tcb_t* to) {
 
 }
 
-/** @brief  Updates kernel state after a context switch
+/** @brief  Updates the kernel state after a context switch
  *
  *  The function updates information about the currently running thread in the
  *  kernel_t data structure. The function also marks the invoking thread as

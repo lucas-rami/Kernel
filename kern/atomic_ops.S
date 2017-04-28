@@ -1,6 +1,6 @@
 /** @file atomic_ops.S
- *  @brief This file contains the definitions for functions that perform
- *  different atomic operations
+ *  @brief  This file contains the definitions for functions that perform
+ *          different atomic operations
  *  @author akanjani, lramire1
  */
 

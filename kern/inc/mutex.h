@@ -6,8 +6,15 @@
 #ifndef _MUTEX_H
 #define _MUTEX_H
 
-/** @brief The structure of a mutex
- */
+/** @brief A state of the mutex which means that mutex_init hasn't been called
+ *   after a mutex_destroy */
+#define MUTEX_UNINITIALIZED 0
+
+/** @brief A state of the mutex which means that mutex_destroy hasn't been called
+ *   after a mutex_init */
+#define MUTEX_INITIALIZED 1
+
+/** @brief The structure of a mutex */
 typedef struct mutex {
 
   /** @brief An int which stores the ticket number of the thread which ran last

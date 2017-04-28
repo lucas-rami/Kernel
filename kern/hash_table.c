@@ -1,7 +1,7 @@
 /** @file hash_table.c
  *
- *  @brief This file contains the definitions for functions which can be used
- *   to manipulate the generic hash table with elements of type void*
+ *  @brief  This file contains the definitions for functions which can be used
+ *          to manipulate the generic hash table with elements of type void*
  *
  *  @author akanjani, lramire1
  */
@@ -14,15 +14,15 @@
 /* Debugging */
 #include <simics.h>
 
-/** @brief Initialize the hash table
+/** @brief  Initializes the hash table
  *
  *  The function must be called once before any other function in this file,
  *  otherwise the hash table's behavior is undefined.
  *
- *  @param hash_table     The hash table to initialize
- *  @param nb_buckets     The number of buckets in the hash table
- *  @param find           Function to find a particular element in the list
- *  @param hash_function  A hashing function
+ *  @param  hash_table     The hash table to initialize
+ *  @param  nb_buckets     The number of buckets in the hash table
+ *  @param  find           Function to find a particular element in the list
+ *  @param  hash_function  A hashing function
  *
  *  @return 0 on success, a negative error code on failure
  */
@@ -60,10 +60,10 @@ int hash_table_init(generic_hash_table_t *hash_table, unsigned int nb_buckets,
   return 0;
 }
 
-/** @brief Add an element to the hash table
+/** @brief  Adds an element to the hash table
  *
- *  @param hash_table The hash table
- *  @param elem       The element to add
+ *  @param  hash_table The hash table
+ *  @param  elem       The element to add
  *
  *  @return 0 on success, a negative error code on failure
  */
@@ -89,13 +89,13 @@ int hash_table_add_element(generic_hash_table_t *hash_table, void *elem) {
   return 0;
 }
 
-/** @brief Remove an element in the hash table
+/** @brief  Removes an element in the hash table
  *
- *  @param hash_table   A hash table
- *  @param elem         The element to remove
+ *  @param  hash_table   A hash table
+ *  @param  elem         The element to remove
  *
  *  @return The deleted element's value if it was found in the list.
- *  NULL otherwise
+ *          NULL otherwise
  */
 void *hash_table_remove_element(generic_hash_table_t *hash_table, void *elem) {
 
@@ -114,12 +114,12 @@ void *hash_table_remove_element(generic_hash_table_t *hash_table, void *elem) {
   return linked_list_delete_node(&hash_table->buckets[bucket], elem);
 }
 
-/** @brief Get an element in the hash table
+/** @brief  Gets an element in the hash table
  *
- *  @param hash_table   A hash_table
- *  @param elem         The element to get
+ *  @param  hash_table   A hash_table
+ *  @param  elem         The element to get
  *
- *  @return The element if it was found in the hash table. NULL otherwise.
+ *  @return The element if it was found in the hash table, NULL otherwise.
  */
 void *hash_table_get_element(generic_hash_table_t *hash_table, void *elem) {
 

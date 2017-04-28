@@ -24,6 +24,9 @@
 #define ROOT_THREAD_FALSE 0
 #define ROOT_THREAD_TRUE 1
 
+/* Exit status in case of exception */
+#define EXCEPTION_EXIT_STATUS -2
+
 /* Name of the first task to run */
 #define FIRST_TASK "init"
 

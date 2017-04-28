@@ -1,30 +1,26 @@
 /** @file dynamic_queue.c
- *
  *  @brief This file contains the definitions for functions which can be used
- *   to insert or delete elements from the generic queue with elements of type
- *   void*
- *
+ *         to insert or delete elements from the generic queue
  *  @author akanjani, lramire1
  */
-
 
 #include <dynamic_queue.h>
 #include <stdlib.h>
 #include <eff_mutex.h>
+#include <assert.h>
 
-/** @brief Makes a generic_node_t type node to be added in the queue
+/** @brief  Makes a generic_node_t type node to be added in the queue
  *
- *  @param value The value to be stored in the list casted as void*
+ *  @param  value The value to be stored in the list casted as void*
  *
- *  @return NULL on error, or a pointer to the generic_node_t type new node
+ *  @return A pointer to the generic_node_t type new node on success, NULL
+ *          otherwise
  */
 static generic_node_t *make_node(void *value) {
 
-  // Allocate the space for the new node
-  generic_node_t *new_node = (generic_node_t *)malloc(sizeof(generic_node_t));
-
-  if (!new_node) {
-    // malloc error
+  // Allocate space for the new node
+  generic_node_t *new_node = malloc(sizeof(generic_node_t));
+  if (new_node == NULL) {
     return NULL;
   }
 
@@ -35,22 +31,21 @@ static generic_node_t *make_node(void *value) {
   return new_node;
 }
 
-/** @brief Initialize the queue
+/** @brief  Initializes the queue
  *
- *  @param list The queue to be initialized
+ *  @param  list The queue to be initialized
  *
  *  @return 0 on success, a negative error code on failure
  */
 int queue_init(generic_queue_t *list) {
 
-  // Check validity of the argument
+  // Check argument
   if (list == NULL) {
     return -1;
   }
 
   // Initialize the head and tail to NULL
-  list->head = NULL;
-  list->tail = NULL;
+  list->head = list->tail = NULL;
 
   // Initialize the mutex
   if (eff_mutex_init(&list->mp) < 0) {
@@ -60,15 +55,18 @@ int queue_init(generic_queue_t *list) {
   return 0;
 }
 
-/** @brief Inserts a generic_node_t type node at the tail end of the queue
+/** @brief  Inserts a generic_node_t type node at the tail end of the queue
  *
- *  @param value The value to be stored in the list casted as void*
- *  @param list A pointer to a generic_queue_t structure which holds
- *   the head and tail pointer of a queue
+ *  @param  value   The value to be stored in the list casted as void*
+ *  @param  list    A pointer to a generic_queue_t structure which holds
+ *                  the head and tail pointer of a queue
  *
  *  @return 0 on success, a negative error code on failure
  */
 int queue_insert_node(generic_queue_t *list, void *value) {
+
+  // Check argument
+  assert(list != NULL);
 
   // Make a new node
   generic_node_t *new_node = make_node(value);
@@ -109,13 +107,14 @@ int queue_insert_node(generic_queue_t *list, void *value) {
   return 0;
 }
 
-/** @brief Deletes a generic_node_t type node from the front end of the queue
+/** @brief  Deletes a generic_node_t type node from the front end of the queue
  *
- *  @param list A pointer to a generic_queue_t structure which holds
- *   the head and tail pointer of a queue
+ *  @param  list  A pointer to a generic_queue_t structure which holds
+ *                the head and tail pointer of a queue
  *
- *  @return void* The value of the element in the deleted node cast as a void*
- *   or NULL on error
+ *  @return The value of the element in the deleted node cast as a void* on
+ *          success (the queue was non-empty), NULL otherwise
+ *              
  */
 void *queue_delete_node(generic_queue_t *list) {
 
@@ -159,12 +158,12 @@ void *queue_delete_node(generic_queue_t *list) {
   return ret;
 }
 
-/** @brief Checks if the queue is empty or not
+/** @brief  Checks if the queue is empty or not
  *
- *  @param list A pointer to a generic_queue_t structure which holds
- *   the head and tail pointer of a queue
+ *  @param  list  A pointer to a generic_queue_t structure which holds
+ *                the head and tail pointer of a queue
  *
- *  @return int 1 is list is empty, 0 otherwise
+ *  @return 1 is the list is empty, 0 otherwise
  */
 int is_queue_empty(generic_queue_t *list) {
 

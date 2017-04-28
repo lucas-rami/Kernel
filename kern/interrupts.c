@@ -25,17 +25,18 @@
 
 #define NUM_32BIT_INT_PER_IDT_ENTRY 2
 
-/** @brief The driver-library initialization function
+/** @brief  The driver-library initialization function
  *
- *   Installs the timer and keyboard interrupt handler.
- *   NOTE: The console has to be initialized or cleared in case the user
- *   decides not to call handler_install and not use the timer or the keyboard.
+ *  Installs the timer and keyboard interrupt handler.
+ *  NOTE: The console has to be initialized or cleared in case the user
+ *  decides not to call handler_install and not use the timer or the keyboard.
  *
- *   @param tickback Pointer to clock-tick callback function
+ *  @param  tickback  Pointer to clock-tick callback function
  *
- *   @return A negative error code on error, or 0 on success
- **/
+ *  @return A negative error code on error, or 0 on success
+ */
 int handler_install(void (*tickback)(unsigned int)) {
+
   // Initialize the console
   console_init();
 
@@ -54,24 +55,22 @@ int handler_install(void (*tickback)(unsigned int)) {
   return 0;
 }
 
-/** @brief The driver-library registering function
+/** @brief  The driver-library registering function
  *
- *   Makes an entry in the IDT for the timer and keyboard interrupt handlers.
+ *  Makes an entry in the IDT for the timer and keyboard interrupt handlers.
  *
- *   @param handler_function Pointer to the interrupt handler function
- *   @param gate_type A uint8_t type specifying the type of the gate i.e.
- *   interrupt/trap etc.
- *   @param idt_offset Offset to the starting address of the IDT for this
- *   interrupt
- *   @param privilege_level The uint8_t type specifying the privilege_level
- *   of the handler. Anything other than KERNEL_PRIVILEGE_LEVEL throws an
- *   error as of now.
- *   @param segment A uint16_t specifying the segment to be selected for the
- *   target code segment. Anything other than SEGSEL_KERNEL_CS throws an
- *   error as of now.
+ *  @param  handler_function  Pointer to the interrupt handler function
+ *  @param  gate_type         A uint8_t type specifying the type of the gate
+ *                            i.e. interrupt/trap etc.
+ *  @param  idt_offset        Offset to the starting address of the IDT for this
+ *                            interrupt
+ *  @param  privilege_level   The uint8_t type specifying the privilege_level
+ *                            of the handler
+ *  @param  segment           A uint16_t specifying the segment to be selected 
+ *                            for the target code segment
  *
- *   @return A negative error code on error, or 0 on success
- **/
+ *  @return 0 on success, a negative number on error
+ */
 int register_handler(uintptr_t handler_function, uint8_t gate_type,
                      uint32_t idt_offset, uint8_t privilege_level,
                      uint16_t segment) {
