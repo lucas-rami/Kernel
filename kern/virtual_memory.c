@@ -236,20 +236,10 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
 void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3,
                  int is_first_task) {
 
-  // Temporary set the current thread's cr3 to the new page directory 
-  // address
-  uint32_t old_cr3 = get_cr3();
-  kernel.current_thread->cr3 = (uint32_t)cr3;
-  set_cr3((uint32_t)cr3);
-
   // Get the page directory entry
-  unsigned int *page_directory_entry_addr = 
-                                  get_page_dir_entry((unsigned int)address);
-
-  // Reset the current's thread cr3
-  kernel.current_thread->cr3 = (uint32_t)old_cr3;
-  set_cr3(old_cr3);
-
+  unsigned int index = (((unsigned int)address & PAGE_TABLE_DIRECTORY_MASK) >>
+                         PAGE_DIR_RIGHT_SHIFT);
+  unsigned int *page_directory_entry_addr = cr3 + index;
 
 
   int page_table_allocated = 0;
@@ -303,7 +293,7 @@ void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3,
 
       // Temporary set the current thread's cr3 to the new page directory 
       // address
-      old_cr3 = get_cr3();
+      uint32_t old_cr3 = get_cr3();
       kernel.current_thread->cr3 = (uint32_t)cr3;
 
       // Zero out old frame
