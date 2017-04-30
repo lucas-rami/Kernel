@@ -5,11 +5,8 @@
  *  @author Anirudh Kanjani
  */
 
-#ifndef __KEYBOARD_H_
-#define __KEYBOARD_H_
-
-#define CONSOLE_IO_FALSE 0
-#define CONSOLE_IO_TRUE 1
+#ifndef _KEYBOARD_H_
+#define _KEYBOARD_H_
 
 int keyboard_init();
 
@@ -31,5 +28,5 @@ void keyboard_c_handler();
  **/
 int readchar(void);
 
-#endif
+#endif /* _KEYBOARD_H_ */
 

@@ -33,7 +33,7 @@
 #define TRUE 1
 #define FALSE 0
 
-// Number of registers poped during a popa instruction
+/* Number of registers poped during a popa instruction */
 #define NB_REGISTERS_POPA 8
 
 #define INCREASE_FRAME_COUNT eff_mutex_lock(&kernel.mutex);\

@@ -19,5 +19,5 @@ atomic_add_and_update:
 atomic_exchange:
   movl  4(%esp), %edx   // Move address to read to into edx
   movl  8(%esp), %eax   // Move the new value into eax
-  xchg  %eax, (%ecx)    // Perform the exchange operation
+  xchg  %eax, (%edx)    // Perform the exchange operation
   ret                   // Return from procedure (eax contains the old value)

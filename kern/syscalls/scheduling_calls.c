@@ -68,14 +68,14 @@ int kern_deschedule(int *reject) {
 
 int kern_make_runnable(int tid) {
 
-  // If the tid is less than 0, we return immediately
-  if (tid < 0) {
+  // If the tid is less or equal to 0, we return immediately
+  if (tid <= 0) {
     return -1;
   }
 
   tcb_t tmp;
   tmp.tid = tid;
-  // disable_interrupts();
+
   // Try to get the TCB with the given tid
   tcb_t *tcb = hash_table_get_element(&kernel.tcbs, &tmp);
   if (tcb == NULL) {

@@ -31,6 +31,34 @@
 /* Name of the first task to run */
 #define FIRST_TASK "init"
 
+/** @brief  Holds information about an outstanding call to readline() */
+typedef struct {
+  
+  /** @brief  The user character buffer */
+  char *buf;
+  
+  /** @brief  The buffer size, in bytes */  
+  int len;
+
+  /** @brief  Readline caller's TCB */
+  tcb_t *caller;
+
+  /** @brief  Buffer storing the list of characters printed on the console */
+  char key_buf[CONSOLE_IO_MAX_LEN];
+
+  /** @brief  Index in the merged buffer indicating where to write next */
+  int key_index;
+
+} readline_t;
+
+typedef struct {
+
+  eff_mutex_t mp;
+
+  stack_queue_t zombie_memory;
+
+} garbage_collector_t;
+
 /** @brief  Data structure holding all the kernel's internal data structures
   *         and current state */
 typedef struct kernel {
@@ -56,16 +84,23 @@ typedef struct kernel {
   /** @brief  Idle thread (ran when there is nothing to run) */
   tcb_t *idle_thread;
 
+  /** @brief  Keyboard consumer thread (to handler keyboard input) */
+  tcb_t *keyboard_consumer_thread;
+
   /** @brief  Indicates wether the CPU is currently running the idle thread */
   int cpu_idle;
 
   /** @brief  Mutex used to ensure atomicity when changing the kernel state */
   eff_mutex_t mutex;
 
-  /** @brief  Mutex used to ensure atomicity when calling malloc */
+  /** @brief  Mutex used to ensure atomicity when calling the malloc library */
   eff_mutex_t malloc_mutex;
 
-  /** @brief  Count of the number of frames available(not used or requested for) */
+  /** @brief  Mutex used to ensure atomicity when printing to the console */
+  eff_mutex_t console_mutex;
+
+  /** @brief  Count of the number of frames available
+   *          (not used or requested for) */
   unsigned int free_frame_count;
 
   /** @brief  The address of the zeroed out frame for the whole kernel for 
@@ -86,6 +121,10 @@ typedef struct kernel {
    *          used by zombie/dead threads */
   garbage_collector_t gc;
 
+  /** @brief  A structure holding information about the current outstanding
+   *          call to readline() */
+  readline_t rl;
+
   /* ------------------------- */
 
   /** @brief Hash table holding all the PCBs */
@@ -96,8 +135,8 @@ typedef struct kernel {
 
 } kernel_t;
 
-/** @brief Hold information about an allocation made using new_pages() */
-typedef struct alloc {
+/** @brief  Holds information about an allocation made using new_pages() */
+typedef struct {
 
   /** @brief The base address for the allocation*/
   void* base;
@@ -106,7 +145,6 @@ typedef struct alloc {
   int len;
 
 } alloc_t;
-
 
 /* Holds the kernel state*/
 kernel_t kernel;
@@ -123,5 +161,7 @@ unsigned int hash_function_tcb(void *tcb, unsigned int nb_buckets);
 int find_tcb(void *tcb1, void *tcb2);
 int find_alloc(void* alloc, void* base);
 int find_pcb_ll(void* pcb1, void* pcb2);
+
+void keyboard_consumer();
 
 #endif /* _KERNEL_STATE_H_ */

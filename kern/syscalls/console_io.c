@@ -4,10 +4,10 @@
  *  @author akanjani, lramire1
  */
 
+#include <eff_mutex.h>
 #include <mutex.h>
 #include <console.h>
 #include <assert.h>
-#include <cond_var.h>
 #include <common_kern.h>
 #include <keyboard.h>
 #include <string.h>
@@ -16,6 +16,9 @@
 #include <kernel_state.h>
 #include <asm.h>
 #include <scheduler.h>
+#include <atomic_ops.h>
+#include <syscalls.h>
+#include <context_switch.h>
 
 /* VM system */
 #include <virtual_memory.h>
@@ -25,42 +28,21 @@
 /* Debugging */
 #include <simics.h>
 
-/* Constants for synchronization */
-#define LOCKED 0
-#define UNLOCKED 1
-
-// TMP
-#define MAX_LEN 64
-
-int input_available = CONSOLE_IO_FALSE;
-tcb_t* waiting_input_tcb = NULL;
-
-static void get_lock(mutex_t* mutex, cond_t* cond, int lock);
-static void release_lock(mutex_t* mutex, cond_t* cond, int lock);
-
 int kern_readline(int len, char *buf) {
   
   // Synchronization variables
-  static mutex_t mutex;
-  static cond_t cond;
+  static eff_mutex_t mutex;
   static int mutex_initialized = CONSOLE_IO_FALSE;
-  static int lock = UNLOCKED;
-
-  static int read_tmp[MAX_LEN];
-  static int i = 0;
 
   // Synchronization primitives initialization
-  if (mutex_initialized == CONSOLE_IO_FALSE) {
-    assert(mutex_init(&mutex) == 0);
-    assert(cond_init(&cond) == 0);
-    mutex_initialized = CONSOLE_IO_TRUE;
+  if (atomic_exchange(&mutex_initialized, CONSOLE_IO_TRUE) == CONSOLE_IO_FALSE){
+    assert(eff_mutex_init(&mutex) == 0);
   }
 
-  // TODO: "reasonable" maximum bound on len ? Console size ?
   // TODO: buf must fall in non-read-only memory region of the task
 
   // Check length validity
-  if (len < 0) {
+  if (len < 0 || len > CONSOLE_IO_MAX_LEN) {
     lprintf("readline(): Invalid length");
     return -1;
   }
@@ -72,87 +54,45 @@ int kern_readline(int len, char *buf) {
     return -1;
   }
 
+  // Block concurrent threads
+  eff_mutex_lock(&mutex);
 
-  // Block other threads (no interleaving of readline() calls)
-  get_lock(&mutex, &cond, lock);
+  // Update readline_t data structure in kernel state
+  kernel.rl.buf = buf;
+  kernel.rl.len = len;
+  kernel.rl.caller = kernel.current_thread;
 
-  int done = CONSOLE_IO_FALSE, min_len = len;
-  char c;
+  // Deschedule myself until a line of input is available
+  disable_interrupts();
+  kernel.current_thread->thread_state = THR_BLOCKED;
+  context_switch(kernel.keyboard_consumer_thread);
 
-  while (done == CONSOLE_IO_FALSE) {
-    
-    while (done == CONSOLE_IO_FALSE && (c = readchar()) >= 0) {
-    
-      if (c == '\b' && i > 0) {
-        --i;
-      } else if (c == '\r') {
-        i = 0;
-      } else if (c == '\n') {
-        // Commit into buffer and return
-        if (i < MAX_LEN) {
-          read_tmp[i] = c;
-          ++i;
-        }
-        min_len = (i < len) ? i : len;
-        memcpy(buf, read_tmp, min_len);
-        done = CONSOLE_IO_TRUE;
-
-        // Shift remaining elements to beginning of array for next calls to
-        // readline()
-        int nb_remaining = MAX_LEN - i;
-        memcpy(read_tmp, &read_tmp[MAX_LEN - nb_remaining], nb_remaining);
-
-      } else if (i < MAX_LEN - 1) {
-        read_tmp[i] = c;
-        ++i;
-      }
-
-      // Echo the character on the console
-      putbyte(c);
-
-      // Clear the input_available flag
-      input_available = CONSOLE_IO_FALSE;
-    }
-
-    // Synchronization with keyboard handler
-    if (done == CONSOLE_IO_FALSE) {
-      disable_interrupts();
-      if (input_available == CONSOLE_IO_FALSE) {
-        waiting_input_tcb = kernel.current_thread;
-        block_and_switch(HOLDING_MUTEX_FALSE, NULL);
-        waiting_input_tcb = NULL;
-      } else {
-        enable_interrupts();
-      }
-    }
-
-  }
+  // buf now contains the line of input
+  // kernel.rl.len contains the number of bytes written in the buffer
+  // kernel.rl.caller has been set to NULL
+  
+  int ret = kernel.rl.len;   
 
   // Allow other threads to run
-  release_lock(&mutex, &cond, lock);
+  eff_mutex_unlock(&mutex);
 
-  return min_len;
+  return ret;
 }
+
 
 int kern_print(int len, char *buf) {
 
   // Synchronization variables
-  static mutex_t mutex;
-  static cond_t cond;
+  static eff_mutex_t mutex;
   static int mutex_initialized = CONSOLE_IO_FALSE;
-  static int lock = UNLOCKED;
 
   // Synchronization primitives initialization
-  if (mutex_initialized == CONSOLE_IO_FALSE) {
-    assert(mutex_init(&mutex) == 0);
-    assert(cond_init(&cond) == 0);
-    mutex_initialized = CONSOLE_IO_TRUE;
+  if (atomic_exchange(&mutex_initialized, CONSOLE_IO_TRUE) == CONSOLE_IO_FALSE){
+    assert(eff_mutex_init(&mutex) == 0);
   }
-
-  // TODO: "reasonable" maximum bound on len ? Console size ?
   
   // Check length validity
-  if (len < 0) {
+  if (len < 0 || len > CONSOLE_IO_MAX_LEN) {
     lprintf("print(): Invalid length");
     return -1;
   }
@@ -163,34 +103,25 @@ int kern_print(int len, char *buf) {
     lprintf("print(): Invalid buffer");     
     return -1;
   }
+  
+  // Block concurrent threads
+  eff_mutex_lock(&mutex);
 
-  // Block other threads (no interleaving of print() outputs)
-  get_lock(&mutex, &cond, lock);
+  // Lock the mutex on the console
+  eff_mutex_lock(&kernel.console_mutex);
 
-  // Print the buffer's content on the console
   int i;
+  // Print the buffer's content on the console
   for (i = 0 ; i < len ; ++i) {
     putbyte(buf[i]);
   }
 
+  // Unlock the mutex on the console
+  eff_mutex_unlock(&kernel.console_mutex);
+
   // Allow other threads to run
-  release_lock(&mutex, &cond, lock);
+  eff_mutex_unlock(&mutex);
 
   return 0;
 }
 
-static void get_lock(mutex_t* mutex, cond_t* cond, int lock) {
-  mutex_lock(mutex);
-  while (lock == LOCKED) {
-    cond_wait(cond, mutex);
-  }
-  lock = LOCKED;
-  mutex_unlock(mutex);
-}
-
-static void release_lock(mutex_t* mutex, cond_t* cond, int lock) {
-  mutex_lock(mutex);
-  lock = UNLOCKED;
-  cond_signal(cond);
-  mutex_unlock(mutex);
-}

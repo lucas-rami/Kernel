@@ -15,6 +15,8 @@
 #include <syscalls.h>
 #include <cr.h>
 #include <stack_queue.h>
+#include <string.h>
+#include <context_switch.h>
 
 /* Debugging */
 #include <simics.h>
@@ -22,12 +24,16 @@
 /* Number of buckets for hash tables*/
 #define NB_BUCKETS 8
 
+/* Number of registers poped during a popa instruction */
+#define NB_REGISTERS_POPA 8
+
 /* Static functions prototypes */
 static tcb_t *create_idle_thread();
+static tcb_t *create_keyboard_consumer_thread();
 
 /** @brief  Creates the kernel's idle thread
  *
- *  The function created a particular TCB for the idle thread which does not
+ *  The function creates a particular TCB for the idle thread which does not
  *  have an englobing task and is not added to the TCBs hash table.
  *  Only some fields of the TCB data structure are filled with meaningful data.
  *
@@ -59,6 +65,60 @@ static tcb_t *create_idle_thread() {
   return new_tcb;
 }
 
+/** @brief  Creates the kernel's keyboard consumer thread
+ *
+ *  The function creates a particular TCB for the idle thread which does not
+ *  have an englobing task and is not added to the TCBs hash table.
+ *  Only some fields of the TCB data structure are filled with meaningful data.
+ *
+ *  @return The idle thread's TCB on success, NULL otherwise
+ */
+static tcb_t *create_keyboard_consumer_thread() {
+
+  // Allocate space for the new TCB
+  tcb_t *new_tcb = malloc(sizeof(tcb_t));
+  if (new_tcb == NULL) {
+    return NULL;
+  }
+
+  // Create a kernel stack for this thread
+  void* kernel_stack = malloc(PAGE_SIZE);
+  if (kernel_stack == NULL) {
+    free(new_tcb);
+    return NULL;
+  }
+
+  // Initialize the mutex on this TCB
+  if (eff_mutex_init(&new_tcb->mutex) < 0) {
+    lprintf("create_idle_thread(): Failed to initialize TCB mutex");
+    free(new_tcb);
+    return NULL;
+  }
+
+  // Set various fields to their initial value (only the one that matters for
+  // the keyboard consumer thread)
+  new_tcb->task = NULL;
+  new_tcb->thread_state = THR_BLOCKED;
+  new_tcb->tid = -1; // No other thread is allowed to have this tid
+  new_tcb->esp0 = ((uint32_t)kernel_stack) + PAGE_SIZE;
+  new_tcb->cr3 = get_cr3();
+
+  // Craft the stack for first context switch to this thread
+  unsigned int * stack_addr = (unsigned int *) new_tcb->esp0;
+  --stack_addr;
+  *stack_addr = (unsigned int) new_tcb;
+  --stack_addr;
+  *stack_addr = (unsigned int) keyboard_consumer;
+  --stack_addr;  
+  *stack_addr = (unsigned int) init_thread;
+  stack_addr -= NB_REGISTERS_POPA;
+
+  new_tcb->esp = (uint32_t) stack_addr;
+
+  return new_tcb;
+
+}
+
 /** @brief  Initializes the kernel state
  *
  *  The function initalizes all the data structures needed by the kernel and
@@ -79,6 +139,13 @@ int kernel_init() {
   kernel.cpu_idle = CPU_IDLE_TRUE;
   kernel.free_frame_count = machine_phys_frames() - NUM_KERNEL_FRAMES;
   kernel.zeroed_out_frame = 0;
+  
+  // Initialize readline_t structure
+  kernel.rl.buf = NULL;
+  kernel.rl.len = 0;
+  kernel.rl.caller = NULL;
+  memset(kernel.rl.key_buf, 0, CONSOLE_IO_MAX_LEN);
+  kernel.rl.key_index = 0; 
 
   // Initialize the runnable thread queue
   stack_queue_init(&kernel.runnable_queue);
@@ -88,6 +155,13 @@ int kernel_init() {
     lprintf("kernel_init(): Failed to initialize mutex for malloc_wrappers.c");
     return -1;
   }
+
+  // Initialize the mutex for the functions printing to the console
+  if (eff_mutex_init(&kernel.console_mutex) < 0) {
+    lprintf("kernel_init(): Failed to initialize mutex for the console");
+    return -1;
+  }
+
   lprintf("Kernel malloc mutex is %p", &kernel.malloc_mutex);
 
   // Initialize the PCBs hash table
@@ -115,13 +189,24 @@ int kernel_init() {
     lprintf("kernel_init(): Failed to initialize the garbage collector");
     return -1;
   }
+
   stack_queue_init(&kernel.gc.zombie_memory);
 
-  // Configure the idle task
+  // Create the idle thread
   kernel.idle_thread = create_idle_thread();
   if (kernel.idle_thread == NULL) {
     lprintf("kernel_init(): Failed to create idle thread");
+    return -1;
   }
+
+  // Create the keyboard consumer thread
+  kernel.keyboard_consumer_thread = create_keyboard_consumer_thread();
+  if (kernel.keyboard_consumer_thread == NULL) {
+    lprintf("kernel_init(): Failed to create keyboard consumer thread");    
+    return -1;
+  }
+
+  // Set the current thread as being the idle thread
   kernel.current_thread = kernel.idle_thread;
 
   // Mark the kernel state as initialized

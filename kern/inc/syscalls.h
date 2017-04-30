@@ -8,6 +8,7 @@
 #define _SYSCALLS_H_
 
 #include <stdint.h>
+#include <video_defines.h>
 #include <tcb.h>
 
 int kern_gettid();
@@ -30,6 +31,12 @@ int kern_remove_pages(void *base);
 int readline(int len, char *buf);
 int print(int len, char *buf);
 
+/* Boolean values for readline() and print() */
+#define CONSOLE_IO_FALSE 0
+#define CONSOLE_IO_TRUE 1
+/* Maximum length for buffer */
+#define CONSOLE_IO_MAX_LEN (CONSOLE_WIDTH * CONSOLE_HEIGHT)
+
 /* Exec calls */
 int kern_exec(char *execname, char **argvec);
 char *load_args_for_new_program(char **argvec, unsigned int *new_ptd, int count);
@@ -44,13 +51,6 @@ int kern_wait(int *status_ptr);
 
 /* Vanish call */
 void kern_vanish(void);
-typedef struct {
-
-  eff_mutex_t mp;
-
-  stack_queue_t zombie_memory;
-
-} garbage_collector_t;
 
 /* Sleep */
 int kern_sleep(int ticks);

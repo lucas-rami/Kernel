@@ -23,6 +23,7 @@
 #include "keyboard_asm.h"
 #include <asm.h>
 #include <interrupt_defines.h>
+#include <video_defines.h>
 #include <interrupts.h>
 #include <keyboard.h>
 #include <keyhelp.h>
@@ -32,10 +33,7 @@
 #include <simics.h>
 #include <stdio.h>
 #include <tcb.h>
-
-extern int input_available;
-extern tcb_t* waiting_input_tcb;
-
+#include <syscalls.h>
 
 /** @brief keyboard initialization function
  *
@@ -47,6 +45,7 @@ extern tcb_t* waiting_input_tcb;
  *   @return A negative error code on error, or 0 on success
  **/
 int keyboard_init(void) {
+
   return register_handler((uintptr_t)keyboard_interrupt_handler, TRAP_GATE,
                           KEY_IDT_ENTRY, KERNEL_PRIVILEGE_LEVEL,
                           SEGSEL_KERNEL_CS);
@@ -65,22 +64,16 @@ int keyboard_init(void) {
  *   @return void
  **/
 void keyboard_c_handler(void) {
+
   // Read the byte from the port
   uint8_t character = ( int )inb( KEYBOARD_PORT );
 
-  // Store it in the static buf
-  enqueue( character );
-
-  // Signal new input available for readline()
-  input_available = CONSOLE_IO_TRUE;
-  if (waiting_input_tcb != NULL) {
-    add_runnable_thread(waiting_input_tcb);
-    waiting_input_tcb = NULL;
-  }
+  // Enqueue the key event
+  enqueue(character);
   
-  // Ack the PIC
+  // Acknowledge the PIC
   outb(INT_CTL_PORT, INT_ACK_CURRENT);
-  (void)character;
+
 }
 
 /** @brief The API provided to the user to read the characters that were
