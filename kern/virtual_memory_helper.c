@@ -256,9 +256,7 @@ int free_frame(unsigned int* addr) {
   }
   int frame_index = ((unsigned int)(addr) - USER_MEM_START) / PAGE_SIZE;
   unset_bit(&free_map, frame_index);
-  eff_mutex_lock(&kernel.mutex);
-  kernel.free_frame_count++;
-  eff_mutex_unlock(&kernel.mutex);
+  release_frames(1);
   return 0;
 }
 

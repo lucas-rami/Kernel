@@ -17,6 +17,7 @@
 #include <stack_queue.h>
 #include <string.h>
 #include <context_switch.h>
+#include <atomic_ops.h>
 
 /* Debugging */
 #include <simics.h>
@@ -349,9 +350,6 @@ tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3,
     new_tcb->swexn_values.arg = NULL;
   }
 
-  // TODO: Change this into an atomic op.
-  // No need for a mutex
-
   // Assign a unique id to the TCB
   eff_mutex_lock(&kernel.mutex);
   new_tcb->tid = kernel.thread_id;
@@ -374,6 +372,42 @@ tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3,
 
   return new_tcb;
 }
+
+/** @brief  Atomically increases the number of free frames available 
+ *
+ *  @param  nb  The number of frames to release  
+ *
+ *  @return void
+ */
+void release_frames(unsigned int nb) {
+  atomic_add_and_update(&kernel.free_frame_count, nb);
+}
+
+/** @brief  Atomically tries to reserve a given number of frames
+ *
+ *  @param  nb  The number of frames to reserve  
+ *
+ *  @return 0 on success, a negative number on failure
+ */
+int reserve_frames(unsigned int nb) {
+  
+  int success = 0;
+
+  do {
+
+    int old_val = kernel.free_frame_count; 
+    if (old_val < nb) {
+      return -1;
+    }
+    int new_val = old_val - nb;
+    success = atomic_compare_and_exchange_32(&kernel.free_frame_count, 
+                                              old_val, new_val);
+
+  } while (!success);
+
+  return 0;
+}
+
 
 /** @brief Hash function for PCBs hash table
  *
@@ -445,6 +479,7 @@ int find_alloc(void* alloc, void* base) {
   return 0;
 }
 
+// TODO
 int find_pcb_ll(void *pcb1, void *pcb2) {
   return (uint32_t)pcb1 == (uint32_t)pcb2;
 }

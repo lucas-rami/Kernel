@@ -103,14 +103,10 @@ int kern_remove_pages(void *base) {
  */
 static int reserve_frames_zfod(void* base, int nb_pages) {
 
-  // Try to reserve nb_pages 
-  eff_mutex_lock(&kernel.mutex);
-  if (kernel.free_frame_count < nb_pages) {
-    eff_mutex_unlock(&kernel.mutex);
+  // Try to reserve frames
+  if (reserve_frames(nb_pages) < 0) {
     return -1;
   }
-  kernel.free_frame_count -= nb_pages;
-  eff_mutex_unlock(&kernel.mutex);
 
   // Allocate space for new allocation structure
   alloc_t * new_alloc = malloc(sizeof(alloc_t));
@@ -123,9 +119,7 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
   // Register the allocation
   pcb_t * current_pcb = kernel.current_thread->task;
   if (linked_list_insert_node(&current_pcb->allocations, new_alloc) < 0) {
-    eff_mutex_lock(&kernel.mutex);
-    kernel.free_frame_count += nb_pages;  
-    eff_mutex_unlock(&kernel.mutex);
+    release_frames(nb_pages);
     free(new_alloc);
     lprintf("reserve_frames_zfod(): Registration of new allocation failed");
     return -1;
@@ -133,9 +127,7 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
 
   // Mark the pages as requested
   if (mark_address_range_requested((unsigned int)base, (unsigned int)nb_pages) < 0) {
-    eff_mutex_lock(&kernel.mutex);
-    kernel.free_frame_count += nb_pages;  
-    eff_mutex_unlock(&kernel.mutex);
+    release_frames(nb_pages);
     free(new_alloc);
     linked_list_delete_node(&current_pcb->allocations, new_alloc);
     lprintf("reserve_frames_zfod(): mark_address_range_requested failed");

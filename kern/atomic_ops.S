@@ -1,11 +1,12 @@
 /** @file atomic_ops.S
  *  @brief  This file contains the definitions for functions that perform
- *          different atomic operations
+ *          various atomic operations
  *  @author akanjani, lramire1
  */
 
 .global atomic_add_and_update
 .global atomic_exchange
+.global atomic_compare_and_exchange_32
 
 atomic_add_and_update:
 	movl 0x4(%esp), %ecx	  // Move the first argument to ecx
@@ -21,3 +22,16 @@ atomic_exchange:
   movl  8(%esp), %eax   // Move the new value into eax
   xchg  %eax, (%edx)    // Perform the exchange operation
   ret                   // Return from procedure (eax contains the old value)
+
+
+atomic_compare_and_exchange_32:
+  movl 4(%esp), %edx          // edx contains the variable's address
+  movl 8(%esp), %eax          // eax contains the old value
+  movl 12(%esp), %ecx         // ecx contains the new value
+  LOCK cmpxchg %ecx, (%edx)   // if %eax = (%edx) then set (%edx) = %ecx 
+  je success
+    movl $0, %eax
+    ret
+  success:
+    movl $1, %eax
+    ret

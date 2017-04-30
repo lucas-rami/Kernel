@@ -95,9 +95,9 @@ void kern_vanish() {
     free_address_space(cr3, KERNEL_AND_USER_SPACE);
     lprintf("Freed address space");
     lprintf("Taking kernel mutex %p", &kernel.mutex);
-    eff_mutex_lock(&kernel.mutex);
-    kernel.free_frame_count += curr_task->num_of_frames_requested;
-    lprintf("Leaving kernel mutex %p", &kernel.mutex);
+
+    release_frames(curr_task->num_of_frames_requested);
+
     eff_mutex_unlock(&kernel.mutex);
 
     // TODO: Delete the linked list allocations which we store for new pages

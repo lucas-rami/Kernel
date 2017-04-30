@@ -154,6 +154,11 @@ pcb_t *create_new_pcb();
 tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3,
                       swexn_struct_t* handler, int root_thread);
 
+/* Frames management */
+int reserve_frames(unsigned int nb);
+void release_frames(unsigned int nb);
+
+
 /* Functions used by the kernel's internal data strutures */
 unsigned int hash_function_pcb(void *pcb, unsigned int nb_buckets);
 int find_pcb(void *pcb1, void *pcb2);

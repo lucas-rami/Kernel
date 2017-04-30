@@ -36,10 +36,6 @@
 /* Number of registers poped during a popa instruction */
 #define NB_REGISTERS_POPA 8
 
-#define INCREASE_FRAME_COUNT eff_mutex_lock(&kernel.mutex);\
-                             kernel.free_frame_count += num_frames_requested;\
-                             eff_mutex_unlock(&kernel.mutex)
-
 /** @brief  Creates a task from an executable, should only be used for the first
  *          task created in the kernel
  *
@@ -81,7 +77,7 @@ int create_task_from_executable(char *task_name) {
   if ((cr3 = setup_vm(&elf, FIRST_TASK_TRUE)) == NULL) {
     lprintf("Task creation failed for task \"%s\"", task_name);
     free(stack_kernel);
-    INCREASE_FRAME_COUNT;
+    release_frames(num_frames_requested);
     return -1;
   }
   
@@ -93,7 +89,7 @@ int create_task_from_executable(char *task_name) {
   if (new_pcb == NULL) {
     lprintf("create_task_from_executable(): PCB initialization failed");
     free(stack_kernel);
-    INCREASE_FRAME_COUNT;
+    release_frames(num_frames_requested);
     return -1;
   }
 
@@ -104,7 +100,7 @@ int create_task_from_executable(char *task_name) {
     lprintf("create_task_from_executable(): TCB initialization failed");
     free(stack_kernel);
     hash_table_remove_element(&kernel.pcbs, new_pcb);
-    INCREASE_FRAME_COUNT;
+    release_frames(num_frames_requested);
     return -1;
   }
 
@@ -219,14 +215,10 @@ unsigned int request_frames_needed_by_program(simple_elf_t *elf) {
   total_frames_reqd++;
   total_frames_reqd -= reduce_count;
 
-  eff_mutex_lock(&kernel.mutex);
-  if (total_frames_reqd <= kernel.free_frame_count) {
-    kernel.free_frame_count -= total_frames_reqd;
-  } else {
-    eff_mutex_unlock(&kernel.mutex);
+  // Try to reserve frames
+  if (reserve_frames(total_frames_reqd) < 0) {
     return 0;
   }
-  eff_mutex_unlock(&kernel.mutex);
 
   return total_frames_reqd;
 }

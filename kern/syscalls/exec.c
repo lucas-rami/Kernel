@@ -31,23 +31,27 @@
 #define TRUE 1
 #define FALSE 0
 
-/** @brief The C function that handles the exec system call.
- *   Replaces the program currently running in the invoking task with the 
- *   program stored in the file named execname. The number of strings in 
- *   the vector and the vector itself will be transported into the memory
- *   of the new program where they will serve as the first and second 
- *   arguments of the the new program’s main(), respectively. Before the 
- *   new program begins, %EIP will be set to the “entry point” (the first 
- *   instruction of the main() wrapper, as advertised by the ELF linker).
- *   The kernel does as much validation as possible of the exec() request 
- *   before deallocating the old program’s resources.
+/* Static functions prototypes */
+static int exec_prechecks(char *execname, char **argvec);
+
+/** @brief  The C function that handles the exec system call
  *
- *   After a successful exec() the thread that begins execution of the new 
- *   program has no software exception handler registered.
+ *  Replaces the program currently running in the invoking task with the 
+ *  program stored in the file named execname. The number of strings in 
+ *  the vector and the vector itself will be transported into the memory
+ *  of the new program where they will serve as the first and second 
+ *  arguments of the the new program’s main(), respectively. Before the 
+ *  new program begins, %EIP will be set to the “entry point” (the first 
+ *  instruction of the main() wrapper, as advertised by the ELF linker).
+ *  The kernel does as much validation as possible of the exec() request 
+ *  before deallocating the old program’s resources.
  *
- *  @param execname A string specifying the name of the program to be loaded
- *  @param argvec   An array of strings to be passed as an argument to the 
- *                  main() wrapper of the new program
+ *  After a successful exec() the thread that begins execution of the new 
+ *  program has no software exception handler registered.
+ *
+ *  @param  execname  A string specifying the name of the program to be loaded
+ *  @param  argvec    An array of strings to be passed as an argument to the 
+ *                    main() wrapper of the new program
  *
  *  @return int On success, this system call does not return to the invoking 
  *              program, since it is no longer running. If something goes 
@@ -64,12 +68,14 @@ int kern_exec(char *execname, char **argvec) {
 
   unsigned int *old_cr3 = (unsigned int*)get_cr3();
 
+  // Load ELF header
   simple_elf_t elf;
   if (load_elf_file(execname, &elf) <0) {
     lprintf("Error loading %p from the elf file", execname);
     return -1;
   }
 
+  // Compute and update the number of frames requested by the program
   unsigned num_frames_requested;
   if ((num_frames_requested = request_frames_needed_by_program(&elf)) == 0) {
     lprintf("The program %s needs more memory than is available", execname);
@@ -78,19 +84,21 @@ int kern_exec(char *execname, char **argvec) {
  
   lprintf("Setting up vm for tid %d", kernel.current_thread->tid);
   unsigned int *cr3 = NULL;
+
+  // Create the new address space
   if ((cr3 = setup_vm(&elf, FIRST_TASK_FALSE)) == NULL) {
     lprintf("VM setup failed for task \"%s\"", execname);
-    eff_mutex_lock(&kernel.mutex);
-    kernel.free_frame_count += num_frames_requested;
-    eff_mutex_unlock(&kernel.mutex);
+    release_frames(num_frames_requested);
     return -1;
   }
+
   lprintf("Set up vm complete for tid %d", kernel.current_thread->tid);
 
+  // Load the arguments in the new address space
   char *new_stack_addr = load_args_for_new_program(argvec, old_cr3, count);
   lprintf("Loaded args for new program");
 
-
+  // Update invoking thread's TCB
   tcb_t *curr_tcb = kernel.current_thread;
   curr_tcb->num_of_frames_requested = num_frames_requested;
   curr_tcb->task->num_of_frames_requested = num_frames_requested;
@@ -100,21 +108,22 @@ int kern_exec(char *execname, char **argvec) {
 
 
   lprintf("Calling free address space");
+  // Free the entire old address space
   free_address_space(old_cr3, KERNEL_AND_USER_SPACE);
+
   lprintf("Returned from free address space. Should go to execed code");
 
-
+  // Run the new program
   run_first_thread(elf.e_entry, (uint32_t)new_stack_addr, get_eflags());
-  lprintf("SHOULDNT PRINT");
-
 
   lprintf("SHOULD NEVER RETURN HERE!!");
   return 0;
 }
 
-/** @brief Transports the number of strings in the argvec and the vector itself
- *   into the memory of the new program where they will serve as the first and 
- *   second arguments of the the new program’s main(), respectively. 
+/** @brief  Transports the number of strings in the argvec and the vector itself
+ *          into the memory of the new program where they will serve as the 
+ *          first and second arguments of the the new program’s main(), 
+ *          respectively
  *
  *  @param argvec  A null-terminated vector of null-terminated string arguments
  *  @param old_ptd The cr3 value of the invoking thread
@@ -132,28 +141,43 @@ char *load_args_for_new_program(char **argvec, unsigned int *old_ptd,
   
   kernel.current_thread->cr3 = (uint32_t)old_ptd;
   set_cr3((uint32_t)old_ptd);
+
   while (argvec[i] != NULL) {
-    // TODO: Is this a TOCTOU problem?
+
+    // Copy string to local buffer
     len = strlen(argvec[i]);
     memcpy(buf, argvec[i], len + 1);
     stack_addr -= (len + 1);
+
+    // Store argument address
     args_addr[i] = stack_addr;
+
+    // Copy string to new address space
     kernel.current_thread->cr3 = (uint32_t)new_ptd;
     set_cr3((uint32_t)new_ptd);
     memcpy(stack_addr, buf, len + 1);
     kernel.current_thread->cr3 = (uint32_t)old_ptd;
     set_cr3((uint32_t)old_ptd);
+
     i++;
   }
   free(buf);
 
+  // Array is NULL terminated
   args_addr[i] = 0;
+
+  // Leave space for argvec
   stack_addr -= (sizeof(char*) * (count+1));
+
   char *start_of_argv = stack_addr;
+
+  // Copy argvec to new address space
   kernel.current_thread->cr3 = (uint32_t)new_ptd;
   set_cr3((uint32_t)new_ptd);
   memcpy(stack_addr, args_addr, (sizeof(char*) * (count+1)));
   free(args_addr);
+
+  // Craft the stack
   unsigned int ptr_size = sizeof(void*);
   stack_addr -= ptr_size;
   *(char **)stack_addr = (char*)STACK_START_ADDR;
@@ -167,13 +191,24 @@ char *load_args_for_new_program(char **argvec, unsigned int *old_ptd,
   return (stack_addr - sizeof(uint32_t));
 }
   
-int exec_prechecks(char *execname, char **argvec) {
+/** @brief  Performs the argument prechecks for the exec function
+ *
+ *  @param  execname  A string specifying the name of the program to be loaded
+ *  @param  argvec    An array of strings to be passed as an argument to the 
+ *                    main() wrapper of the new program
+ *
+ *  @return The number of strings stored in argvec on sucess, a negative number
+ *          on error
+ */  
+static int exec_prechecks(char *execname, char **argvec) {
   
+  // The invoking task must be mono-threaded
   if (kernel.current_thread->task->num_of_threads > 1) {
     lprintf("Exec Error: Multiple threads running while calling exec");
     return -1;
   }
 
+  // Check that execname is valid
   if (is_valid_string(execname) < 0) {
     lprintf("Execname not valid");
     return ERR_INVALID_ARGS;
@@ -186,6 +221,7 @@ int exec_prechecks(char *execname, char **argvec) {
     return -1;
   }
 
+  // Count the number of strings in argvec
   int i = 0;
   while (argvec[i] != NULL) {
     if (is_valid_string(argvec[i]) < 0 || strlen(argvec[i]) > 

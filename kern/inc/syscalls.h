@@ -28,8 +28,9 @@ int kern_new_pages(void *base, int len);
 int kern_remove_pages(void *base);
 
 /* Console IO */
-int readline(int len, char *buf);
-int print(int len, char *buf);
+int kern_readline(int len, char *buf);
+int kern_print(int len, char *buf);
+int kern_getchar(void); // NOT IMPLEMENTED, ALWAYS RETURN ERROR
 
 /* Boolean values for readline() and print() */
 #define CONSOLE_IO_FALSE 0
@@ -40,7 +41,6 @@ int print(int len, char *buf);
 /* Exec calls */
 int kern_exec(char *execname, char **argvec);
 char *load_args_for_new_program(char **argvec, unsigned int *new_ptd, int count);
-int exec_prechecks(char *execname, char **argvec);
 
 /* swexn calls */
 int swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg);

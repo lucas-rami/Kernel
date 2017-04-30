@@ -1,6 +1,6 @@
 /** @file fork.c
- *  @brief This file contains the definition for the kern_fork() and
- *  kern_thread_fork() system calls.
+ *  @brief  This file contains the definition for the kern_fork() and
+ *          kern_thread_fork() system calls
  *  @author akanjani, lramire1
  */
 
@@ -27,6 +27,7 @@
 
 #define NB_REGISTERS_POPA 8
 
+/* Static functions prototypes */
 static unsigned int * copy_memory_regions(void);
 static unsigned int * initialize_stack_fork(uint32_t orig_stack, 
                       uint32_t new_stack, unsigned int * esp, tcb_t * new_tcb);
@@ -37,9 +38,10 @@ static unsigned int * initialize_stack_fork(uint32_t orig_stack,
  *  invoking task. The new task contains a single thread which is a copy of the
  *  thread invoking fork() except for the return value of the system call.
  *  The exit status of a newly-created task is 0. If a thread in the task 
- *  invoking fork() has a software exception handler registered, the corresponding
- *  thread in the newly-created task will have exactly the same handler 
- *  registered.
+ *  invoking fork() has a software exception handler registered, the 
+ *  corresponding thread in the newly-created task will have exactly the same 
+ *  handler registered. The call is rejected if the invoking task's is
+ *  multi-threaded.
  *
  *  @param  esp   The limit address on the invoking thread's stack used for
  *                creating the child thread's stack
@@ -51,43 +53,36 @@ static unsigned int * initialize_stack_fork(uint32_t orig_stack,
  */
 int kern_fork(unsigned int *esp) {
 
-  // TODO: Reject call if more than one thread in the task ?
-  // TODO: Need to register software exception handler
-
-  eff_mutex_lock(&kernel.mutex);
-  if (kernel.current_thread->num_of_frames_requested <= kernel.free_frame_count) {
-    // TODO: Shouldn't it be kernel.current_thread->task->num_of_frames_requested ?
-    kernel.free_frame_count -= kernel.current_thread->num_of_frames_requested;
-  } else {
-    lprintf("Can't fork as no frames left");
-    eff_mutex_unlock(&kernel.mutex);
+  // Reject call if more than one thread in the task
+  if (kernel.current_thread->task->num_of_threads > 1) {
     return -1;
   }
-  eff_mutex_unlock(&kernel.mutex);
+
+  // Reserve the number of frames needed for the new task
+  if (reserve_frames(kernel.current_thread->num_of_frames_requested) < 0) {
+    return -1;
+  }
 
   // Allocate a kernel stack for the new task
   void *stack_kernel = malloc(PAGE_SIZE);
   if (stack_kernel == NULL) {
     lprintf("fork(): Could not allocate kernel stack for task's root thread");
-    // TODO: Increase the kernel free frame count
+    release_frames(kernel.current_thread->num_of_frames_requested);
     return -1;
   }
 
   unsigned int * new_cr3 = copy_memory_regions();
   if (new_cr3 == NULL) {
     lprintf("fork(): Could not allocate memory regions");
-    // TODO: Increase the kernel free frame count
+    release_frames(kernel.current_thread->num_of_frames_requested);
     free(stack_kernel);    
     return -1;
   }
 
-  // SIMICS Debugging 
-  // sim_reg_child(new_cr3, (void *) kernel.current_thread->cr3);
-
   // Highest address of child's kernel stack
   uint32_t esp0 = (uint32_t)(stack_kernel) + PAGE_SIZE;
 
-  // Create new PCB/TCB for the task and its root thread
+  // Create new PCB for the task
   pcb_t *new_pcb = create_new_pcb();
   if (new_pcb == NULL) {
     lprintf("fork(): PCB initialization failed");
@@ -96,20 +91,18 @@ int kern_fork(unsigned int *esp) {
     return -1;
   }
 
-  tcb_t *new_tcb = create_new_tcb(new_pcb, esp0, (uint32_t)new_cr3, NULL,
-                                  ROOT_THREAD_TRUE);
+  // Create new TCB for the root thread
+  tcb_t *new_tcb = create_new_tcb(new_pcb, esp0, (uint32_t)new_cr3, 
+                    &kernel.current_thread->swexn_values, ROOT_THREAD_TRUE);
+
   if (new_tcb == NULL) {
     lprintf("fork(): TCB initialization failed");
     free(stack_kernel);
     hash_table_remove_element(&kernel.pcbs, new_pcb);
     free_address_space(new_cr3, KERNEL_AND_USER_SPACE);
-    // TODO: Increase the kernel free frame count
     return -1;
   }
   new_pcb->parent = kernel.current_thread->task;
-  lprintf("Setting %p as the task for thread %d", new_pcb, new_tcb->tid);
-  
-  lprintf("TID %d kernel stack %p", new_tcb->tid, (char*)stack_kernel);
 
   // Add the child to the running queue
   eff_mutex_lock(&kernel.current_thread->task->list_mutex);
@@ -121,7 +114,7 @@ int kern_fork(unsigned int *esp) {
   new_tcb->esp = (uint32_t) initialize_stack_fork(kernel.current_thread->esp0,
                                                   esp0, esp, new_tcb);
 
-  lprintf("\tkern_fork(): Thread %d forking %d", kernel.current_thread->tid, new_tcb->tid);
+  // lprintf("\tkern_fork(): Thread %d forking %d", kernel.current_thread->tid, new_tcb->tid);
 
   // Make the thread runnable
   add_runnable_thread(new_tcb);
@@ -258,6 +251,7 @@ static unsigned int * copy_memory_regions() {
     if (is_entry_present(orig_dir_entry)) {
       lprintf("Copying directory entry %p to %p", orig_dir_entry, new_dir_entry);
 
+      // TODO: not using the static pages for direct mapped kernel memory
       unsigned int *orig_page_table_addr = get_page_table_addr(orig_dir_entry);
       unsigned int *new_page_table_addr = 
                       create_page_table(new_dir_entry, DIRECTORY_FLAGS, FIRST_TASK_FALSE);
@@ -285,7 +279,6 @@ static unsigned int * copy_memory_regions() {
         if (is_entry_present(orig_tab_entry)) {
 
           if ((unsigned int)get_frame_addr(orig_tab_entry) < USER_MEM_START) {
-            // TODO: Redundant?
             // This is direct mapped kernel memory
             *new_tab_entry = *orig_tab_entry;
           } else {
