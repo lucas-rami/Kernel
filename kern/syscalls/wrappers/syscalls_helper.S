@@ -5,11 +5,6 @@
  *  @author akanjani, lramire1
  */
 
-#include <simics.h>
-
-str:	
-	.string	"(%p) = %p. Return value %d"
-
 .global save_state
 .global restore_state_and_iret
 .global restore_state_and_iret_with_errcode
@@ -40,21 +35,6 @@ restore_state_and_iret:
   popl %gs
   movl %eax, 28(%esp)   // Replace the value of %eax on the stack
 
-/*
-  movl 28(%esp), %edx
-  movl 36(%esp), %edi   // DEBUG: edi contains eip in user space
-  movl (%edi), %esi     // DEBUG: esi contains the instruction @ edi
-  pushl %edx
-  pushl %esi
-  pushl %edi
-  pushl $str
-  call custom_print
-  popl %edi
-  popl %edi
-  popl %edi
-  popl %edi
-*/
-
   popa                  // Pop general purpose registers
 
   addl $4, %esp         // Put back the stack pointer to where it was when the
@@ -70,7 +50,7 @@ restore_state_and_iret_with_errcode:
   popl %es
   popl %fs
   popl %gs
-  /* DO NOT COPY THE RETURN STATUS OF THE EXCEPTION HANDLER?? */
+  /* TODO: DO NOT COPY THE RETURN STATUS OF THE EXCEPTION HANDLER?? */
   // movl %eax, 28(%esp)   // Replace the value of %eax on the stack
   popa                  // Pop general purpose registers
 

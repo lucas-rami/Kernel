@@ -1,3 +1,8 @@
+/** @file vanish.S
+ *  @brief Wrapper for vanish() system call
+ *  @author akanjani, lramire1
+ */
+
 .global vanish
 
 vanish:

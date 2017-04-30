@@ -1,3 +1,8 @@
+/** @file wait.S
+ *  @brief Wrapper for wait() system call
+ *  @author akanjani, lramire1
+ */
+
 .global wait
 
 wait:

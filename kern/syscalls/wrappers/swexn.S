@@ -1,3 +1,8 @@
+/** @file swexn.S
+ *  @brief Wrapper for swexn() system call
+ *  @author akanjani, lramire1
+ */
+
 .global swexn
 
 swexn:
