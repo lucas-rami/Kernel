@@ -13,17 +13,31 @@
 /* Debugging */
 #include <simics.h>
 
+/** @brief  Data structure representing a sleeping thread */
 typedef struct sleeper {
+
+  /** @brief  Number of remaining ticks to sleep */
   int ticks;
+
+  /** @brief  Sleeper's TCB */  
   tcb_t* tcb;
+  
 } sleeper_t;
 
+/* File variables */
 static int ticks_buffer = 0;
 static int ticks_next_update = 0;
 static generic_double_node_t* head = NULL;
 static generic_double_node_t* tail = NULL;
 
-// TODO: doc
+/** @brief  Deschedules the calling thread until at least ticks timer interrupts
+ *          have occurred after the call.
+*
+ *  @param  ticks   The number of timer interrupts before waiking up the thead 
+ *
+ *  @return 0 on success (after sleeping or if ticks is 0), a negative number 
+ *          if ticks is negative
+ */
 int kern_sleep(int ticks) {
   
   // Check validity of arguments
@@ -36,7 +50,7 @@ int kern_sleep(int ticks) {
   sleeper_t new_sleeper = {ticks, kernel.current_thread};
   generic_double_node_t new_node = {&new_sleeper, NULL, NULL};
 
-  // TODO: Linear search OK with interrupts disabled ?
+  // We don't want any timer interrupt during this operation
   disable_interrupts();
 
   generic_double_node_t* it = head;
@@ -89,6 +103,13 @@ int kern_sleep(int ticks) {
   return 0;
 }
 
+/** @brief  Callback function for timer interrupt handler, wakes up all threads
+ *          that have been sleeping for the right amount of ticks
+ *
+ *  @brief  ticks   The total number of ticks since system boot
+ *
+ *  @return void
+ */
 void wake_up_threads(unsigned int ticks) {
 
   // If no one is sleeping, return immediately
@@ -122,11 +143,6 @@ void wake_up_threads(unsigned int ticks) {
       head = node;
       node->prev = NULL;
       ticks_next_update = sleeper->ticks - ticks_buffer;
-
-      // NOTE: DEBUG
-      if (sleeper->ticks - ticks_buffer < 0) {
-        lprintf("wake_up_thread(): Invalid state, ticks_next_update < 0");
-      }
 
     }
 

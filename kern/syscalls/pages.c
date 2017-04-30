@@ -23,12 +23,12 @@
 /* Debugging */
 #include <simics.h>
 
-/* Prototypes for static functions in this file */
+/* Static functions prototypes */
 static int reserve_frames_zfod(void* base, int nb_pages);
 static int free_frames_zfod(void* base);
 
-/** @brief Allocates new memory to the invoking task, starting at base and 
- *    extending for len bytes
+/** @brief  Allocates new memory to the invoking task, starting at base and 
+ *          extending for len bytes
  *
  *  new pages() will fail, returning a negative integer error code, if base is 
  *  not page-aligned, if len is not a positive integral multiple of the system 
@@ -37,8 +37,8 @@ static int free_frames_zfod(void* base);
  *  address space reserved by the kernel, 1 or if the operating system has 
  *  insufficient resources to satisfy the request.
  *
- *  @param base   The memory starting address
- *  @param len    The allocation's length (in bytes)
+ *  @param  base   The memory starting address
+ *  @param  len    The allocation's length (in bytes)
  *
  *  @return 0 on success, a negative number on error
  */
@@ -78,7 +78,7 @@ int kern_new_pages(void *base, int len) {
  *  as the result of a previous call to new pages() which specified the same 
  *  value of base.
  *
- *  @param base   The base address of the allocation
+ *  @param  base   The base address of the allocation
  *
  *  @return 0 on success, a negative number on error
  */
@@ -94,10 +94,10 @@ int kern_remove_pages(void *base) {
   return free_frames_zfod(base);
 }
 
-/** @brief Reserve a particular number of ZFOD frames at a given address
+/** @brief  Reserves a particular number of ZFOD frames at a given address
  *
- *  @param base     The base address for allocation
- *  @param nb_pages The number of pages to reserve
+ *  @param  base     The base address for allocation
+ *  @param  nb_pages The number of pages to reserve
  *
  *  @return 0 on success, a negative number on error
  */
@@ -148,10 +148,10 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
 
 }
 
-/** @brief Free a memory region previously reserves usign reserve_frames_zfod()
+/** @brief  Frees a memory region previously reserves usign reserve_frames_zfod()
  *
- *  @param base   The base address that was used during reservation
-*
+ *  @param  base   The base address that was used during reservation
+ *
  *  @return 0 on success, a negative number on error
  */
 static int free_frames_zfod(void* base) {
@@ -171,6 +171,7 @@ static int free_frames_zfod(void* base) {
   // Free the frames
   free_frames_range((unsigned int) base, len);
 
+  // TODO: make this atomic
   eff_mutex_lock(&kernel.current_thread->mutex);
   kernel.current_thread->num_of_frames_requested -= (len/PAGE_SIZE);
   eff_mutex_unlock(&kernel.current_thread->mutex);
@@ -178,7 +179,7 @@ static int free_frames_zfod(void* base) {
   eff_mutex_lock(&kernel.current_thread->task->mutex);
   kernel.current_thread->task->num_of_frames_requested -= (len/PAGE_SIZE);
   eff_mutex_unlock(&kernel.current_thread->task->mutex);
-  // set_cr3(get_cr3());
+
   return 0;
 
 }

@@ -6,10 +6,14 @@
 #include <kernel_state.h>
 #include <eff_mutex.h>
 #include <pcb.h>
+#include <atomic_ops.h>
 
+/** @brief  Sets the exit status of the current task
+ *
+ *  @param  status  The new exit status
+ *
+ *  @return void
+ */
 void kern_set_status(int status) {
-  pcb_t * pcb = kernel.current_thread->task;
-  eff_mutex_lock(&pcb->mutex);
-  pcb->return_status = status;
-  eff_mutex_unlock(&pcb->mutex);
+  atomic_exchange(&kernel.current_thread->task->return_status, status);
 }
