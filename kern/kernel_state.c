@@ -4,7 +4,6 @@
  *  @author akanjani, lramire1
  */
 
-#include <assert.h>
 #include <cond_var.h>
 #include <kernel_state.h>
 #include <stdlib.h>
@@ -21,6 +20,7 @@
 
 /* Debugging */
 #include <simics.h>
+#include <assert.h>
 
 /* Number of buckets for hash tables*/
 #define NB_BUCKETS 8
@@ -151,17 +151,25 @@ int kernel_init() {
   // Initialize the runnable thread queue
   stack_queue_init(&kernel.runnable_queue);
 
-  // Initialize the mutex for the functions in malloc_wrappers.c
-  if (eff_mutex_init(&kernel.malloc_mutex) < 0) {
-    lprintf("kernel_init(): Failed to initialize mutex for malloc_wrappers.c");
-    return -1;
-  }
+  // // Initialize the mutex for the functions in malloc_wrappers.c
+  // if (eff_mutex_init(&kernel.malloc_mutex) < 0) {
+  //   lprintf("kernel_init(): Failed to initialize mutex for malloc_wrappers.c");
+  //   return -1;
+  // }
 
-  // Initialize the mutex for the functions printing to the console
-  if (eff_mutex_init(&kernel.console_mutex) < 0) {
-    lprintf("kernel_init(): Failed to initialize mutex for the console");
-    return -1;
-  }
+  // // Initialize the mutex for the functions printing to the console
+  // if (eff_mutex_init(&kernel.console_mutex) < 0) {
+  //   lprintf("kernel_init(): Failed to initialize mutex for the console");
+  //   return -1;
+  // }
+
+  // Initialize all mutexes
+  assert( eff_mutex_init(&kernel.mutex) == 0 &&
+          eff_mutex_init(&kernel.malloc_mutex) == 0 &&
+          eff_mutex_init(&kernel.console_mutex) == 0 &&
+          eff_mutex_init(&kernel.print_mutex) == 0 &&
+          eff_mutex_init(&kernel.readline_mutex) == 0 &&
+          eff_mutex_init(&kernel.gc.mp) == 0);
 
   lprintf("Kernel malloc mutex is %p", &kernel.malloc_mutex);
 
@@ -179,17 +187,17 @@ int kernel_init() {
     return -1;
   }
 
-  // Initialize the kernel mutex
-  if (eff_mutex_init(&kernel.mutex) < 0) {
-    lprintf("kernel_init(): Failed to initialize mutex");
-    return -1;
-  }
-  lprintf("Kernel mutex is %p", &kernel.mutex);
+  // // Initialize the kernel mutex
+  // if (eff_mutex_init(&kernel.mutex) < 0) {
+  //   lprintf("kernel_init(): Failed to initialize mutex");
+  //   return -1;
+  // }
+  // lprintf("Kernel mutex is %p", &kernel.mutex);
 
-  if (eff_mutex_init(&kernel.gc.mp) < 0) {
-    lprintf("kernel_init(): Failed to initialize the garbage collector");
-    return -1;
-  }
+  // if (eff_mutex_init(&kernel.gc.mp) < 0) {
+  //   lprintf("kernel_init(): Failed to initialize the garbage collector");
+  //   return -1;
+  // }
 
   stack_queue_init(&kernel.gc.zombie_memory);
 

@@ -99,6 +99,14 @@ typedef struct kernel {
   /** @brief  Mutex used to ensure atomicity when printing to the console */
   eff_mutex_t console_mutex;
 
+  /** @brief  Mutex used by readline() to ensure that threads do not 
+   *          interleave */
+  eff_mutex_t print_mutex;
+
+  /** @brief  Mutex used by readline() to ensure that threads do not 
+   *          interleave */
+  eff_mutex_t readline_mutex;
+
   /** @brief  Count of the number of frames available
    *          (not used or requested for) */
   unsigned int free_frame_count;

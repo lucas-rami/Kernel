@@ -48,15 +48,6 @@
  *          larger than the console's size
  */
 int kern_readline(int len, char *buf) {
-  
-  // Synchronization primitives
-  static eff_mutex_t mutex;
-  static int mutex_initialized = CONSOLE_IO_FALSE;
-
-  // Synchronization primitives initialization
-  if (atomic_exchange(&mutex_initialized, CONSOLE_IO_TRUE) == CONSOLE_IO_FALSE){
-    assert(eff_mutex_init(&mutex) == 0);
-  }
 
   // Check length validity
   if (len < 0 || len > CONSOLE_IO_MAX_LEN) {
@@ -71,7 +62,7 @@ int kern_readline(int len, char *buf) {
   }
 
   // Block concurrent threads
-  eff_mutex_lock(&mutex);
+  eff_mutex_lock(&kernel.readline_mutex);
 
   // Update readline_t data structure in kernel state
   kernel.rl.buf = buf;
@@ -90,7 +81,7 @@ int kern_readline(int len, char *buf) {
   int ret = kernel.rl.len;   
 
   // Allow other threads to run
-  eff_mutex_unlock(&mutex);
+  eff_mutex_unlock(&kernel.readline_mutex);
 
   return ret;
 }
@@ -110,15 +101,6 @@ int kern_readline(int len, char *buf) {
  *          the console's size or if buf is not a valid memory address 
  */
 int kern_print(int len, char *buf) {
-
-  // Synchronization primitives
-  static eff_mutex_t mutex;
-  static int mutex_initialized = CONSOLE_IO_FALSE;
-
-  // Synchronization primitives initialization
-  if (atomic_exchange(&mutex_initialized, CONSOLE_IO_TRUE) == CONSOLE_IO_FALSE){
-    assert(eff_mutex_init(&mutex) == 0);
-  }
   
   // Check length validity
   if (len < 0 || len > CONSOLE_IO_MAX_LEN) {
@@ -133,7 +115,7 @@ int kern_print(int len, char *buf) {
   }
   
   // Block concurrent threads
-  eff_mutex_lock(&mutex);
+  eff_mutex_lock(&kernel.print_mutex);
 
   // Lock the mutex on the console
   eff_mutex_lock(&kernel.console_mutex);
@@ -148,7 +130,7 @@ int kern_print(int len, char *buf) {
   eff_mutex_unlock(&kernel.console_mutex);
 
   // Allow other threads to run
-  eff_mutex_unlock(&mutex);
+  eff_mutex_unlock(&kernel.print_mutex);
 
   return 0;
 }
