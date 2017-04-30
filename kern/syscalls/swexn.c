@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <virtual_memory.h>
+#include <virtual_memory_defines.h>
 #include <simics.h>
 #include <string.h>
 #include <kernel_state.h>
@@ -32,8 +33,7 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
   if (newureg != NULL) {
 
     // Check that the ureg_t structure is in user address space
-    if ((unsigned int)newureg < USER_MEM_START || 
-        is_buffer_valid((unsigned int)newureg, sizeof(ureg_t)) < 0) {
+    if (is_buffer_valid((unsigned int)newureg, sizeof(ureg_t), READ_ONLY) < 0) {
       lprintf("\tkern_swexn(): Invalid newureg buffer");
       return -1;
     }

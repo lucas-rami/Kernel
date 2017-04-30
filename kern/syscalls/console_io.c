@@ -30,7 +30,7 @@
 
 int kern_readline(int len, char *buf) {
   
-  // Synchronization variables
+  // Synchronization primitives
   static eff_mutex_t mutex;
   static int mutex_initialized = CONSOLE_IO_FALSE;
 
@@ -48,8 +48,7 @@ int kern_readline(int len, char *buf) {
   }
 
   // Check validity of buffer
-  if ((unsigned int) buf < USER_MEM_START ||
-      is_buffer_valid((unsigned int)buf, len) < 0) {
+  if (is_buffer_valid((unsigned int)buf, len, READ_WRITE) < 0) {
     lprintf("readline(): Invalid buffer");     
     return -1;
   }
@@ -67,9 +66,9 @@ int kern_readline(int len, char *buf) {
   kernel.current_thread->thread_state = THR_BLOCKED;
   context_switch(kernel.keyboard_consumer_thread);
 
-  // buf now contains the line of input
-  // kernel.rl.len contains the number of bytes written in the buffer
-  // kernel.rl.caller has been set to NULL
+  /* buf now contains the line of input
+   * kernel.rl.len contains the number of bytes written in the buffer
+   * kernel.rl.caller has been reset to NULL */
   
   int ret = kernel.rl.len;   
 
@@ -82,7 +81,7 @@ int kern_readline(int len, char *buf) {
 
 int kern_print(int len, char *buf) {
 
-  // Synchronization variables
+  // Synchronization primitives
   static eff_mutex_t mutex;
   static int mutex_initialized = CONSOLE_IO_FALSE;
 
@@ -98,8 +97,7 @@ int kern_print(int len, char *buf) {
   }
 
   // Check validity of buffer
-  if ((unsigned int) buf < USER_MEM_START ||
-      is_buffer_valid((unsigned int)buf, len) < 0) {
+  if (is_buffer_valid((unsigned int)buf, len, READ_ONLY) < 0) {
     lprintf("print(): Invalid buffer");     
     return -1;
   }
@@ -110,8 +108,8 @@ int kern_print(int len, char *buf) {
   // Lock the mutex on the console
   eff_mutex_lock(&kernel.console_mutex);
 
-  int i;
   // Print the buffer's content on the console
+  int i;
   for (i = 0 ; i < len ; ++i) {
     putbyte(buf[i]);
   }

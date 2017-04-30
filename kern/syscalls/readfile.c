@@ -6,6 +6,7 @@
 #include <loader.h>
 #include <common_kern.h>
 #include <virtual_memory.h>
+#include <virtual_memory_defines.h>
 
 /** @brief  Attempts to fill the user-specified buffer buf with count bytes 
  *          starting offset bytes from the beginning of the RAM disk file 
@@ -20,7 +21,7 @@
  *
  *  @param  filename   The name of the file to copy data from
  *  @param  buf        The buffer to copy the data into
- *  @param  count       The number of bytes to be copied
+ *  @param  count      The number of bytes to be copied
  *  @param  offset     The location in the file to begin copying from
  *
  *  @return The number of bytes stored in the buffer on success, a negative
@@ -34,8 +35,7 @@ int kern_readfile(char *filename, char *buf, int count, int offset) {
   }
 
   // Check that the buffer is valid
-  if ((unsigned int)buf < USER_MEM_START ||
-      is_buffer_valid((unsigned int)buf, count) < 0) {
+  if (is_buffer_valid((unsigned int)buf, count, READ_WRITE) < 0) {
     return -1;
   }
 

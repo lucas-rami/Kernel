@@ -64,4 +64,8 @@
 #define FIRST_TASK_TRUE 1
 #define FIRST_TASK_FALSE 0
 
+/* Constants for is_buffer_valid() function */
+#define READ_ONLY 0
+#define READ_WRITE 1
+
 #endif /* _VIRTUAL_MEMORY_DEFINES_H_ */

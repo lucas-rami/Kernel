@@ -1,4 +1,5 @@
 #include <virtual_memory.h>
+#include <virtual_memory_defines.h>
 #include <stdint.h>
 #include <simics.h>
 #include <stddef.h>
@@ -13,15 +14,16 @@
 
 int kern_wait(int *status_ptr) {
   
-  // Validation of args
-  if (is_buffer_valid((unsigned int)&status_ptr, sizeof(uintptr_t)) < 0) {
-    // status ptr isn't a valid memory address
-    lprintf("kern_wait(): Invalid args");
-  }
+  // // Validation of args
+  // if (is_buffer_valid((unsigned int)&status_ptr, sizeof(uintptr_t)) < 0) {
+  //   // status ptr isn't a valid memory address
+  //   lprintf("kern_wait(): Invalid args");
+  // }
 
   // If number of running children is less than or equal
-  // to number of waiitng threads, return err
-  if (status_ptr != NULL && is_buffer_valid((unsigned int)status_ptr, sizeof(int)) < 0) {
+  // to number of waiting threads, return err
+  if (status_ptr != NULL &&
+      is_buffer_valid((unsigned int)status_ptr, sizeof(int), READ_WRITE) < 0) {
     lprintf("The address status_ptr isn't valid");
     return -1;
   }

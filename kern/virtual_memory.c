@@ -25,6 +25,7 @@
 
 /* Debugging */
 #include <simics.h>
+#include <assert.h>
 
 #include <limits.h>
 
@@ -491,12 +492,26 @@ void vm_enable() {
 /** @brief  Checks whether the memory starting at a particular address and on a
  *          certain length lies withing the current task's address space
  *
- *  @param  address  A virtual address (the starting address)
- *  @param  len      The length, in bytes, to check for validity
+ *  The buffer must lie in user-space memory, on valid pages. If the read_only
+ *  parameter is READ_WRITE, then the pages containing the buffer must be
+ *  writable, otherwise the buffer is considered invalid.
+ *
+ *  @param  address     A virtual address (the starting address)
+ *  @param  len         The length, in bytes, to check for validity (> 0)
+ *  @param  read_only   Indicates whether the buffer should be in writable
+ *                      pages (either READ_ONLY or READ_WRITE)
  *
  *  @return 0 if the buffer is valid, a negative number otherwise
  */
-int is_buffer_valid(unsigned int address, int len) {
+int is_buffer_valid(unsigned int address, int len, int read_only) {
+
+  // Argument checking
+  assert(len > 0 && (read_only == READ_ONLY || read_only == READ_WRITE));
+
+  // Check that the buffer is in user-space
+  if (address < USER_MEM_START) {
+    return -1;
+  }
 
   // Get page directory entry of starting address
   unsigned int * page_dir_entry_addr = get_page_dir_entry(address);
@@ -513,6 +528,11 @@ int is_buffer_valid(unsigned int address, int len) {
   // Check that the entry is valid 
   if (!is_entry_present(page_table_entry_addr)) {
       return -1;
+  }
+
+  // Check for writable page
+  if (read_only == READ_WRITE && !(*page_table_entry_addr & PAGE_WRITABLE)) {
+    return -1;
   }
 
   // Decrement length by the remaining amount of space in the frame 
@@ -541,6 +561,12 @@ int is_buffer_valid(unsigned int address, int len) {
     if (!is_entry_present(page_table_entry_addr)) {
       return -1;
     }
+
+    // Check for writable page
+    if (read_only == READ_WRITE && !(*page_table_entry_addr & PAGE_WRITABLE)) {
+      return -1;
+    }
+
 
     // Decrement remaining length
     len -= PAGE_SIZE;
