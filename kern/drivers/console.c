@@ -158,7 +158,7 @@ void putbytes( const char *s, int len )
  *
  *  @return 0 on success, or -1 if color code is invalid.
  */
-int set_term_color( int color )
+int set_terminal_color( int color )
 {
 	if ( !is_valid_color( color ) ) {
 		// invalid color

@@ -58,7 +58,7 @@ void putbytes(const char* s, int len);
  *  @return 0 on success or integer error code less than 0 if
  *          color code is invalid.
  */
-int set_term_color(int color);
+int set_terminal_color(int color);
 
 /** @brief Writes the current foreground and background
  *         color of characters printed on the console

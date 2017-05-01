@@ -32,6 +32,11 @@ int kern_readline(int len, char *buf);
 int kern_print(int len, char *buf);
 int kern_getchar(void); // NOT IMPLEMENTED, ALWAYS RETURN ERROR
 
+/* Terminal */
+int kern_set_term_color(int color);
+int kern_set_cursor_pos(int row, int col);
+int kern_get_cursor_pos(int *row, int *col);
+
 /* Boolean values for readline() and print() */
 #define CONSOLE_IO_FALSE 0
 #define CONSOLE_IO_TRUE 1

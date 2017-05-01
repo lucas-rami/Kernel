@@ -151,27 +151,20 @@ int kernel_init() {
   // Initialize the runnable thread queue
   stack_queue_init(&kernel.runnable_queue);
 
-  // // Initialize the mutex for the functions in malloc_wrappers.c
-  // if (eff_mutex_init(&kernel.malloc_mutex) < 0) {
-  //   lprintf("kernel_init(): Failed to initialize mutex for malloc_wrappers.c");
-  //   return -1;
-  // }
+  // Initialize the garbage collector queue
+  stack_queue_init(&kernel.gc.zombie_memory);
 
-  // // Initialize the mutex for the functions printing to the console
-  // if (eff_mutex_init(&kernel.console_mutex) < 0) {
-  //   lprintf("kernel_init(): Failed to initialize mutex for the console");
-  //   return -1;
-  // }
 
   // Initialize all mutexes
-  assert( eff_mutex_init(&kernel.mutex) == 0 &&
-          eff_mutex_init(&kernel.malloc_mutex) == 0 &&
-          eff_mutex_init(&kernel.console_mutex) == 0 &&
-          eff_mutex_init(&kernel.print_mutex) == 0 &&
-          eff_mutex_init(&kernel.readline_mutex) == 0 &&
-          eff_mutex_init(&kernel.gc.mp) == 0);
-
-  lprintf("Kernel malloc mutex is %p", &kernel.malloc_mutex);
+  if( eff_mutex_init(&kernel.mutex) < 0 ||
+      eff_mutex_init(&kernel.malloc_mutex) < 0 ||
+      eff_mutex_init(&kernel.console_mutex) < 0 ||
+      eff_mutex_init(&kernel.print_mutex) < 0 ||
+      eff_mutex_init(&kernel.readline_mutex) < 0 ||
+      eff_mutex_init(&kernel.gc.mp) < 0 ) {
+    lprintf("\tkernel_init(): Mutexes initializzation failed");
+    return -1;
+  }
 
   // Initialize the PCBs hash table
   if (hash_table_init(&kernel.pcbs, NB_BUCKETS, find_pcb, hash_function_pcb) <
@@ -186,20 +179,6 @@ int kernel_init() {
     lprintf("kernel_init(): Failed to initialize hash table for TCBs");
     return -1;
   }
-
-  // // Initialize the kernel mutex
-  // if (eff_mutex_init(&kernel.mutex) < 0) {
-  //   lprintf("kernel_init(): Failed to initialize mutex");
-  //   return -1;
-  // }
-  // lprintf("Kernel mutex is %p", &kernel.mutex);
-
-  // if (eff_mutex_init(&kernel.gc.mp) < 0) {
-  //   lprintf("kernel_init(): Failed to initialize the garbage collector");
-  //   return -1;
-  // }
-
-  stack_queue_init(&kernel.gc.zombie_memory);
 
   // Create the idle thread
   kernel.idle_thread = create_idle_thread();

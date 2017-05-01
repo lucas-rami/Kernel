@@ -39,7 +39,8 @@ int idt_syscall_install() {
                           (uintptr_t)vanish, (uintptr_t)wait,
                           (uintptr_t)sleep, (uintptr_t)set_status,
                           (uintptr_t)get_ticks, (uintptr_t)halt,
-                          (uintptr_t)readfile
+                          (uintptr_t)readfile, (uintptr_t)set_term_color,
+                          (uintptr_t)set_cursor_pos, (uintptr_t)get_cursor_pos
                           };
 
   // List of offsets in the IDT corresponding to syscalls
@@ -48,7 +49,8 @@ int idt_syscall_install() {
                             NEW_PAGES_INT, REMOVE_PAGES_INT, READLINE_INT, 
                             PRINT_INT, SWEXN_INT, VANISH_INT, WAIT_INT, 
                             SLEEP_INT, SET_STATUS_INT, GET_TICKS_INT, HALT_INT,
-                            READFILE_INT
+                            READFILE_INT, SET_TERM_COLOR_INT, 
+                            SET_CURSOR_POS_INT, GET_CURSOR_POS_INT
                             };
 
   // TODO: create a similar array to differentiate between TRAP and INTERRUPT

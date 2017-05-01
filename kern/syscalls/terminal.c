@@ -14,7 +14,7 @@
 
 int kern_set_term_color(int color) {
   eff_mutex_lock(&kernel.console_mutex);
-  int ret = set_color(color);
+  int ret = set_terminal_color(color);
   eff_mutex_unlock(&kernel.console_mutex);
   return ret;
 }
