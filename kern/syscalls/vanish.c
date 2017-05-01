@@ -61,6 +61,11 @@ void kern_vanish() {
     
     eff_mutex_lock(&curr_task->list_mutex);
 
+    // Update number of running children for init
+    eff_mutex_lock(&kernel.init_task->list_mutex);
+    kernel.init_task->num_running_children += curr_task->num_running_children;
+    eff_mutex_unlock(&kernel.init_task->list_mutex);
+    
     // Mark all running children's parent as init
     generic_node_t *temp = curr_task->running_children.head;
     while(temp != NULL) {
@@ -73,19 +78,14 @@ void kern_vanish() {
 
     eff_mutex_unlock(&curr_task->list_mutex);
 
-    // Update number of running children for init
-    eff_mutex_lock(&kernel.init_task->list_mutex);
-    kernel.init_task->num_running_children += curr_task->num_running_children;
-    eff_mutex_unlock(&kernel.init_task->list_mutex);
-    
+    // Free any user space memory being used by this task
     unsigned int *cr3 = (unsigned int *)kernel.current_thread->cr3;
     kernel.current_thread->cr3 = kernel.init_cr3;
     set_cr3(kernel.init_cr3);
     free_address_space(cr3, KERNEL_AND_USER_SPACE);
 
+    // Update the kernel count of frames
     release_frames(curr_task->num_of_frames_requested);
-
-    eff_mutex_unlock(&kernel.mutex);
 
     // Delete the linked list allocations which we store for new pages
     linked_list_delete_list(&kernel.current_thread->task->allocations);
@@ -95,11 +95,14 @@ void kern_vanish() {
     generic_node_t *curr_zombie_list = curr_task->zombie_children.head;
 
     if (curr_zombie_list != NULL) {
+      // At least 1 zombie child of this task
       eff_mutex_lock(&kernel.init_task->list_mutex);
       generic_node_t *init_zombie_tail = kernel.init_task->zombie_children.tail;
       if (init_zombie_tail == NULL) {
+        // Init has no zombie child. Make its list's head as that of mine
         init_zombie_tail = (kernel.init_task->zombie_children.head = curr_zombie_list);
       } else {
+        // Init at least has one zombie child. Append my list
         init_zombie_tail->next = curr_zombie_list;
       }
       eff_mutex_unlock(&kernel.init_task->list_mutex);
@@ -131,16 +134,16 @@ void kern_vanish() {
       curr_task->parent->num_running_children--;
       curr_task->parent->num_waiting_threads--;
 
-      while (kern_make_runnable(wait_thread->tid) < 0) {
-        lprintf("Make runnable failing");
-      }
+      while (kern_make_runnable(wait_thread->tid) < 0);
     }
   } 
 
+  // Remove the tcb from the hashmap
   hash_table_remove_element(&kernel.tcbs, kernel.current_thread);
 
   eff_mutex_lock(&kernel.gc.mp);
 
+  // Free everything in the garbage collector queue at this time
   generic_node_t *delete_zombie_mem;
   while((delete_zombie_mem = stack_queue_dequeue(&kernel.gc.zombie_memory)) != NULL) {
     free((tcb_t*)delete_zombie_mem->value);
@@ -149,10 +152,12 @@ void kern_vanish() {
   generic_node_t tmp_delete;
   tmp_delete.value = kernel.current_thread;
   tmp_delete.next = NULL;
+  // Enqueue the tcb for the current thread in the garbage collector queue
   stack_queue_enqueue(&kernel.gc.zombie_memory, &tmp_delete);
 
   if (is_last_thread != LAST_THREAD_TRUE) {
     // The stack of the last thread will be freed by the wait call
+    // Otherwise, add the kernel stack to the garbage collector queue
     generic_node_t tmp_delete2;
     tmp_delete2.value = (char*)(kernel.current_thread->esp0 - PAGE_SIZE);
     tmp_delete2.next = NULL;
@@ -161,9 +166,12 @@ void kern_vanish() {
 
   disable_interrupts();
 
-  // Interrupts are disabled so no one can delete this kernel stack/tcb before context switch
+  // Interrupts are disabled so no one can delete this kernel stack/tcb 
+  // before context switch
   eff_mutex_unlock(&kernel.gc.mp);
+
   if (is_last_thread == LAST_THREAD_TRUE) {
+    // Unlock the parent's list mutex
     eff_mutex_unlock(&curr_task->parent->list_mutex);
   }
 

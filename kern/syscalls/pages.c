@@ -44,7 +44,6 @@ static int free_frames_zfod(void* base);
  */
 int kern_new_pages(void *base, int len) {
 
-  lprintf("\tkern_new_pages(): Base addr is %p, Length is %d", base, len);
   // Check that the 'len' argument is valid
   if (len <= 0 || len % PAGE_SIZE != 0) {
     lprintf("\tkern_new_pages(): Invalid len argument");

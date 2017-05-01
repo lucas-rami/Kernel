@@ -114,8 +114,6 @@ int kern_fork(unsigned int *esp) {
   new_tcb->esp = (uint32_t) initialize_stack_fork(kernel.current_thread->esp0,
                                                   esp0, esp, new_tcb);
 
-  // lprintf("\tkern_fork(): Thread %d forking %d", kernel.current_thread->tid, new_tcb->tid);
-
   // Make the thread runnable
   add_runnable_thread(new_tcb);
 
@@ -249,9 +247,7 @@ static unsigned int * copy_memory_regions() {
 
     // If the page directory entry is present
     if (is_entry_present(orig_dir_entry)) {
-      lprintf("Copying directory entry %p to %p", orig_dir_entry, new_dir_entry);
 
-      // TODO: not using the static pages for direct mapped kernel memory
       unsigned int *orig_page_table_addr = get_page_table_addr(orig_dir_entry);
       unsigned int *new_page_table_addr = 
                       create_page_table(new_dir_entry, DIRECTORY_FLAGS, FIRST_TASK_FALSE);
