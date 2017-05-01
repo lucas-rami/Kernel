@@ -123,6 +123,12 @@ int kern_print(int len, char *buf) {
   int i;
   for (i = 0 ; i < len ; ++i) {
     putbyte(buf[i]);
+    // if (kernel.rl.caller != NULL) {
+    //   if (kernel.rl.key_index < CONSOLE_IO_MAX_LEN) {
+    //   kernel.rl.key_buf[kernel.rl.key_index] = buf[i];
+    // }
+    //   ++kernel.rl.key_index;
+    // }
   }
 
   // Unlock the mutex on the console
