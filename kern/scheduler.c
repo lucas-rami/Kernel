@@ -41,8 +41,8 @@ tcb_t *next_thread() {
 /** @brief  Enqueues the invoking thread in the queue of runnable threads and
  *          context switch to the next thread in the queue
  *
- *  If the invoking thread is the idle thread, then it is not added to the queue
- *  of runnable threads. 
+ *  If the invoking thread is the idle thread, then it is not added to the 
+ *  queue of runnable threads. 
  *
  *  @return void
  */
@@ -59,8 +59,6 @@ void make_runnable_and_switch() {
     return;
   }
 
-  lprintf("\tmake_runnable_and_switch(): Enqueueing %d", kernel.current_thread->tid);  
-
   generic_node_t new_tail = {kernel.current_thread, NULL};
   stack_queue_enqueue(&kernel.runnable_queue, &new_tail);
 
@@ -68,9 +66,9 @@ void make_runnable_and_switch() {
   
 }
 
-/** @brief  Blocks the invoking thread and then context switch to another thread
+/** @brief  Blocks the invoking thread and context switches to another thread
  *
- *  @param  holding_mutex Indicates whether the function should unlock the mutex
+ *  @param  holding_mutex Indicates whether the function should unlock mutex
  *                        on the invoking thread's state
  *  @param  mp            A pointer to an eff_mutex to unlock depending on the
  *                        value of holding_mutex
@@ -82,8 +80,6 @@ void block_and_switch(int holding_mutex, eff_mutex_t *mp) {
   assert(kernel.current_thread != NULL && kernel.init == KERNEL_INIT_TRUE);
 
   disable_interrupts();
-
-  lprintf("\tblock_and_switch(): Blocking thread %d", kernel.current_thread->tid);
 
   if (holding_mutex == HOLDING_MUTEX_TRUE) {
     eff_mutex_unlock(mp);
@@ -118,8 +114,6 @@ void add_runnable_thread(tcb_t *tcb) {
     return;
   }
 
-  lprintf("\tadd_runnable_thread(): Thread %d adding %d to runnable queue", kernel.current_thread->tid, tcb->tid);
-
   disable_interrupts();
 
   // Should not happen
@@ -144,8 +138,8 @@ void add_runnable_thread(tcb_t *tcb) {
 /** @brief  Forces the kernel to run a particular thread
  *
  *  The function performs a context switch to a particular thread given as
- *  argument, overriding the scheduler's normal behavior. The invoking thread is
- *  put in the queue of runnable threads.
+ *  argument, overriding the scheduler's normal behavior. The invoking thread
+ *  is put in the queue of runnable threads.
  *  
  *  @param  force_next_tcb The TCB of the thread to run next
  *
@@ -159,8 +153,6 @@ void force_next_thread(tcb_t *force_next_tcb) {
   disable_interrupts();    
 
   eff_mutex_unlock(&force_next_tcb->mutex);  
-
-  lprintf("force_next_thread(): Forcing thread %d", force_next_tcb->tid);
 
   kernel.current_thread->thread_state = THR_RUNNABLE;
 

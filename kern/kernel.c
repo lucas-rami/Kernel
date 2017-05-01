@@ -70,15 +70,12 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
     assert(0);
   }
 
-  // lprintf("\tkernel_main(): Creating first task");
-
   kernel.zeroed_out_frame = (unsigned int) allocate_frame();
-  lprintf("The zeroed out frame is %p", (char*)kernel.zeroed_out_frame);
   if (kernel.zeroed_out_frame == 0) {
     lprintf("Zeroed out frame couldn't be allocated");
     assert(0);
   }
-  // lprintf("The first int at %p is %p", (char*)kernel.zeroed_out_frame, (char*)(*(unsigned int *)kernel.zeroed_out_frame));
+
   memset((char*)kernel.zeroed_out_frame, 0, PAGE_SIZE);
 
   // Create the initial task and load everything into memory
@@ -89,8 +86,6 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
 
   // Clear the console before running anything
   clear_console();
-
-  lprintf("\tkernel_main(): Running idle thread...");
 
   kernel.kernel_ready = KERNEL_READY_TRUE;
 
@@ -108,7 +103,6 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp) {
  *  @return Does not return
  */
 static void idle() {
-  lprintf("\tidle(): Idle task running");
   enable_interrupts();
   
   while (1) {

@@ -29,8 +29,8 @@ int atomic_add_and_update(void *i, uint32_t j);
  */
 int atomic_exchange(void* addr, uint32_t value);
 
-/** @brief  Atomically modifies the value pointed to by addr with new_val if the
- *          value stored at addr is old_val   
+/** @brief  Atomically modifies the value pointed to by addr with new_val if
+ *          the value stored at addr is old_val   
  *
  *  @param  addr      The variable's address
  *  @param  old_val   The value that we expect at addr

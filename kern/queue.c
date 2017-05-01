@@ -3,7 +3,7 @@
  *   and extract characters from the static buffer "queue" of all the 
  *   characters typed on the keyboard maintained by the kernel.
  *
- *  @author Anirudh Kanjani
+ *  @author akanjani, lramire1
  */
 
 #include <queue.h>
@@ -33,16 +33,15 @@ int front = 0, rear = 0;
  *   
  *  @return A negative error code on error, or 0 on success
  **/
-int enqueue( uint8_t ch )
-{
-	int new_rear = ( rear + 1 ) % QUEUE_SIZE;
-	if ( new_rear == front ) {
-		// queue is full
-		return -1;
-	}
-	queue[rear] = ch;
-	rear = new_rear;
-	return 0;
+int enqueue(uint8_t ch) {
+  int new_rear = (rear + 1) % QUEUE_SIZE;
+  if (new_rear == front) {
+    // queue is full
+    return -1;
+  }
+  queue[rear] = ch;
+  rear = new_rear;
+  return 0;
 }
 
 /** @brief The function to remove the character from the cyclic buffer
@@ -54,13 +53,12 @@ int enqueue( uint8_t ch )
  *   
  *  @return A negative error code on error, or 0 on sucess
  **/
-int dequeue()
-{
-	if ( front == rear ) {
-		// empty qeueue
-		return -1;
-	}
-	int ret = ( int )queue[front];
-	front = ( front + 1 ) % QUEUE_SIZE;
-	return ret;
+int dequeue() {
+  if (front == rear) {
+    // empty qeueue
+    return -1;
+  }
+  int ret = (int)queue[front];
+  front = (front + 1) % QUEUE_SIZE;
+  return ret;
 }

@@ -123,8 +123,8 @@ int load_every_segment(const simple_elf_t *elf, unsigned int *cr3) {
     return -1;
   }
   // BSS segment
-  if (load_segment(elf->e_fname, 0, elf->e_bsslen, elf->e_bssstart, SECTION_BSS,
-      cr3) < 0) {
+  if (load_segment(elf->e_fname, 0, elf->e_bsslen, elf->e_bssstart, 
+      SECTION_BSS, cr3) < 0) {
     return -1;
   }
   // STACK
@@ -184,7 +184,8 @@ int load_segment(const char *fname, unsigned long offset, unsigned long size,
     }
 
     // Allocate a frame in user-space memory
-    frame_addr = load_frame(addr, type, page_table_directory, FIRST_TASK_FALSE);
+    frame_addr = load_frame(addr, type, page_table_directory, 
+                            FIRST_TASK_FALSE);
 
     if (frame_addr == NULL) {
       // There is no frame left in user space memory
@@ -249,7 +250,8 @@ void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3,
   if (!is_entry_present(page_directory_entry_addr)) {
 
     // In case there is no kernel memory left
-    if (create_page_table(page_directory_entry_addr, DIRECTORY_FLAGS, is_first_task) == NULL) {
+    if (create_page_table(page_directory_entry_addr, DIRECTORY_FLAGS,
+                          is_first_task) == NULL) {
       return NULL;
     }
 
@@ -326,8 +328,8 @@ void *load_frame(unsigned int address, unsigned int type, unsigned int *cr3,
  *  then the page directory itself is freed. 
  *  A task should not call this function with the address of its page directory
  *  and the 'free_kernel_space' parameter set to KERNEL_AND_USER_SPACE.
- *  A task calling this function with the address of its page directory and the 
- *  'free_kernel_space' parameter set to USER_SPACE_ONLY should never return to 
+ *  A task calling this function with the address of its page directory and the
+ *  'free_kernel_space' parameter set to USER_SPACE_ONLY should never return to
  *  user space afterwards.
  *
  *  @param  page_directory_addr   The page table's address
@@ -358,7 +360,7 @@ int free_address_space(unsigned int *page_directory_addr,
              free_kernel_space) == 0) {
         // If the page table has been freed, invalidate the page dir. entry
         set_entry_invalid(page_directory_entry_addr, get_virtual_address(
-          page_directory_addr, get_page_table_addr(page_directory_entry_addr)));
+         page_directory_addr, get_page_table_addr(page_directory_entry_addr)));
       } else {
         something_remaining = 1;
       }
@@ -366,7 +368,7 @@ int free_address_space(unsigned int *page_directory_addr,
 
   }
   if (!something_remaining) {
-    // If all entries have been invalidated, free the page directory from memory
+    // If all entries have been invalidated,free the page directory from memory
     sfree(page_directory_addr, PAGE_SIZE);
     return 0;
   }
@@ -443,7 +445,7 @@ int free_page_table(unsigned int * page_dir_entry_addr,
  *  normally.
  *
  *  @param  address    A virtual address
- *  @param  nb_frames  The number of frames to free from the starting address     
+ *  @param  nb_frames  The number of frames to free from the starting address
  *
  *  @return void
  */
@@ -499,14 +501,15 @@ void vm_enable() {
  *  @param  address     A virtual address (the starting address)
  *  @param  len         The length, in bytes, to check for validity (> 0)
  *  @param  read_only   Indicates whether the buffer should be in writable
- *                      pages (either READ_ONLY or READ_WRITE)
+ *                      pages (either READ_ONLY, AT_LEAST_READ or READ_WRITE)
  *
  *  @return 0 if the buffer is valid, a negative number otherwise
  */
 int is_buffer_valid(unsigned int address, int len, int read_only) {
 
   // Argument checking
-  assert(len > 0 && (read_only == READ_ONLY || read_only == READ_WRITE));
+  assert(len > 0 && (read_only == READ_ONLY || read_only == AT_LEAST_READ || 
+              read_only == READ_WRITE));
 
   // Check that the buffer is in user-space
   if (address < USER_MEM_START) {
@@ -530,8 +533,10 @@ int is_buffer_valid(unsigned int address, int len, int read_only) {
       return -1;
   }
 
-  // Check for writable page
+  // Check for rw rights
   if (read_only == READ_WRITE && !(*page_table_entry_addr & PAGE_WRITABLE)) {
+    return -1;
+  } else if(read_only == READ_ONLY && (*page_table_entry_addr & PAGE_WRITABLE)){
     return -1;
   }
 
@@ -549,8 +554,8 @@ int is_buffer_valid(unsigned int address, int len, int read_only) {
       ++page_dir_entry_addr;
       if (!((unsigned int)page_table_entry_addr & FRAME_OFFSET_MASK) ||
           !is_entry_present(page_dir_entry_addr)) {
-        // If the directory entry was the last one or the current one is invalid
-        // then the buffer is invalid
+        // If the directory entry was the last one or the current one is 
+        // invalid, then the buffer is invalid
         return -1;
       }
       // Get next page table 
@@ -562,8 +567,10 @@ int is_buffer_valid(unsigned int address, int len, int read_only) {
       return -1;
     }
 
-    // Check for writable page
+    // Check for rw rights
     if (read_only == READ_WRITE && !(*page_table_entry_addr & PAGE_WRITABLE)) {
+      return -1;
+    } else if(read_only == READ_ONLY && (*page_table_entry_addr & PAGE_WRITABLE)){
       return -1;
     }
 

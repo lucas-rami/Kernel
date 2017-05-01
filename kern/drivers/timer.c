@@ -4,7 +4,7 @@
  *   This file contains the implementation of the c interrupt handler and
  *   initializing function for the time interrupt.
  *
- *  @author Anirudh Kanjani
+ *  @author akanjani, lramire1
  */
 
 #include <stdio.h>

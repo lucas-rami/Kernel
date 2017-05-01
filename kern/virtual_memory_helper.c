@@ -71,7 +71,7 @@ void set_entry_invalid(unsigned int *entry_addr, unsigned int address) {
  *  @return The address of the newly created page table
  */
 unsigned int *create_page_table(unsigned int *page_directory_entry_addr, 
-                                uint32_t flags, int is_first_task) {                          
+                                uint32_t flags, int is_first_task) {
   unsigned int *page_table_entry_addr;
   if (is_first_task != FIRST_TASK_TRUE) {
 
@@ -133,7 +133,7 @@ unsigned int *create_page_table_entry(unsigned int *page_table_entry_addr,
     lprintf("create_page_table_entry(): Unable to allocate new frame");
     return NULL;
   }
-  *page_table_entry_addr = ((unsigned int)physical_frame_addr & PAGE_ADDR_MASK);
+  *page_table_entry_addr = (unsigned int)physical_frame_addr & PAGE_ADDR_MASK;
   *page_table_entry_addr |= flags;
   return physical_frame_addr;
 }
@@ -170,10 +170,10 @@ unsigned int *get_page_dir_entry(unsigned int address) {
   return (unsigned int*)(kernel.current_thread->cr3) + offset;
 }
 
-/** @brief  Gets the entry related to a particular virtual address in a page table
- *
- *  @param  page_directory_entry_addr   The page directory entry pointing to the
- *                                      page table
+/** @brief  Gets the entry related to a particular virtual address in a page
+ *          table
+ *  @param  page_directory_entry_addr   The page directory entry pointing to
+ *                                      the page table
  *  @param  address                     A virtual address
  *
  *  @return The page table entry related to the virtual address
@@ -199,8 +199,8 @@ uint32_t get_entry_flags(unsigned int *entry_addr) {
   return *entry_addr & PAGE_FLAGS_MASK;
 }
 
-/** @brief  Gets the virtual address associated with a physical frame, given the
- *          entries in the page directory/table that map to this frame
+/** @brief  Gets the virtual address associated with a physical frame, given
+ *          the entries in the page directory/table that map to this frame
  *
  *  @param  page_directory_entry_addr The address of the page directory entry
  *  @param  page_table_entry_addr The address of the page table entry
@@ -260,7 +260,7 @@ int free_frame(unsigned int* addr) {
   return 0;
 }
 
-/** @brief  Marks the page table entry for virtual address passed as a parameter
+/** @brief  Marks the page table entry for virtual address passed as parameter
  *          as requested by new_pages so that we can differentiate between a 
  *          valid and invalid page fault in the page fault handler
  *
@@ -288,12 +288,10 @@ int mark_address_requested(unsigned int address) {
     return -1;
   }
 
-  lprintf("Marking address %p requested", (char*)address);
   *page_table_entry_addr = (kernel.zeroed_out_frame & PAGE_ADDR_MASK);
   *page_table_entry_addr |= PAGE_TABLE_RESERVED_BIT;
   *page_table_entry_addr |= PAGE_USER_RO_FLAGS;
 
-  // lprintf("The value at the address now is %p", ((char*)(*(unsigned int *))));
   return 0;
 }
 
@@ -314,7 +312,6 @@ int mark_address_range_requested(unsigned int address, unsigned int count) {
   int i;
   for(i = 0; i < count; i++) {
     if (mark_address_requested(address + (i * PAGE_SIZE)) < 0) {
-      // TODO: Reset all the previous page table entries marked as requested
       lprintf("mark_address_range_requested(): mark_address_requested failed");
       return -1;
     }
@@ -323,8 +320,8 @@ int mark_address_range_requested(unsigned int address, unsigned int count) {
 }
 
 /** @brief  Checks if the address passed as a parameter is already requested
- *          for through new_pages or not. If yes, a new frame is allocated and 0
- *          is returned. Otherwise, a negative value is returned 
+ *          for through new_pages or not. If yes, a new frame is allocated and
+ *          0 is returned. Otherwise, a negative value is returned 
  *
  *  @param  address The virtual address for which we need to find if a frame is
  *                  allocated or not
@@ -347,16 +344,13 @@ int allocate_frame_if_address_requested(unsigned int address) {
       get_page_table_entry(page_directory_entry_addr, address);
 
   if (is_page_requested(page_table_entry_addr)) {
-    lprintf("Address requested earlier %p",(char*)address );
     if (create_page_table_entry(page_table_entry_addr, PAGE_USER_FLAGS) 
         < 0) {
       // Error while allocating a frame
       // SHOULD NEVER HAPPEN
-      lprintf("check_if_address_requested(): create_page_table_entry failed");
       return -1;
     }
   } else {
-    lprintf("Address not requested earlier %p",(char*)address );
     return -1;
   }
 

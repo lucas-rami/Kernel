@@ -1,4 +1,4 @@
-/** @file idt_syscall.h
+/** @file idt_syscall.c
  *  @brief  This file contains the defintions for functions used to register
  *          the system calls handlers into the IDT.
  *  @author akanjani, lramire1
@@ -52,9 +52,6 @@ int idt_syscall_install() {
                             READFILE_INT, SET_TERM_COLOR_INT, 
                             SET_CURSOR_POS_INT, GET_CURSOR_POS_INT
                             };
-
-  // TODO: create a similar array to differentiate between TRAP and INTERRUPT
-  // gates
 
   int nb_syscalls = sizeof(syscalls) / sizeof(uintptr_t);
   int i;

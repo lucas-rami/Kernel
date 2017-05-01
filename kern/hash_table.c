@@ -9,7 +9,6 @@
 #include <hash_table.h>
 #include <linked_list.h>
 #include <stdlib.h>
-#include <mutex.h>
 
 /* Debugging */
 #include <simics.h>
@@ -31,7 +30,8 @@ int hash_table_init(generic_hash_table_t *hash_table, unsigned int nb_buckets,
                     unsigned int (*hash_function)(void *, unsigned int)) {
 
   // Check validity of arguments
-  if (hash_table == NULL || nb_buckets <= 0 || find == NULL || hash_function == NULL) {
+  if (hash_table == NULL || nb_buckets <= 0 || find == NULL || 
+      hash_function == NULL) {
     return -1;
   }
 
@@ -70,13 +70,14 @@ int hash_table_init(generic_hash_table_t *hash_table, unsigned int nb_buckets,
 int hash_table_add_element(generic_hash_table_t *hash_table, void *elem) {
 
   // Check validity of arguments
-  if (hash_table == NULL || hash_table->hash_function == NULL || elem == NULL) {
+  if (hash_table == NULL || hash_table->hash_function == NULL || elem == NULL)
+  {
     return -1;
   }
 
   // Compute in which bucket the element will go
-  unsigned int bucket = hash_table->hash_function(elem, hash_table->nb_buckets);
-  // lprintf("\tAdding into bucket %u (hash_table = %p, elem = %d, nb_buckets = %u)", bucket, hash_table, (int)elem, hash_table->nb_buckets);
+  unsigned bucket = hash_table->hash_function(elem, hash_table->nb_buckets);
+
   if (bucket < 0 || bucket >= hash_table->nb_buckets) {
     return -1;
   }
@@ -100,13 +101,14 @@ int hash_table_add_element(generic_hash_table_t *hash_table, void *elem) {
 void *hash_table_remove_element(generic_hash_table_t *hash_table, void *elem) {
 
   // Check validity of arguments
-  if (hash_table == NULL || hash_table->hash_function == NULL || elem == NULL) {
+  if (hash_table == NULL || hash_table->hash_function == NULL || elem == NULL)
+  {
     return NULL;
   }
 
   // Compute in which bucket the element could be
-  unsigned int bucket = hash_table->hash_function(elem, hash_table->nb_buckets);
-  // lprintf("\tRemoving from bucket %u (hash_table = %p, elem = %d, nb_buckets = %u)", bucket, hash_table, (int)elem, hash_table->nb_buckets);
+  unsigned bucket = hash_table->hash_function(elem, hash_table->nb_buckets);
+
   if (bucket < 0 || bucket >= hash_table->nb_buckets) {
     return NULL;
   }
@@ -124,13 +126,14 @@ void *hash_table_remove_element(generic_hash_table_t *hash_table, void *elem) {
 void *hash_table_get_element(generic_hash_table_t *hash_table, void *elem) {
 
   // Check validity of arguments
-  if (hash_table == NULL || hash_table->hash_function == NULL || elem == NULL) {
+  if (hash_table == NULL || hash_table->hash_function == NULL || elem == NULL)
+  {
     return NULL;
   }
 
   // Compute in which bucket the element could be
-  unsigned int bucket = hash_table->hash_function(elem, hash_table->nb_buckets);
-  // lprintf("\tGetting from bucket %u (hash_table = %p, elem = %d, nb_buckets = %u)", bucket, hash_table, (int)elem, hash_table->nb_buckets);
+  unsigned bucket = hash_table->hash_function(elem, hash_table->nb_buckets);
+
   if (bucket < 0 || bucket >= hash_table->nb_buckets) {
     return NULL;
   }

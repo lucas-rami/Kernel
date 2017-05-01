@@ -1,7 +1,7 @@
 /** @file keyboard_asm.S
  *  @brief The file which contains the handler of the keyboard interrupt
  *
- *  @author Anirudh Kanjani
+ *  @author akanjani, lramire1
  */
 
 # Ensure that the symbol keyboard_interrupt_handler is accessible via C code

@@ -27,8 +27,6 @@ void context_switch(tcb_t* to) {
   // Get the invoking thred's TCB
   tcb_t *me = kernel.current_thread;
 
-  // lprintf("\t\tCONTEXT SWITCH: %d -> %d", me->tid, to->tid);
-
   // Context switch to the other thread
   context_switch_asm(&kernel.current_thread->esp, &to->esp);
 
@@ -53,7 +51,8 @@ void init_thread(tcb_t* to) {
 
   // Update the kernel state
   kernel.current_thread = to;
-  kernel.cpu_idle = (to == kernel.idle_thread) ? CPU_IDLE_TRUE : CPU_IDLE_FALSE;
+  kernel.cpu_idle = (to == kernel.idle_thread) ? CPU_IDLE_TRUE : 
+    CPU_IDLE_FALSE;
 
   // Update the thread's state
   to->thread_state = THR_RUNNING;
@@ -61,8 +60,6 @@ void init_thread(tcb_t* to) {
   // Update cr3 and esp0 registers
   set_cr3(to->cr3);
   set_esp0(to->esp0);
-
-  // lprintf("\tinit_thread(): Thread %d running", to->tid);
 
   enable_interrupts();
 }

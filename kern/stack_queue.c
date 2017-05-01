@@ -1,5 +1,5 @@
 /** @file stack_queue.c
- *  @brief  This file contains the implementation of functions used to modify a 
+ *  @brief  This file contains the implementation of functions used to modify 
  *          stack_queue_t data structure.
  *  @author akanjani, lramire1
  */

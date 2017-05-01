@@ -6,11 +6,10 @@
 #ifndef _EFF_MUTEX_H_
 #define _EFF_MUTEX_H_
 
-#include <mutex.h>
-#include <cond_var.h>
-
 #define MUTEX_LOCKED 1
 #define MUTEX_UNLOCKED 0
+
+#include <stack_queue.h>
 
 /** @brief A mutex implementation using a waiting queue */
 typedef struct eff_mutex {

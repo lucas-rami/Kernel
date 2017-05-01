@@ -5,7 +5,6 @@
  */
 
 #include <atomic_ops.h>
-#include <cond_var.h>
 #include <malloc.h>
 #include <malloc_internal.h>
 #include <stddef.h>
@@ -28,7 +27,7 @@ void *malloc(size_t size) {
 
 /** @brief  Wrapper function for _memalign() (thread-safe)
  *
- *  @param  alignment The alignment to use (must be a multiple of sizeof(void*))
+ *  @param  alignment The alignment to use(must be a multiple of sizeof(void*))
  *  @param  size      The amount of space to allocate, in bytes
  *
  *  @return The start address of the newly allocated memory on success, NULL
@@ -100,7 +99,7 @@ void *smalloc(size_t size) {
 
 /** @brief  Wrapper function for _smemalign() (thread-safe)
  *
- *  @param  alignment The alignment to use (must be a multiple of sizeof(void*))
+ *  @param  alignment The alignment to use(must be a multiple of sizeof(void*))
  *  @param  size      The amount of space to allocate, in bytes
  *
  *  @return The start address of the newly allocated memory on success, NULL

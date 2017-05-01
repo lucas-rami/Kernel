@@ -1,10 +1,9 @@
-/** @file kernel_state.h
+/** @file kernel_state.c
  *  @brief This file contains the definitions for the kernel_state_t data
  *  structure and the functions to act on it.
  *  @author akanjani, lramire1
  */
 
-#include <cond_var.h>
 #include <kernel_state.h>
 #include <stdlib.h>
 #include <page.h>
@@ -286,7 +285,7 @@ pcb_t *create_new_pcb() {
 /** @brief  Creates a new TCB and add it to the TCBs hash table
  *  
  *  The number of frames requested is set to 0 and the thread's state to 
- *  THR_UNINITALIZED. The esp field is set to 0 and should be modified when the 
+ *  THR_UNINITALIZED. The esp field is set to 0 and should be modified when the
  *  thread's stack is manually crafted. The new TCB is added to the hash table 
  *  of TCBs. If the handler argument is not NULL, an exception handler is
  *  registered for the new thread.
@@ -322,7 +321,7 @@ tcb_t *create_new_tcb(pcb_t *pcb, uint32_t esp0, uint32_t cr3,
   // Set various fields to their initial value
   new_tcb->task = pcb;
   new_tcb->thread_state = THR_UNINITALIZED; 
-  new_tcb->esp = 0; // Should be modified when the new thread's stack is created
+  new_tcb->esp = 0; // Should be modified when new thread's stack is created
   new_tcb->esp0 = esp0;
   new_tcb->cr3 = cr3;
   new_tcb->num_of_frames_requested = 0;
@@ -466,7 +465,14 @@ int find_alloc(void* alloc, void* base) {
   return 0;
 }
 
-// TODO
+/** @brief Find a PCB in the linked list
+ *
+ *  @param tcb A task's PCB
+ *  @param tid The value in the linked list
+ *
+ *  @return 1 if the PCB address is the same as the one stored in the 
+ *            linked list, 0 otherwise
+ */
 int find_pcb_ll(void *pcb1, void *pcb2) {
   return (uint32_t)pcb1 == (uint32_t)pcb2;
 }

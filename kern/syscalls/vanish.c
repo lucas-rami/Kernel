@@ -2,7 +2,6 @@
 #include <kernel_state.h>
 #include <eff_mutex.h>
 #include <cr.h>
-#include <dynamic_queue.h>
 #include <linked_list.h>
 #include <stddef.h>
 #include <pcb.h>

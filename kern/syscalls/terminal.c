@@ -12,6 +12,13 @@
 #include <virtual_memory_helper.h>
 #include <virtual_memory_defines.h>
 
+/** @brief  Sets the terminal print color for any future output to the console
+ *
+ *  @param  color   A color code
+ *
+ *  @return 0 on success, a negative number if color does not specify a valid
+ *          color 
+ */
 int kern_set_term_color(int color) {
   eff_mutex_lock(&kernel.console_mutex);
   int ret = set_terminal_color(color);
@@ -19,6 +26,13 @@ int kern_set_term_color(int color) {
   return ret;
 }
 
+/** @brief  Sets the cursor to the location (row, col)
+ *
+ *  @param  row   The new cursor's row
+ *  @param  col   The new cursor's column
+ *
+ *  @return 0 on success, a negative number if the location is invalid
+ */
 int kern_set_cursor_pos(int row, int col) {
   eff_mutex_lock(&kernel.console_mutex);
   int ret = set_cursor(row, col);
@@ -26,6 +40,15 @@ int kern_set_cursor_pos(int row, int col) {
   return ret;
 }
 
+/** @brief  Writes the current location of the cursor to the integers addressed 
+ *          by the two arguments
+ *
+ *  @param  row   An address where to store the cursos's row
+ *  @param  col   An address where to store the cursos's column
+ *
+ *  @return 0 on success, a negative number if either argument is invalid (in
+ *          that case the values of both integers are undefined)
+ */
 int kern_get_cursor_pos(int *row, int *col) {
 
   if (is_buffer_valid((unsigned int)row, sizeof(int), READ_WRITE) < 0 ||

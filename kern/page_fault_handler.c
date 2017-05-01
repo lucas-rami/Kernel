@@ -1,6 +1,6 @@
 /** @file page_fault_handler.c
- *  @brief  This file contains the definition for the page fault handler and the
- *          function to register the page fault handler in the IDT
+ *  @brief  This file contains the definition for the page fault handler and
+ *          the function to register the page fault handler in the IDT
  *  @author akanjani, lramire1
  */
 
@@ -42,15 +42,11 @@ int page_fault_init(void) {
  */
 void page_fault_c_handler(char *stack_ptr) {
 
-  lprintf("\tpage_fault_c_handler(): Page fault @ %p", (void*) get_cr2());
 
   if (allocate_frame_if_address_requested(get_cr2()) < 0) {
 
     // Calls the user-registered handler, if any
     create_stack_sw_exception(SWEXN_CAUSE_PAGEFAULT, stack_ptr);
-
-    lprintf("Page fault not handled! Setting status -2 and killing the thread");
-    MAGIC_BREAK;
 
     // Set the task's exit status and kill the thread 
     kern_set_status(EXCEPTION_EXIT_STATUS);
@@ -58,24 +54,5 @@ void page_fault_c_handler(char *stack_ptr) {
   }
   
   // The page fault was because of the ZFOD system, we can return to user-space
-
- lprintf("\tpage_fault_c_handler(): The frame allocation was successfull");
-  // Re run the instruction
-
-  // Get the page table base register from the register cr3
-  //
-  // Figure out the correct offset and check if the entry is valid
-  // if not, call malloc to create a new page table entry and set the
-  // address of the new entry in the page directory and set the valid
-  // bit and continue
-  //
-  // Go at the correct offset in the page table and check whether the
-  // entry is valid or not
-  // If it is valid, why was there a page fault?
-  //
-  // Allocate a new frame from the bit map and set it to be allocated
-  // copy its address to the page table entry and set the page table entry
-  // as valid now
-  //
   return;
 }

@@ -66,6 +66,7 @@
 
 /* Constants for is_buffer_valid() function */
 #define READ_ONLY 0
-#define READ_WRITE 1
+#define AT_LEAST_READ 1
+#define READ_WRITE 2
 
 #endif /* _VIRTUAL_MEMORY_DEFINES_H_ */

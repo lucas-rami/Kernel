@@ -19,9 +19,9 @@
  *  - the offset is bigger than the file's size
  *  - no file exists with the given filename
  *
- *  The function assumes that the buffer validity has been checked before by the
- *  invoking thread. The buffer should exist within the current task's address
- *  space and be big enough to contain size bytes.
+ *  The function assumes that the buffer validity has been checked before by
+ *  the invoking thread. The buffer should exist within the current task's
+ *  address space and be big enough to contain size bytes.
  *
  *  @param  filename   The name of the file to copy data from
  *  @param  offset     The location in the file to begin copying from

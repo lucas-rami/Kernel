@@ -28,7 +28,6 @@
 // Debugging
 #include <simics.h>
 
-// NOTE: Temporary
 #define ESP 0xFFFFFFFF
 #define TRUE 1
 #define FALSE 0
@@ -36,8 +35,8 @@
 /* Number of registers poped during a popa instruction */
 #define NB_REGISTERS_POPA 8
 
-/** @brief  Creates a task from an executable, should only be used for the first
- *          task created in the kernel
+/** @brief  Creates a task from an executable, should only be used for the
+ *          first task created in the kernel
  *
  *  The function creates evertying necessary for the first task in the kernel
  *  to run. The function get the ELF header for the given task name, allocates
@@ -108,9 +107,8 @@ int create_task_from_executable(char *task_name) {
   char *argv[2];
   argv[0] = task_name;
   argv[1] = NULL;
-  uint32_t stack_top = (uint32_t) load_args_for_new_program(argv, (unsigned int *)get_cr3(), 1);
-
-  lprintf("\ttask_create(): Setting the init_cr3 as %p", cr3);
+  uint32_t stack_top = 
+    (uint32_t)load_args_for_new_program(argv, (unsigned int *)get_cr3(), 1);
 
   // Set the created task as the kernel's init task
   kernel.init_cr3 = (uint32_t)cr3;
@@ -209,8 +207,6 @@ unsigned int request_frames_needed_by_program(simple_elf_t *elf) {
   total_frames_reqd += (dataend/PAGE_SIZE) + 1 - (datastart/PAGE_SIZE);
   total_frames_reqd += (bssend/PAGE_SIZE) + 1 - (bssstart/PAGE_SIZE);
 
-  // lprintf("The number of frames reqd are %u", total_frames_reqd - reduce_count + 1);
-  
   // Adding one frame for the stack
   total_frames_reqd++;
   total_frames_reqd -= reduce_count;
@@ -225,7 +221,7 @@ unsigned int request_frames_needed_by_program(simple_elf_t *elf) {
 
 /** @brief  Loads the ELF header of a given task
  *
- *  The function checks that the task exists and that the ELF header associated 
+ *  The function checks that the task exists and the ELF header associated 
  *  to this task is valid. It returns an error if the ELF does not exists or is
  *  invalid. On success the elf argument is populated with the task sections
  *  information.

@@ -44,8 +44,6 @@ int bitmap_init(bitmap_t *map, int length) {
     return -1;
   }
 
-  // lprintf("Bitmap mutex is %p", &map->mp);
-
   // Memset the bitmap to BITMAP_UNALLOCATED
   memset(map->arr, BITMAP_UNALLOCATED, sizeof(uint8_t) * length);
 
@@ -156,7 +154,7 @@ int unset_bit(bitmap_t *map, int index) {
   int actual_index = (index / BITS_IN_UINT8_T);
   int bit_pos = (index % BITS_IN_UINT8_T);
   map->arr[actual_index] &= 
-                        (~(BITMAP_ALLOCATED << (BITS_IN_UINT8_T - bit_pos - 1)));
+    (~(BITMAP_ALLOCATED << (BITS_IN_UINT8_T - bit_pos - 1)));
 
   eff_mutex_unlock(&map->mp);    
   return 0;

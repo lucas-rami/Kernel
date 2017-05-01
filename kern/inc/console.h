@@ -4,7 +4,7 @@
  *  This contains the prototypes and global variables for the console
  *  driver
  *
- *  @author Michael Berman (mberman)
+ *  @author akanjani, lramire1
  *  @bug No known bugs.
  */
 
@@ -139,11 +139,22 @@ void draw_char(int row, int col, int ch, int color);
  */
 char get_char(int row, int col);
 
-// TODO: Document these
+/** @brief Initializes the console 
+ *  @return void
+ */
 void console_init();
 
+/** @brief Scrolls up the whole screen by a row
+ *  @return void
+ */
 void scroll_up();
 
+/** @brief Sets color "color" at position (row, col)
+ *  @param row Row of the character.
+ *  @param col Column of the character.
+ *  @param color The color to be printed on the screen
+ *  @return 0 on success, -1 otherwise
+ */
 int set_color_for_pixel(int row, int col, int color);
 
 

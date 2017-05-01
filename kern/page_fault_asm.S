@@ -6,9 +6,9 @@
 .global page_fault_handler
 
 page_fault_handler:
-  call save_state
-  movl %esp, %edx
-  pushl %edx
-  call page_fault_c_handler
-  addl $4, %esp
-  call restore_state_and_iret_with_errcode
+  call save_state                            // Save the state
+  movl %esp, %edx                            
+  pushl %edx                                 // Pass the esp as a parameter
+  call page_fault_c_handler                  // Call page fault c handler
+  addl $4, %esp                              // Restore esp
+  call restore_state_and_iret_with_errcode   // Restore state and iret

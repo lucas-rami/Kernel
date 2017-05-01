@@ -39,14 +39,13 @@ int mutex_init(mutex_t *mp) {
   mp->init = MUTEX_INITIALIZED;
   mp->tid_owner = -1;
 
-  lprintf("Init mutex %p", mp);
   return 0;
 }
 
 /** @brief  Destroys a mutex
  *
  *  This function destroys the mutex pointed to by mp.
- *  It is illegal for an application to use a mutex after it has been destroyed.
+ *  It is illegal for an application to use a mutex after it has been destroyed
  *  It is illegal for an application to attempt to destroy a mutex while it is
  *  locked or threads are trying to acquire it.
  *
@@ -82,10 +81,6 @@ void mutex_destroy(mutex_t *mp) {
  */
 void mutex_lock(mutex_t *mp) {
 
-  if (mp->init != MUTEX_INITIALIZED) {
-    lprintf("Mutex not init. %p", mp);
-  }
-
   // Check argument
   assert(mp != NULL && mp->init == MUTEX_INITIALIZED);
 
@@ -95,7 +90,6 @@ void mutex_lock(mutex_t *mp) {
   int my_ticket = atomic_add_and_update(&mp->next_ticket, j);
 
   while((mp->prev + 1) != my_ticket) {
-    lprintf("Yielding as the owner is %d. Thread %d should run", mp->tid_owner, mp->prev + 1);
     kern_yield(-1);
   }
 
@@ -114,10 +108,6 @@ void mutex_lock(mutex_t *mp) {
  *  @return void
  */
 void mutex_unlock(mutex_t *mp) {
-  if (mp->init != MUTEX_INITIALIZED) {
-    lprintf("Mutex not init. %p", mp);
-  }
-
   // Check argument
   assert(mp != NULL && mp->init == MUTEX_INITIALIZED);
   
@@ -154,8 +144,8 @@ int eff_mutex_init(eff_mutex_t *mp) {
 
 /** @brief  Destroys an eff_mutex
  *
- *  This function should be called only after the eff_mutex has been initialized
- *  previously with a call to eff_mutex_init(). After this call returns, one may
+ *  This function should be called only after eff_mutex has been initialized
+ *  previously with a call to eff_mutex_init(). After this call returns,one may
  *  reuse this eff_mutex by calling eff_mutex_init again.
  *
  *  @param  mp  A pointer to an eff_mutex
@@ -189,8 +179,6 @@ void eff_mutex_lock(eff_mutex_t *mp) {
     return;
   }
 
-  // lprintf("eff_mutex_lock");
-  // MAGIC_BREAK;
   // Validate parameter and the fact that the mutex is initialized
   assert(mp != NULL);
   disable_interrupts();
@@ -203,20 +191,18 @@ void eff_mutex_lock(eff_mutex_t *mp) {
     generic_node_t tmp;
     tmp.value = (void *)kernel.current_thread;
     tmp.next = NULL;
-    lprintf("Blocking current thread %d for mutex %p as the owner is %d", kernel.current_thread->tid, mp, mp->owner);
     stack_queue_enqueue(&mp->mutex_queue, &tmp);
     // This call will enable interrupts
     block_and_switch(HOLDING_MUTEX_FALSE, NULL);
   }
   mp->state = MUTEX_LOCKED;
   mp->owner = kernel.current_thread->tid;
-  // lprintf("Thread %d has the mutex %p", kernel.current_thread->tid, mp);
   enable_interrupts();
 }
 
 /** @brief  Releases the lock on the mutex
  *
- *  The function wakes up the next thread in the queue (if any) before returning
+ *  The function wakes up the next thread in the queue(if any) before returning
  *  so that another thread may take the mutex. The invoking thread should be
  *  holding this mutex before calling the function.
  *
@@ -229,14 +215,10 @@ void eff_mutex_unlock(eff_mutex_t *mp) {
     return;
   }
   assert(mp != NULL);
-  // disable_interrupts();
   generic_node_t *tmp = stack_queue_dequeue(&mp->mutex_queue);
   if (tmp) {
     kern_make_runnable(((tcb_t*)tmp->value)->tid);
-    // if (kernel.current_thread->tid != 1)
-    lprintf("Made runnable thread %d for mutex %p", ((tcb_t*)tmp->value)->tid, mp);
   }
   mp->owner = -1;
   mp->state = MUTEX_UNLOCKED;
-  // enable_interrupts();
 }

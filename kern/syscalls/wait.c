@@ -6,7 +6,6 @@
 #include <pcb.h>
 #include <kernel_state.h>
 #include <eff_mutex.h>
-#include <dynamic_queue.h>
 #include <syscalls.h>
 #include <malloc.h>
 #include <stack_queue.h>

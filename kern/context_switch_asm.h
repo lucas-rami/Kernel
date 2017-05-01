@@ -4,6 +4,9 @@
  *  @author akanjani, lramire1
  */
 
+#ifndef _CONTEXT_SWITCH_ASM_H_
+#define _CONTEXT_SWITCH_ASM_H_
+
 #include <tcb.h>
 
 /** @brief  Performs a context switch to another thread
@@ -26,3 +29,5 @@ void context_switch_asm(uint32_t *addr_from_esp, uint32_t *to_esp);
  *  @return void
  */
 void run_first_thread(uint32_t entry_point, uint32_t esp, uint32_t eflags);
+
+#endif /* _CONTEXT_SWITCH_ASM_H_ */

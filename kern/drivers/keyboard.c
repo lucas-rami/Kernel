@@ -17,7 +17,7 @@
  *  The readchar function is the one available to the user to read from the
  *  buffer storing all the characters typed from the keyboard
  *
- *  @author Anirudh Kanjani
+ *  @author akanjani, lramire1
  */
 
 #include "keyboard_asm.h"

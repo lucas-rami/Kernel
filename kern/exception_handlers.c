@@ -57,7 +57,6 @@ int exception_handlers_init() {
   for (i = 0; i < nb_exceptions; i++) {
     if (register_handler((uintptr_t)exception_handlers[i], TRAP_GATE,
         exception_idt_indices[i], USER_PRIVILEGE_LEVEL, SEGSEL_KERNEL_CS) <0) {
-      lprintf("Failed to register %u in IDT", (unsigned int)exception_idt_indices[i]);
       return -1;
     }
   }
@@ -80,7 +79,8 @@ int exception_handlers_init() {
  *  @return Does not return
  */
 void generic_exception_handler(int cause, char *stack_ptr) {
-  lprintf("Exception other than Page fault. Cause %d at address %p", cause, (char*)get_cr2());
+  lprintf("Exception other than Page fault. Cause %d at address %p", 
+          cause, (char*)get_cr2());
   
   // Execute the user-registered handler if one exists
   create_stack_sw_exception(cause, stack_ptr);

@@ -4,7 +4,7 @@
  *  This file contains the implementations of the sanity prechecks that
  *  are used by the functions in the driver library
  *
- *  @author Anirudh Kanjani
+ *  @author akanjani, lramire1
  */
 
 #include <console.h>

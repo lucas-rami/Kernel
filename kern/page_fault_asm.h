@@ -1,5 +1,5 @@
 /** @file page_fault_asm.h
- *  @brief This file contains the declaration for the page fault handler wrapper
+ *  @brief This file contains the declaration for page fault handler wrapper
  *  @author akanjani, lramire1
  */
 

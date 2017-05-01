@@ -1,7 +1,7 @@
 /** @file timer_asm.S
  *  @brief The file which contains the handler of the timer interrupt
  *
- *  @author Anirudh Kanjani
+ *  @author akanjani, lramire1
  */
 
 # Ensure that the symbol timer_interrupt_handler is accessible via C code

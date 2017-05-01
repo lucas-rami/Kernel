@@ -9,7 +9,6 @@
 #include <eff_mutex.h>
 #include <stdint.h>
 #include <linked_list.h>
-#include <dynamic_queue.h>
 #include <stack_queue.h>
 
 #define TASK_RUNNING 0

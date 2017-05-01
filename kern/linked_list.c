@@ -19,8 +19,8 @@
  *
  *  @return 0 on success, a negative error code on failure
  */
-int linked_list_init(generic_linked_list_t *list, int (*find)(void *, void *)) {
-
+int linked_list_init(generic_linked_list_t *list, int (*find)(void *, void *))
+{
   // Check validity of arguments
   if (list == NULL) {
     return -1;
@@ -98,7 +98,6 @@ void *linked_list_delete_node(generic_linked_list_t *list, void *value) {
     return NULL;
   }
 
-  // lprintf("Thread %d taking linked list lock %p", kern_gettid(), &list->mp);
   eff_mutex_lock(&list->mp);
 
   // Iterator on the list's elements
@@ -187,10 +186,12 @@ void linked_list_delete_list(generic_linked_list_t *list) {
 
   eff_mutex_lock(&list->mp);
 
+  // Iterator on the list's elements
   generic_node_t *iterator = list->head;
 
   while(iterator != NULL) {
     generic_node_t *tmp = iterator->next;
+    // free the object stored in the linked list
     free(iterator->value);
     free(iterator);
     iterator = tmp;

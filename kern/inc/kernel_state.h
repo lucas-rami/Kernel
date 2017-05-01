@@ -53,8 +53,10 @@ typedef struct {
 
 typedef struct {
 
+  /** @brief  The mutex to protect the queue */
   eff_mutex_t mp;
 
+  /** @brief  The queue of memory to be freed */
   stack_queue_t zombie_memory;
 
 } garbage_collector_t;

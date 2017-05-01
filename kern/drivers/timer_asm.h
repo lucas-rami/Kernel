@@ -2,7 +2,7 @@
  *  @brief The file which contains the definition of the handler of the 
  *   timer interrupt
  *
- *  @author Anirudh Kanjani
+ *  @author akanjani, lramire1
  */
 
 #ifndef __TIMER_ASM_H_

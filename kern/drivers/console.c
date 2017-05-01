@@ -10,7 +10,7 @@
  *  the cursor, change the default color of the words on the screen and 
  *  reading a value from a position on the screen.
  *
- *  @author Anirudh Kanjani
+ *  @author akanjani, lramire1
  */
 
 /* The type include */

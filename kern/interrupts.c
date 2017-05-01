@@ -6,7 +6,7 @@
  *  register_handler function which help the user to setup their timer,
  *  keyboard interrupts and the console.
  *
- *  @author Anirudh Kanjani
+ *  @author akanjani, lramire1
  */
 
 #include <drivers/timer_asm.h>
@@ -62,8 +62,8 @@ int handler_install(void (*tickback)(unsigned int)) {
  *  @param  handler_function  Pointer to the interrupt handler function
  *  @param  gate_type         A uint8_t type specifying the type of the gate
  *                            i.e. interrupt/trap etc.
- *  @param  idt_offset        Offset to the starting address of the IDT for this
- *                            interrupt
+ *  @param  idt_offset        Offset to the starting address of the IDT for
+ *                            this interrupt
  *  @param  privilege_level   The uint8_t type specifying the privilege_level
  *                            of the handler
  *  @param  segment           A uint16_t specifying the segment to be selected 
