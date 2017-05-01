@@ -1,3 +1,9 @@
+/** @file vanish.c
+ *  @brief  This file contains the definition for kern_vanish() system call
+ *          and its helper function
+ *  @author akanjani, lramire1
+ */
+
 #include <hash_table.h>
 #include <kernel_state.h>
 #include <eff_mutex.h>
@@ -22,43 +28,39 @@
 #define LAST_THREAD_FALSE 0
 #define LAST_THREAD_TRUE 1
 
+/** @brief  Terminates execution of the calling thread “immediately.” 
+ *
+ *   If the invoking thread is the last thread in its task, the kernel 
+ *   deallocates all resources in use by the task and makes the exit status 
+ *   of the task available to the parent task (the task which created this 
+ *   task using fork()) via wait(). If the parent task is no longer running, 
+ *   the exit status of the task is made available to the kernel-launched 
+ *   “init” task instead. The statuses of any child tasks that have not 
+ *   been collected via wait() are made available to the 
+ *   kernel-launched “init” task.
+ *
+ *  @return  void
+ *
+ */
 void kern_vanish() {
-  // Do the opposite of kern_thread_fork
-  // Destroy the tcb
-  // Call the grabage collector
-  // Is mutex_lock(&kernel.mutex) reqd?
-  //lprintf("Kern vanish");
-  // lprintf("TID %d", kernel.current_thread->tid);
-  // hash_table_remove_element(&kernel.tcbs, kernel.current_thread);
-  // Add the tcb to the garbage collector list
-  // Add the kernel stack for this thread to the garbage collector
-  lprintf("Vanish %d", kernel.current_thread->tid);
 
-  // Garbage collect all tcbs and kernel stacks added to the queues
-  /*eff_mutex_lock(&kernel.gc.mp);
-  generic_node_t *delete_me;
-  while((delete_me = stack_queue_dequeue(&kernel.gc.zombie_memory)) != NULL) {
-    lprintf("Freeing %p", (tcb_t*)delete_me->value);
-    free((tcb_t*)delete_me->value);
-  }
-  eff_mutex_unlock(&kernel.gc.mp);
-  */
   int is_last_thread = LAST_THREAD_FALSE;
 
   pcb_t *curr_task = kernel.current_thread->task;
 
-  lprintf("Taking curr task's mutex %p", &curr_task->mutex);
   eff_mutex_lock(&curr_task->mutex);
   if (curr_task->num_of_threads <= 1) {
     is_last_thread = LAST_THREAD_TRUE;
     curr_task->task_state = EXITED;
   }
-  lprintf("Unlocking curr task's mutex %p", &curr_task->mutex);
+
   eff_mutex_unlock(&curr_task->mutex);
 
   if (is_last_thread == LAST_THREAD_TRUE) {
-    lprintf("Taking curr task's list mutex %p", &curr_task->list_mutex);
+    // Last thread vanishing
+    
     eff_mutex_lock(&curr_task->list_mutex);
+
     // Mark all running children's parent as init
     generic_node_t *temp = curr_task->running_children.head;
     while(temp != NULL) {
@@ -68,49 +70,31 @@ void kern_vanish() {
       free(temp);
       temp = next;
     }
-    lprintf("Leaving curr task's list mutex %p", &curr_task->list_mutex);
+
     eff_mutex_unlock(&curr_task->list_mutex);
 
     // Update number of running children for init
-    lprintf("Taking init's list mutex %p", &kernel.init_task->list_mutex);
     eff_mutex_lock(&kernel.init_task->list_mutex);
     kernel.init_task->num_running_children += curr_task->num_running_children;
-    lprintf("Unlocking init's list mutex %p", &kernel.init_task->list_mutex);
     eff_mutex_unlock(&kernel.init_task->list_mutex);
     
-    // Free up the virtual memory. Switch to the init's cr3 to make kernel code
-    // run
-    // lprintf("Setting cr3 as %d", (int)kernel.init_cr3);
-    // TODO: Change this so that only a task has cr3
     unsigned int *cr3 = (unsigned int *)kernel.current_thread->cr3;
-    // TODO: Change this to task again when above is fixed
     kernel.current_thread->cr3 = kernel.init_cr3;
-    // lprintf("Setting cr3 as %p", (uint32_t*)kernel.init_cr3);
-    // disable_interrupts();
-    // enable_interrupts();
     set_cr3(kernel.init_cr3);
-    lprintf("Free address space called with cr3 %p", cr3);
-    // enable_interrupts();
     free_address_space(cr3, KERNEL_AND_USER_SPACE);
-    lprintf("Freed address space");
-    lprintf("Taking kernel mutex %p", &kernel.mutex);
 
     release_frames(curr_task->num_of_frames_requested);
 
     eff_mutex_unlock(&kernel.mutex);
 
-    // TODO: Delete the linked list allocations which we store for new pages
+    // Delete the linked list allocations which we store for new pages
     linked_list_delete_list(&kernel.current_thread->task->allocations);
-    // lprintf("Linked list deleted for new_pages");
-    // MAGIC_BREAK;
 
-    lprintf("Taking curr taksk's list mutex %p", &curr_task->list_mutex);
     eff_mutex_lock(&curr_task->list_mutex);
 
     generic_node_t *curr_zombie_list = curr_task->zombie_children.head;
 
     if (curr_zombie_list != NULL) {
-      lprintf("Taking init's list mutex %p", &kernel.init_task->list_mutex);
       eff_mutex_lock(&kernel.init_task->list_mutex);
       generic_node_t *init_zombie_tail = kernel.init_task->zombie_children.tail;
       if (init_zombie_tail == NULL) {
@@ -118,20 +102,15 @@ void kern_vanish() {
       } else {
         init_zombie_tail->next = curr_zombie_list;
       }
-      lprintf("Unlocking init's list mutex %p", &kernel.init_task->list_mutex);
       eff_mutex_unlock(&kernel.init_task->list_mutex);
     }
 
-    lprintf("Leaving curr taksk's list mutex %p", &curr_task->list_mutex);
     eff_mutex_unlock(&curr_task->list_mutex);
 
-
-    lprintf("Modifying the parent now. Mutex %p", &curr_task->parent->list_mutex);
     eff_mutex_lock(&curr_task->parent->list_mutex);
-    lprintf("Took a lock on parent");
     
     // Remove yourself from the running queue of the parent
-    // Even if I am not in the linked list, this function will have no 
+    // Even if the task is not in the linked list, this function will have no 
     // side effect
     linked_list_delete_node(&curr_task->parent->running_children, curr_task);
 
@@ -141,7 +120,6 @@ void kern_vanish() {
       generic_node_t new_zombie = {curr_task, NULL};
       stack_queue_enqueue(&curr_task->parent->zombie_children, &new_zombie);
       curr_task->last_thread_esp0 = kernel.current_thread->esp0 - PAGE_SIZE;
-      // lprintf("Adding task %p %d to %p %d zombie children", curr_task, curr_task->tid, curr_task->parent, curr_task->parent->tid);
     } else {
       // At least one thread is waiting in my parent process
       generic_node_t *wait_thread_node = stack_queue_dequeue(&curr_task->parent->waiting_threads);
@@ -153,28 +131,18 @@ void kern_vanish() {
       curr_task->parent->num_running_children--;
       curr_task->parent->num_waiting_threads--;
 
-      // kern_make_runnable(wait_thread->tid);
-      // lprintf("Current thread %d. Made runnable %d", kernel.current_thread->tid, wait_thread->tid);
-     /* < 0) {
-        lprintf("Make runnable failed. Current thread %d, mkr thread %d", kernel.current_thread->tid, wait_thread->tid);
-      }*/
       while (kern_make_runnable(wait_thread->tid) < 0) {
         lprintf("Make runnable failing");
       }
-      // Populate the address of the zombie block in the tcb of wait thread
-      // Make runnable the wait thread
     }
   } 
 
-  lprintf("Removing tcb for thread %d", kernel.current_thread->tid);
   hash_table_remove_element(&kernel.tcbs, kernel.current_thread);
-  lprintf("Removed tcb for thread %d", kernel.current_thread->tid);
-  // TODO: What about the PCB and the kernel stack. How do you delete those?
+
   eff_mutex_lock(&kernel.gc.mp);
 
   generic_node_t *delete_zombie_mem;
   while((delete_zombie_mem = stack_queue_dequeue(&kernel.gc.zombie_memory)) != NULL) {
-    lprintf("Freeing %p", (tcb_t*)delete_zombie_mem->value);
     free((tcb_t*)delete_zombie_mem->value);
   }
 
@@ -182,7 +150,7 @@ void kern_vanish() {
   tmp_delete.value = kernel.current_thread;
   tmp_delete.next = NULL;
   stack_queue_enqueue(&kernel.gc.zombie_memory, &tmp_delete);
-  lprintf("Adding %p to gc list", (char*)(kernel.current_thread->esp0 & ~(PAGE_SIZE - 1)));
+
   if (is_last_thread != LAST_THREAD_TRUE) {
     // The stack of the last thread will be freed by the wait call
     generic_node_t tmp_delete2;
@@ -190,17 +158,12 @@ void kern_vanish() {
     tmp_delete2.next = NULL;
     stack_queue_enqueue(&kernel.gc.zombie_memory, &tmp_delete2);
   }
-  lprintf("The queue now is. Kernel stack is %p ", (char*)kernel.current_thread->esp0);
-  generic_node_t *print_tmp = kernel.gc.zombie_memory.head;
-  while(print_tmp) {
-    lprintf("The value is %p", (char*)print_tmp->value);
-    print_tmp = print_tmp->next;
-  }
+
   disable_interrupts();
+
   // Interrupts are disabled so no one can delete this kernel stack/tcb before context switch
   eff_mutex_unlock(&kernel.gc.mp);
   if (is_last_thread == LAST_THREAD_TRUE) {
-    lprintf("Unlocking parent's list mutex %p", &curr_task->parent->list_mutex);
     eff_mutex_unlock(&curr_task->parent->list_mutex);
   }
 

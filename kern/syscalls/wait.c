@@ -1,3 +1,9 @@
+/** @file wait.c
+ *  @brief  This file contains the definition for kern_wait() system call and
+ *          its helper function
+ *  @author akanjani, lramire1
+ */
+
 #include <virtual_memory.h>
 #include <virtual_memory_defines.h>
 #include <stdint.h>
@@ -11,44 +17,56 @@
 #include <stack_queue.h>
 #include <scheduler.h>
 
+/** @brief Collects the exit status of a task and stores it in the integer 
+ *         referenced by status ptr.
+ *
+ *   The wait() system call may be invoked simultaneously by any number of 
+ *   threads in a task; exited child tasks may be matched to wait()’ing 
+ *   threads in any non-pathological way. Threads
+ *   which cannot collect an already-exited child task when there exist child
+ *   tasks which have not yet exited will generally block until a child task 
+ *   exits and collect the status of an exited child
+ *   task. However, threads which will definitely not be able to collect the 
+ *   status of an exited child task in the future must not block forever; 
+ *   in that case, wait() will return an integer error code less than zero.
+ *   The invoking thread may specify a status ptr parameter of zero (NULL) 
+ *   to indicate that it wishes to collect the ID of an exited task but 
+ *   wishes to ignore the exit status of that task. Otherwise, if the status 
+ *   ptr parameter does not refer to writable memory, wait() will return
+ *   an integer error code less than zero instead of collecting a child task.
+ *
+ *  @param  status_ptr   The pointer to the integer where the status of the 
+ *                       exited task should be stored 
+ *
+ *  @return  int  Thread ID of the original thread of the exiting task on 
+ *                success, -1 otherwise
+ *
+ */
 int kern_wait(int *status_ptr) {
   
-  // // Validation of args
-  // if (is_buffer_valid((unsigned int)&status_ptr, sizeof(uintptr_t)) < 0) {
-  //   // status ptr isn't a valid memory address
-  //   lprintf("kern_wait(): Invalid args");
-  // }
-
-  // If number of running children is less than or equal
-  // to number of waiting threads, return err
+  // Argument validation
   if (status_ptr != NULL &&
       is_buffer_valid((unsigned int)status_ptr, sizeof(int), READ_WRITE) < 0) {
     lprintf("The address status_ptr isn't valid");
     return -1;
   }
   
-  
-  lprintf("\tkern_wait(): Thread %d waiting", kernel.current_thread->tid);
-  
-  // Check if this thread will wait infinitely 
   pcb_t *curr_task = kernel.current_thread->task;
-  lprintf("Taking list mutex %p for task", &curr_task->list_mutex);
   eff_mutex_lock(&curr_task->list_mutex);
-  // lprintf("Taken list mutex %p for task", &curr_task->list_mutex);
-  lprintf("Waiting threads %d running children %d", (int)curr_task->num_waiting_threads, (int)curr_task->num_running_children);
+
+  // Check if this thread will wait infinitely 
   if (curr_task->num_waiting_threads >= curr_task->num_running_children) {
     // This thread will wait infinitely
-    lprintf("Waitin children equals running children. Returning -1");
+    lprintf("Waiting children equals running children");
     eff_mutex_unlock(&curr_task->list_mutex);
-    lprintf("Waitin children equals running children. Returning -1. Mutex unlocked");
     return -1;
   }
   
   if (curr_task->zombie_children.head != NULL) {
-    lprintf("At least 1 zombie child present");
     
     // Remove the zombie child
-    generic_node_t * zombie_child_node = stack_queue_dequeue(&curr_task->zombie_children);
+    generic_node_t * zombie_child_node = 
+      stack_queue_dequeue(&curr_task->zombie_children);
     if (zombie_child_node == NULL) {
       lprintf("kern_wait(): zombie queue delete failed");
       return -1;
@@ -56,72 +74,73 @@ int kern_wait(int *status_ptr) {
 
     pcb_t* zombie_child = zombie_child_node->value;
 
+    // Decrease the count of running or zombie children for this task
     curr_task->num_running_children--;
     eff_mutex_unlock(&curr_task->list_mutex);
 
     if (status_ptr != NULL) {
+      // Set the status_ptr if it isn't NULL
       *status_ptr = zombie_child->return_status;
     }
-    int ret = zombie_child->original_thread_id;
-    
-    // TODO: Free kernel stack of the last thread
-    // TODO: Destroy the mutexes and everything?
-    lprintf("Freeing the pcb %p of thread %d. My tid %d.", zombie_child, zombie_child->original_thread_id, kernel.current_thread->tid);
-    hash_table_remove_element(&kernel.pcbs, zombie_child);
-    eff_mutex_lock(&kernel.gc.mp);
-    generic_node_t *delete_zombie_mem;
-    while((delete_zombie_mem = stack_queue_dequeue(&kernel.gc.zombie_memory)) != NULL) {
-      lprintf("Freeing %p", (tcb_t*)delete_zombie_mem->value);
-      free((tcb_t*)delete_zombie_mem->value);
-    }
-    eff_mutex_unlock(&kernel.gc.mp);
 
-    lprintf("Freeing %p", (char*)zombie_child->last_thread_esp0);
-    char *delete_me = (char*)zombie_child->last_thread_esp0;
-    lprintf("Freeing %p", zombie_child);
-    free(zombie_child);
-    free(delete_me);
-    lprintf("Free returned");
- 
+    // Set the return value as original thread id of the zombie child
+    int ret = zombie_child->original_thread_id;
+
+    // Cleanup the zombie
+    cleanup_process(zombie_child);
+    
     return ret;
   }
 
-  curr_task->num_waiting_threads++;
-  lprintf("No zombie child");
   // No zombie children at the time
   // Wait for at least one thread to vanish
+  curr_task->num_waiting_threads++;
 
   // Enqueue myself in the the queue of waiting threads
   generic_node_t new_waiting = {kernel.current_thread, NULL};
   stack_queue_enqueue(&curr_task->waiting_threads, &new_waiting);
   
-  // eff_mutex_unlock(&curr_task->list_mutex);
-  lprintf("Reaching there");
-  lprintf("Calling kern_deschedule waiting for thread %d", kernel.current_thread->tid);
+  // Block this thread
   block_and_switch(HOLDING_MUTEX_TRUE, &curr_task->list_mutex);
-  // kern_deschedule(&x);
-  lprintf("SHOULDNT PRINT UNTIL THE FIRST ONE EXITS");
   
   if (status_ptr != NULL) {
+    // Set the status ptr if not NULL
     *status_ptr = kernel.current_thread->reaped_task->return_status;
   }
+
+  // Set the return value as the original thread id of the zombie task
   int ret = kernel.current_thread->reaped_task->original_thread_id;
 
-  // TODO: Free kernel stack of the last thread
-  lprintf("Freeing pcb of the reaped task. My tid %d", kernel.current_thread->tid);
-  hash_table_remove_element(&kernel.pcbs, kernel.current_thread->reaped_task);
-  eff_mutex_lock(&kernel.gc.mp);
-  generic_node_t *delete_zombie_mem;
-  while((delete_zombie_mem = stack_queue_dequeue(&kernel.gc.zombie_memory)) != NULL) {
-    lprintf("Freeing %p", (tcb_t*)delete_zombie_mem->value);
-    free((tcb_t*)delete_zombie_mem->value);
-  }
-  eff_mutex_unlock(&kernel.gc.mp);
-  char *delete_me = (char*)kernel.current_thread->reaped_task->last_thread_esp0;
-  lprintf("Will free kernel stack %p for thread %d", (char*)kernel.current_thread->reaped_task->last_thread_esp0, kernel.current_thread->tid);
-  free(kernel.current_thread->reaped_task);
-  free(delete_me);
-  lprintf("Free returned");
+  // Cleanup the exited process
+  cleanup_process(kernel.current_thread->reaped_task);
 
   return ret;
 }
+
+/** @brief  Cleans up the kernel stack and the pcb of the exited thread
+ *
+ *  @param  task  A pointer to the pcb of the exited thread
+ *
+ *  @return  void
+ *
+ */
+void cleanup_process(pcb_t *task) {
+  // Remove element from the hash table
+  hash_table_remove_element(&kernel.pcbs, task);
+
+  // Free everything in the garbage collector queue
+  eff_mutex_lock(&kernel.gc.mp);
+  generic_node_t *delete_zombie_mem;
+  while((delete_zombie_mem = stack_queue_dequeue(&kernel.gc.zombie_memory)) 
+        != NULL) {
+    free((tcb_t*)delete_zombie_mem->value);
+  }
+  eff_mutex_unlock(&kernel.gc.mp);
+
+  // Extract the stack pointer start addr from the exited task
+  char *delete_me = (char*)task->last_thread_esp0;
+
+  // Free the pcb and the kernel stack
+  free(task);
+  free(delete_me);
+ }

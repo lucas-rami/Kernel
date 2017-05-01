@@ -58,7 +58,6 @@ static int exec_prechecks(char *execname, char **argvec);
  *              wrong, an integer error code less than zero will be returned.
  */
 int kern_exec(char *execname, char **argvec) {
-  lprintf("exec");
 
   int count = 0;
   // Validate all arguments
@@ -82,7 +81,6 @@ int kern_exec(char *execname, char **argvec) {
     return -1;
   }
  
-  lprintf("Setting up vm for tid %d", kernel.current_thread->tid);
   unsigned int *cr3 = NULL;
 
   // Create the new address space
@@ -92,11 +90,8 @@ int kern_exec(char *execname, char **argvec) {
     return -1;
   }
 
-  lprintf("Set up vm complete for tid %d", kernel.current_thread->tid);
-
   // Load the arguments in the new address space
   char *new_stack_addr = load_args_for_new_program(argvec, old_cr3, count);
-  lprintf("Loaded args for new program");
 
   // Update invoking thread's TCB
   tcb_t *curr_tcb = kernel.current_thread;
@@ -107,11 +102,8 @@ int kern_exec(char *execname, char **argvec) {
   curr_tcb->swexn_values.arg = NULL;
 
 
-  lprintf("Calling free address space");
   // Free the entire old address space
   free_address_space(old_cr3, KERNEL_AND_USER_SPACE);
-
-  lprintf("Returned from free address space. Should go to execed code");
 
   // Run the new program
   run_first_thread(elf.e_entry, (uint32_t)new_stack_addr, get_eflags());

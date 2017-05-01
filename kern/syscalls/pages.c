@@ -171,7 +171,6 @@ static int free_frames_zfod(void* base) {
   // Free the frames
   free_frames_range((unsigned int) base, len);
 
-  // TODO: make this atomic
   eff_mutex_lock(&kernel.current_thread->mutex);
   kernel.current_thread->num_of_frames_requested -= (len/PAGE_SIZE);
   eff_mutex_unlock(&kernel.current_thread->mutex);

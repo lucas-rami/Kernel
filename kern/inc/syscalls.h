@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <video_defines.h>
 #include <tcb.h>
+#include <pcb.h>
 
 int kern_gettid();
 
@@ -56,6 +57,7 @@ int kern_wait(int *status_ptr);
 
 /* Vanish call */
 void kern_vanish(void);
+void cleanup_process(pcb_t *task);
 
 /* Sleep */
 int kern_sleep(int ticks);

@@ -12,16 +12,24 @@
 #include <cr.h>
 #include <syscalls.h>
 #include <kernel_state.h>
+#include <string.h>
+#include <stdio.h>
 
 /* Index of page fault handler in the IDT */
 #define PAGE_FAULT_IDT 0xE
+#define NB_REGISTERS_POPA 8
 
 /** @brief  Registers the page fault handler in the IDT
  *
  *  @return 0 on success, a negative number on error
  */
 int page_fault_init(void) {
-  return register_handler((uintptr_t)page_fault_handler, TRAP_GATE, 
+  // Interrupt gate is being used especially for the page fault handler
+  // as it gets information like the cr2 value and if a task gate is used
+  // that value might change if we get another page fault while handling a
+  // page fault. Interrupt gate ensures we don't end up with that race
+  // condition in our code
+  return register_handler((uintptr_t)page_fault_handler, INTERRUPT_GATE, 
       PAGE_FAULT_IDT, USER_PRIVILEGE_LEVEL, SEGSEL_KERNEL_CS);
 }
 
@@ -42,13 +50,14 @@ int page_fault_init(void) {
  */
 void page_fault_c_handler(char *stack_ptr) {
 
-
   if (allocate_frame_if_address_requested(get_cr2()) < 0) {
-
     // Calls the user-registered handler, if any
     create_stack_sw_exception(SWEXN_CAUSE_PAGEFAULT, stack_ptr);
 
+    // No exception handler installed
     // Set the task's exit status and kill the thread 
+    char err_msg[] = "Vanishing thread due to a PAGE FAULT!";
+    kern_print(strlen(err_msg), err_msg);
     kern_set_status(EXCEPTION_EXIT_STATUS);
     kern_vanish();
   }
