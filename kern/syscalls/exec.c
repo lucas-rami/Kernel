@@ -101,7 +101,6 @@ int kern_exec(char *execname, char **argvec) {
   curr_tcb->swexn_values.eip = NULL;
   curr_tcb->swexn_values.arg = NULL;
 
-
   // Free the entire old address space
   free_address_space(old_cr3, KERNEL_AND_USER_SPACE);
 
