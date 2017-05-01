@@ -59,7 +59,7 @@ int create_stack_sw_exception(unsigned int cause, char *stack_start) {
   stack_start += pointer_size;
   memcpy(ureg_start + (14 * unsigned_int_size), stack_start,
          6 * unsigned_int_size);
-
+  
   // Create a stack frame
   stack_ptr = ureg_start - pointer_size;
   *(unsigned int *)stack_ptr = (unsigned int) ureg_start;
