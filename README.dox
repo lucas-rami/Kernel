@@ -1,10 +1,71 @@
-/**
+# Pebbles Kernel - Operating Systems Design and Implementation - Project 3
 
-@mainpage 15-410 Project 3
+## 1 Features
 
-@author Name1 (id1)
-@author Name2 (id2)
+### 1.1 ZFOD
+The Pebbles Kernel does ZFOD for all frames. When a program is loaded into 
+memory for the first time, it figures out the size of each region from the
+elf file and allocates necessary frames at that instant. But, when a program
+requests more stack_space or more user space in general through the new_pages
+system call, we mark the page as requested by setting bit 9(10th bit from the 
+right) of the page table entry for this address. We also set the frame address
+as that of the zeroed out frame throughout the kernel which is initialized 
+when the kernel boots up. The permissions for this page is set to read only
+so there is no actual frame allocation until we encounter the first write 
+for this address. When we receive the first write for any such requested 
+memory, a page fault occurs and we check if the page had been requested 
+earlier by looking at bit 9 in the page table entry and if that is the case
+we allocate a new zeroed out frame and update the page table entry and 
+modify the permissions to read/write.
 
-Same drill as last time.
+ZFOD helps us in cases where the user allocates much more memory than he 
+actually needs. In that case, we will never have to waste time allocating
+and zeroing out the whole frame. We can just wait for the user to write 
+to the memory to do that thereby deferring the expensive operation and 
+only doing it when absolutely required. 
 
-*/
+### 1.2 Software Exception Handler
+The Pebbles kernel allows the user to install a software exception handler
+where the user gets a chance to handle any exceptions as they please. The 
+kernel does this by giving the user a "swexn" system call which can be 
+used to register this software exception handler. During any exception,
+the kernel has the responsibility of passing all the register values as
+it is on the exception handler stack specified by the user at the time of
+registration of the handler. The kernel makes the exception stack with the
+appropriate register values in the ureg data structure for the exception
+handler to use and run its logic. On a page fault, once we are sure that
+the address causing the page fault isn't requested by the user on an earlier
+instant, we create this exception stack for the registered handler and switch
+to running that in the user space. There, the user code handles the exception
+where they can reserve more frames using the syscall "new_pages" if the user
+program needs it.
+
+
+## 2 Syscalls
+
+### 2.1 Fork
+
+The fork system call copies the memory regions from the parent to the 
+child task. Our kernel implementation rejects a call to fork if it is done
+by a task with more than one thread running. On calling fork, the invoking
+task creates a new kernel stack, pcb and tcb for the child thread and then
+proceeds to copy the whole memory regions mapped to the child thread. As all
+threads actually use memory above a particular threshold(USER_MEM_START) and
+the memory region till that address being reserved for the kernel is directly
+mapped, we do not want to waste page tables for this directly mapped address
+space. As a result, we create the page tables for this memory region only once
+when we are creating the first task and then on forking a new child, only the
+pointers to these page tables are stored in the page directories of the child
+thereby saving us space worth 4 page sizes for each new task. After copying 
+the memory regions, we create a new stack for the child thread so it can start
+running at the exact same point as the parent but just change the value of the
+eax register which contains the return value of fork which is used to 
+distinguish between a child and a parent.
+
+A key point here is that we maintain a count of free kernel frames. Before 
+copying, we ensure that there are at least the number of frames being currently
+used by the parent so that we do not run out of memory later. This count 
+includes the frames that have been requested but haven't been actually 
+allocated along with the number of frames that the task is actually using.
+If we don't have enough free frames in the system, we fail the fork system 
+call.
