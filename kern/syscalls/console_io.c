@@ -108,10 +108,10 @@ int kern_print(int len, char *buf) {
   }
 
   // TODO: Check validity of buffer
-  // if (is_buffer_valid((unsigned int)buf, len, AT_LEAST_READ) < 0) {
-  //   lprintf("print(): Invalid buffer");     
-  //   return -1;
-  // }
+  if (is_buffer_valid((unsigned int)buf, len, AT_LEAST_READ) < 0) {
+    lprintf("print(): Invalid buffer");     
+    return -1;
+  }
   
   // Block concurrent threads
   eff_mutex_lock(&kernel.print_mutex);
