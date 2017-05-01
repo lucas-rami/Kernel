@@ -144,7 +144,6 @@ int kernel_init() {
   kernel.rl.buf = NULL;
   kernel.rl.len = 0;
   kernel.rl.caller = NULL;
-  memset(kernel.rl.key_buf, 0, CONSOLE_IO_MAX_LEN);
   kernel.rl.key_index = 0; 
 
   // Initialize the runnable thread queue

@@ -126,8 +126,7 @@ void wake_up_threads(unsigned int ticks) {
     generic_double_node_t* node = head;
     sleeper_t* sleeper = head->value;
   
-    while (node != NULL && sleeper->ticks == ticks_buffer) {
-      // TODO: is it ok for add_runnable_thread() to disable/enable interrupts 
+    while (node != NULL && sleeper->ticks == ticks_buffer) { 
       add_runnable_thread(sleeper->tcb); 
       node = node->next;
       sleeper = (node == NULL) ? NULL : node->value;

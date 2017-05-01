@@ -171,9 +171,9 @@ void keyboard_consumer() {
           // Store the character in the key buffer
           if (kernel.rl.key_index < CONSOLE_IO_MAX_LEN) {
             kernel.rl.key_buf[kernel.rl.key_index] = ch;
-            ++kernel.rl.key_index;
           }
-
+          ++kernel.rl.key_index;
+          
           break;
       }
 

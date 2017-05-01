@@ -78,9 +78,9 @@ int kern_yield(int tid) {
 int kern_deschedule(int *reject) {
 
   // TODO: Check that reject is a valid pointer
-  // if (is_buffer_valid((unsigned int)reject, sizeof(int), AT_LEAST_READ) < 0) {
-  //   return -1;
-  // }
+  if (is_buffer_valid((unsigned int)reject, sizeof(int), AT_LEAST_READ) < 0) {
+    return -1;
+  }
 
   // Lock the mutex on the thread
   eff_mutex_lock(&kernel.current_thread->mutex);
