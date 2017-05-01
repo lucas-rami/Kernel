@@ -499,14 +499,15 @@ void vm_enable() {
  *  @param  address     A virtual address (the starting address)
  *  @param  len         The length, in bytes, to check for validity (> 0)
  *  @param  read_only   Indicates whether the buffer should be in writable
- *                      pages (either READ_ONLY or READ_WRITE)
+ *                      pages (either READ_ONLY, AT_LEAST_READ or READ_WRITE)
  *
  *  @return 0 if the buffer is valid, a negative number otherwise
  */
 int is_buffer_valid(unsigned int address, int len, int read_only) {
 
   // Argument checking
-  assert(len > 0 && (read_only == READ_ONLY || read_only == READ_WRITE));
+  assert(len > 0 && (read_only == READ_ONLY || read_only == AT_LEAST_READ || 
+              read_only == READ_WRITE));
 
   // Check that the buffer is in user-space
   if (address < USER_MEM_START) {
@@ -530,8 +531,10 @@ int is_buffer_valid(unsigned int address, int len, int read_only) {
       return -1;
   }
 
-  // Check for writable page
+  // Check for rw rights
   if (read_only == READ_WRITE && !(*page_table_entry_addr & PAGE_WRITABLE)) {
+    return -1;
+  } else if(read_only == READ_ONLY && (*page_table_entry_addr & PAGE_WRITABLE)){
     return -1;
   }
 
@@ -562,8 +565,10 @@ int is_buffer_valid(unsigned int address, int len, int read_only) {
       return -1;
     }
 
-    // Check for writable page
+    // Check for rw rights
     if (read_only == READ_WRITE && !(*page_table_entry_addr & PAGE_WRITABLE)) {
+      return -1;
+    } else if(read_only == READ_ONLY && (*page_table_entry_addr & PAGE_WRITABLE)){
       return -1;
     }
 
