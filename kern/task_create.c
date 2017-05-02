@@ -113,6 +113,7 @@ int create_task_from_executable(char *task_name) {
   // Set the created task as the kernel's init task
   kernel.init_cr3 = (uint32_t)cr3;
   kernel.init_task = new_pcb;
+  kernel.keyboard_consumer_thread->cr3 = (uint32_t)cr3;
 
   // Set the number of frames requested by the task and root thread
   new_tcb->num_of_frames_requested = num_frames_requested;
