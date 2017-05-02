@@ -31,6 +31,7 @@ int kern_remove_pages(void *base);
 /* Console IO */
 int kern_readline(int len, char *buf);
 int kern_print(int len, char *buf);
+void kern_print_helper(int len, char *buf);
 int kern_getchar(void); // NOT IMPLEMENTED, ALWAYS RETURN ERROR
 
 /* Terminal */

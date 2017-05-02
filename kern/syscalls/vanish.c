@@ -134,9 +134,7 @@ void kern_vanish() {
       curr_task->parent->num_running_children--;
       curr_task->parent->num_waiting_threads--;
 
-      while (kern_make_runnable(wait_thread->tid) < 0) {
-        kern_yield(wait_thread->tid);
-      }
+      add_runnable_thread(wait_thread);
     }
   } 
 

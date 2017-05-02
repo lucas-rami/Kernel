@@ -56,8 +56,22 @@ void page_fault_c_handler(char *stack_ptr) {
 
     // No exception handler installed
     // Set the task's exit status and kill the thread 
-    char err_msg[] = "Vanishing thread due to a PAGE FAULT!";
-    kern_print(strlen(err_msg), err_msg);
+    // Register dump
+    char err_msg[] = "Vanishing thread due to a PAGE FAULT at address";
+    kern_print_helper(strlen(err_msg), err_msg);
+    char addr_string[10];
+    snprintf(addr_string, 10, "%x", (unsigned int)get_cr2());
+    kern_print_helper(strlen(addr_string), addr_string);
+    char *regs[] = {"\nedi: ", "\nesi: ", "\nebp: ", "\nesp: ", "\nebx: ", 
+                    "\nedx: ", "\necx: ", "\neax: "};
+    stack_ptr += 16;
+    int i = 0;
+    for (i = 0; i < NB_REGISTERS_POPA; i++) {
+      kern_print_helper(strlen(regs[i]), regs[i]);
+      snprintf(addr_string, 10, "%x", *((unsigned int*)stack_ptr + i));
+      kern_print_helper(strlen(addr_string), addr_string);
+    }
+
     kern_set_status(EXCEPTION_EXIT_STATUS);
     kern_vanish();
   }

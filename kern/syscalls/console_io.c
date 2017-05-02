@@ -88,10 +88,7 @@ int kern_readline(int len, char *buf) {
 
 /** @brief  Prints len bytes of memory, starting at buf, to the console
  *
- *  Outputs of two concurrent call to print() cannot be intermixed. Characters 
- *  printed to the console invoke standard newline, backspace, and scrolling 
- *  behaviors. The calling thread does not continue until all characters have
- *  been printed to the console.
+ *   Does some validation of arguments and then calls the helper
  *
  *  @param  len     The number of bytes of memory to write
  *  @param  buf     The starting memory address
@@ -111,6 +108,24 @@ int kern_print(int len, char *buf) {
     return -1;
   }
   
+  kern_print_helper(len, buf);
+  return 0;
+}
+
+/** @brief  Helps print len bytes of memory, starting at buf, to the console
+ *
+ *  Outputs of two concurrent call to print() cannot be intermixed. Characters 
+ *  printed to the console invoke standard newline, backspace, and scrolling 
+ *  behaviors. The calling thread does not continue until all characters have
+ *  been printed to the console.
+ *
+ *  @param  len     The number of bytes of memory to write
+ *  @param  buf     The starting memory address
+ *
+ *  @return void
+ */
+void kern_print_helper(int len, char *buf) {
+
   // Block concurrent threads
   eff_mutex_lock(&kernel.print_mutex);
 
@@ -134,8 +149,6 @@ int kern_print(int len, char *buf) {
 
   // Allow other threads to run
   eff_mutex_unlock(&kernel.print_mutex);
-
-  return 0;
 }
 
 /** @brief  Not implemented
