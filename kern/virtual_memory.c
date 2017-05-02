@@ -570,7 +570,8 @@ int is_buffer_valid(unsigned int address, int len, int read_only) {
     // Check for rw rights
     if (read_only == READ_WRITE && !(*page_table_entry_addr & PAGE_WRITABLE)) {
       return -1;
-    } else if(read_only == READ_ONLY && (*page_table_entry_addr & PAGE_WRITABLE)){
+    } else if(read_only == READ_ONLY && 
+                  (*page_table_entry_addr & PAGE_WRITABLE)){
       return -1;
     }
 

@@ -57,7 +57,6 @@ int kern_wait(int *status_ptr) {
   // Check if this thread will wait infinitely 
   if (curr_task->num_waiting_threads >= curr_task->num_running_children) {
     // This thread will wait infinitely
-    lprintf("Waiting children equals running children");
     eff_mutex_unlock(&curr_task->list_mutex);
     return -1;
   }

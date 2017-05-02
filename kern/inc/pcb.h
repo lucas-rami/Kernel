@@ -63,7 +63,8 @@ typedef struct pcb {
   /* @brief Queue of waiting threads */
   stack_queue_t waiting_threads;
 
-  /** @brief Mutex used to ensure atomicity when changing the above three queues */
+  /** @brief  Mutex used to ensure atomicity when changing the above 
+    *         three queues */
   eff_mutex_t list_mutex;
 
   /** @brief Mutex used to ensure atomicity when changing the task state */

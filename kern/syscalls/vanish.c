@@ -100,7 +100,8 @@ void kern_vanish() {
       generic_node_t *init_zombie_tail = kernel.init_task->zombie_children.tail;
       if (init_zombie_tail == NULL) {
         // Init has no zombie child. Make its list's head as that of mine
-        init_zombie_tail = (kernel.init_task->zombie_children.head = curr_zombie_list);
+        init_zombie_tail = 
+              (kernel.init_task->zombie_children.head = curr_zombie_list);
       } else {
         // Init at least has one zombie child. Append my list
         init_zombie_tail->next = curr_zombie_list;
@@ -125,7 +126,8 @@ void kern_vanish() {
       curr_task->last_thread_esp0 = kernel.current_thread->esp0 - PAGE_SIZE;
     } else {
       // At least one thread is waiting in my parent process
-      generic_node_t *wait_thread_node = stack_queue_dequeue(&curr_task->parent->waiting_threads);
+      generic_node_t *wait_thread_node = 
+                    stack_queue_dequeue(&curr_task->parent->waiting_threads);
       assert(wait_thread_node != NULL);
 
       tcb_t* wait_thread = wait_thread_node->value;
@@ -145,7 +147,8 @@ void kern_vanish() {
 
   // Free everything in the garbage collector queue at this time
   generic_node_t *delete_zombie_mem;
-  while((delete_zombie_mem = stack_queue_dequeue(&kernel.gc.zombie_memory)) != NULL) {
+  while((delete_zombie_mem = 
+                stack_queue_dequeue(&kernel.gc.zombie_memory)) != NULL) {
     free((tcb_t*)delete_zombie_mem->value);
   }
 

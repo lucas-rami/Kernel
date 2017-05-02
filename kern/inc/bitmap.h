@@ -24,9 +24,6 @@ typedef struct bitmap {
   
   /** @brief The bitmap's size, in bytes*/
   int size;
-  
-  /** @brief A mutex to make the bitmap implememtation thread-safe */
-  eff_mutex_t mp;
 
   /** @brief Indiactes whether the bitmap is initialized or not */
   int init;

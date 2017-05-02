@@ -73,11 +73,13 @@ typedef struct kernel {
   tcb_t *current_thread;
 
   /** @brief  Hold the task id that should be assigned to the next
-   *          task created, the value is incremented each time a task is created */
+   *          task created, the value is incremented each time a task is 
+   *          created */
   int task_id;
 
   /** @brief  Hold the thread id that should be assigned to the next
-   *          thread created, the value is incremented each time a thread is created */
+   *          thread created, the value is incremented each time a thread is 
+   *          created */
   int thread_id;
 
   /** @brief  Queue of runnable threads */

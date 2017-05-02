@@ -9,10 +9,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <atomic_ops.h>
 #include <simics.h>
 
 /* Static functions prototypes */
-static int get_bit(bitmap_t *map, int index);
+static uint8_t * get_bit(bitmap_t *map, int index);
 
 /** @brief  Initializes a bitmap
  *
@@ -35,12 +36,6 @@ int bitmap_init(bitmap_t *map, int length) {
   map->size = length;
   map->arr = malloc(sizeof(uint8_t) * length);
   if (map->arr == NULL) {
-    return -1;
-  }
-
-  // Initialize the mutex on the bitmap
-  if (eff_mutex_init(&map->mp) < 0) {
-    free(map->arr);
     return -1;
   }
 
@@ -70,9 +65,6 @@ void bitmap_destoy(bitmap_t* map) {
   // Free the bitmap
   free(map->arr);
 
-  // Destroy the mutex
-  eff_mutex_destroy(&map->mp);
-
   // Reset status
   map->init = BITMAP_UNINITIALIZED;
 }
@@ -82,18 +74,15 @@ void bitmap_destoy(bitmap_t* map) {
  *  @param  map    A bitmap
  *  @param  index  The bit's index
  *
- *  @return The bit's value on success, a negative number on error
+ *  @return The address of the uint8_t containing the bit of interest
  */
-static int get_bit(bitmap_t *map, int index) {
+uint8_t * get_bit(bitmap_t *map, int index) {
   
   // Check argument  
   assert(map != NULL && map->init == BITMAP_INITIALIZED);
 
   int actual_index = (index / BITS_IN_UINT8_T);
-  int bit_pos = (index % BITS_IN_UINT8_T);
-  int ret = map->arr[actual_index] & (1 << (BITS_IN_UINT8_T - bit_pos - 1));
-
-  return ret;
+  return &map->arr[actual_index];
 
 }
 
@@ -112,21 +101,25 @@ int set_bit(bitmap_t *map, int index) {
   // Check argument  
   assert(map != NULL && map->init == BITMAP_INITIALIZED);
 
-  eff_mutex_lock(&map->mp);
-  if (get_bit(map, index) != BITMAP_UNALLOCATED) {
-    // If the bit was already set
-    eff_mutex_unlock(&map->mp);
-    return -1;
-  }
+  int bit_pos = (index % BITS_IN_UINT8_T);
+  uint8_t mask = BITMAP_ALLOCATED << (BITS_IN_UINT8_T - bit_pos - 1);
 
   // Set the bit
-  int actual_index = (index / BITS_IN_UINT8_T);
-  int bit_pos = (index % BITS_IN_UINT8_T);
-  map->arr[actual_index] |= 
-                        (BITMAP_ALLOCATED << (BITS_IN_UINT8_T - bit_pos - 1));
+  uint8_t * val_addr = get_bit(map, index);
+  uint8_t old_val = *val_addr;
+  
+  while (!(old_val & mask)) {
+    
+    uint8_t new_val = old_val | mask;
+    if (atomic_compare_and_exchange_8(val_addr, old_val, new_val)) {
+      return 0;
+    }
 
-  eff_mutex_unlock(&map->mp);    
-  return 0;
+    old_val = *val_addr;
+
+  }
+
+  return -1;
 
 }
 
@@ -139,23 +132,19 @@ int set_bit(bitmap_t *map, int index) {
  *          was already unset
  */
 int unset_bit(bitmap_t *map, int index) {
-
+  
   // Check argument  
   assert(map != NULL && map->init == BITMAP_INITIALIZED);
 
-  eff_mutex_lock(&map->mp);
-  if (get_bit(map, index) <= 0) {
-    // If the bit was already unset    
-    eff_mutex_unlock(&map->mp);
+  int bit_pos = (index % BITS_IN_UINT8_T);
+  uint8_t mask = BITMAP_ALLOCATED << (BITS_IN_UINT8_T - bit_pos - 1);  
+
+  uint8_t* val_addr = get_bit(map, index);
+  if (!(*val_addr & mask)) {
     return -1;
   }
-    
-  // Unset the bit
-  int actual_index = (index / BITS_IN_UINT8_T);
-  int bit_pos = (index % BITS_IN_UINT8_T);
-  map->arr[actual_index] &= 
-    (~(BITMAP_ALLOCATED << (BITS_IN_UINT8_T - bit_pos - 1)));
 
-  eff_mutex_unlock(&map->mp);    
+  *val_addr &= ~mask;
+
   return 0;
 }
