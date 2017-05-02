@@ -42,4 +42,17 @@ int atomic_exchange(void* addr, uint32_t value);
 int atomic_compare_and_exchange_32(void* addr, uint32_t old_val, 
                                     uint32_t new_val);
 
+/** @brief  Atomically modifies the value pointed to by addr with new_val if
+ *          the value stored at addr is old_val   
+ *
+ *  @param  addr      The variable's address
+ *  @param  old_val   The value that we expect at addr
+ *  @param  new_val   The value to replace old_val with
+ *
+ *  @return 1 if the value stored at addr was old_val (thus the value at addr
+ *          has been changed with new_val), 0 otherwise (nothing changed)
+ */
+int atomic_compare_and_exchange_8(void* addr, uint8_t old_val, 
+                                    uint8_t new_val);
+
 #endif /* _ATOMIC_OPS_H_ */

@@ -46,7 +46,8 @@ int kern_get_cursor_pos(int *row, int *col);
 
 /* Exec calls */
 int kern_exec(char *execname, char **argvec);
-char *load_args_for_new_program(char **argvec, unsigned int *new_ptd, int count);
+char *load_args_for_new_program(char **argvec, 
+                                unsigned int *new_ptd, int count);
 
 /* swexn calls */
 int swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg);

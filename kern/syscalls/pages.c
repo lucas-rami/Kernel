@@ -125,7 +125,8 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
   }
 
   // Mark the pages as requested
-  if (mark_address_range_requested((unsigned int)base, (unsigned int)nb_pages) < 0) {
+  if (mark_address_range_requested((unsigned int)base, 
+                                    (unsigned int)nb_pages) < 0) {
     release_frames(nb_pages);
     free(new_alloc);
     linked_list_delete_node(&current_pcb->allocations, new_alloc);
@@ -147,7 +148,8 @@ static int reserve_frames_zfod(void* base, int nb_pages) {
 
 }
 
-/** @brief  Frees a memory region previously reserves usign reserve_frames_zfod()
+/** @brief  Frees a memory region previously reserves using 
+ *          reserve_frames_zfod()
  *
  *  @param  base   The base address that was used during reservation
  *

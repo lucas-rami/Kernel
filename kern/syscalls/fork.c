@@ -107,7 +107,7 @@ int kern_fork(unsigned int *esp) {
   // Add the child to the running queue
   eff_mutex_lock(&kernel.current_thread->task->list_mutex);
   kernel.current_thread->task->num_running_children++;
-  linked_list_insert_node(&kernel.current_thread->task->running_children, new_pcb);
+linked_list_insert_node(&kernel.current_thread->task->running_children,new_pcb);
   eff_mutex_unlock(&kernel.current_thread->task->list_mutex);
 
   // Craft the kernel stack for the new thread
@@ -250,7 +250,7 @@ static unsigned int * copy_memory_regions() {
 
       unsigned int *orig_page_table_addr = get_page_table_addr(orig_dir_entry);
       unsigned int *new_page_table_addr = 
-                      create_page_table(new_dir_entry, DIRECTORY_FLAGS, FIRST_TASK_FALSE);
+            create_page_table(new_dir_entry, DIRECTORY_FLAGS, FIRST_TASK_FALSE);
       
       if (is_entry_present(orig_page_table_addr) && 
           (unsigned int)get_frame_addr(orig_page_table_addr) < USER_MEM_START) {
