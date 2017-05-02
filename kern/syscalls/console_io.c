@@ -103,13 +103,11 @@ int kern_print(int len, char *buf) {
   
   // Check length validity
   if (len < 0 || len > CONSOLE_IO_MAX_LEN) {
-    lprintf("print(): Invalid length");
     return -1;
   }
 
   // Check validity of buffer
   if (is_buffer_valid((unsigned int)buf, len, AT_LEAST_READ) < 0) {
-    lprintf("print(): Invalid buffer");     
     return -1;
   }
   

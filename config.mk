@@ -34,7 +34,7 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the 410user/progs
 # directory.
 #
-410TESTS = mem_permissions readline_basic print_basic exec_basic exec_basic_helper knife peon merchant coolness fork_bomb new_pages remove_pages_test1 remove_pages_test2 swexn_basic_test swexn_cookie_monster swexn_dispatch swexn_regs swexn_stands_for_swextensible swexn_uninstall_test stack_test1 actual_wait fork_wait_bomb fork_wait wait_getpid minclone_mem sleep_test1 fork_exit_bomb make_crash make_crash_helper cho cho2 cho_variant wild_test1 yield_desc_mkrun loader_test1 loader_test2 getpid_test1 slaughter
+410TESTS = fork_test1 mem_eat_test halt_test mem_permissions readline_basic print_basic exec_basic exec_basic_helper knife peon merchant coolness fork_bomb new_pages remove_pages_test1 remove_pages_test2 swexn_basic_test swexn_cookie_monster swexn_dispatch swexn_regs swexn_stands_for_swextensible swexn_uninstall_test stack_test1 actual_wait fork_wait_bomb fork_wait wait_getpid minclone_mem sleep_test1 fork_exit_bomb make_crash make_crash_helper cho cho2 cho_variant wild_test1 yield_desc_mkrun loader_test1 loader_test2 getpid_test1 slaughter
 
 ###########################################################################
 # Test programs you have written which you wish to run
@@ -93,7 +93,7 @@ AUTOSTACK_OBJS = autostack.o page_fault_handler.o
 #
 # Kernel object files you provide in from kern/
 #
-KERNEL_OBJS = stack_queue.o virtual_memory_helper.o virtual_memory_asm.o kernel_state.o hash_table.o linked_list.o eff_mutex.o kernel.o loader.o malloc_wrappers.o interrupts.o queue.o page_fault_asm.o page_fault_handler.o virtual_memory.o bitmap.o idt_syscall.o task_create.o context_switch_asm.o context_switch.o scheduler.o atomic_ops.o sw_exception.o exception_handlers.o exception_handlers_asm.o
+KERNEL_OBJS = eff_mutex.o stack_queue.o virtual_memory_helper.o virtual_memory_asm.o kernel_state.o hash_table.o linked_list.o kernel.o loader.o malloc_wrappers.o interrupts.o queue.o page_fault_asm.o page_fault_handler.o virtual_memory.o bitmap.o idt_syscall.o task_create.o context_switch_asm.o context_switch.o scheduler.o atomic_ops.o sw_exception.o exception_handlers.o exception_handlers_asm.o
 
 # Files in drivers/
 KERNEL_OBJS += drivers/console.o drivers/keyboard.o drivers/keyboard_asm.o drivers/prechecks.o drivers/timer.o drivers/timer_asm.o
