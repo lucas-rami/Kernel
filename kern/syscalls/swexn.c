@@ -50,35 +50,35 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
 
   // TODO: debug that
   // Validation for esp3
-  // if (esp3 != NULL) {
+  if (esp3 != NULL) {
 
-  //   unsigned int exception_stack = (unsigned int)esp3;
-  //   int len = 8 + sizeof(ureg_t);
+    unsigned int exception_stack = (unsigned int)esp3;
+    int len = 8 + sizeof(ureg_t);
 
-  //   if (exception_stack < USER_MEM_START) {
-  //     return -1;
-  //   }
+    if (exception_stack < USER_MEM_START) {
+      return -1;
+    }
 
-  //   /* When creating the exception stack in create_stack_sw_exception(), we
+       /* When creating the exception stack in create_stack_sw_exception(), we
   //    * write 8 + sizeof(ureg_t) bytes on the exception stack.
   //    * We have to check that this space is writable */
-  //   exception_stack -= len;
+    exception_stack -= len;
 
-  //   if (is_buffer_valid(exception_stack, len, READ_WRITE) < 0) {
+    if (is_buffer_valid(exception_stack, len, READ_WRITE) < 0) {
   //     // Reject call if esp3 is invalid
-  //     return -1;
-  //   }
-  // }
+      return -1;
+    }
+  }
 
   // // Validation for eip
-  // if (eip != NULL) {
+  if (eip != NULL) {
 
-  //   if (is_buffer_valid((unsigned int)eip, sizeof(uintptr_t), READ_ONLY) < 0) {
+    if (is_buffer_valid((unsigned int)eip, sizeof(uintptr_t), READ_ONLY) < 0) {
   //     // Reject call if eip is invalid
-  //     return -1;
-  //   }
+      return -1;
+    }
 
-  // }
+  }
 
   // Validation for newureg
   if (newureg != NULL) {
