@@ -48,7 +48,6 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
 
   int ret = 0;
 
-  // TODO: debug that
   // Validation for esp3
   if (esp3 != NULL) {
 

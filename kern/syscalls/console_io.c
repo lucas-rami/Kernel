@@ -107,7 +107,7 @@ int kern_print(int len, char *buf) {
     return -1;
   }
 
-  // TODO: Check validity of buffer
+  // Check validity of buffer
   if (is_buffer_valid((unsigned int)buf, len, AT_LEAST_READ) < 0) {
     lprintf("print(): Invalid buffer");     
     return -1;
@@ -123,12 +123,12 @@ int kern_print(int len, char *buf) {
   int i;
   for (i = 0 ; i < len ; ++i) {
     putbyte(buf[i]);
-    // if (kernel.rl.caller != NULL) {
-    //   if (kernel.rl.key_index < CONSOLE_IO_MAX_LEN) {
-    //   kernel.rl.key_buf[kernel.rl.key_index] = buf[i];
-    // }
-    //   ++kernel.rl.key_index;
-    // }
+    if (kernel.rl.caller != NULL) {
+      if (kernel.rl.key_index < CONSOLE_IO_MAX_LEN) {
+      kernel.rl.key_buf[kernel.rl.key_index] = buf[i];
+    }
+      ++kernel.rl.key_index;
+    }
   }
 
   // Unlock the mutex on the console

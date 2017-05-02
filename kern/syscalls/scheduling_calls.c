@@ -77,7 +77,7 @@ int kern_yield(int tid) {
  */
 int kern_deschedule(int *reject) {
 
-  // TODO: Check that reject is a valid pointer
+  // Check that reject is a valid pointer
   if (is_buffer_valid((unsigned int)reject, sizeof(int), AT_LEAST_READ) < 0) {
     return -1;
   }
