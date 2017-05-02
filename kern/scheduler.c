@@ -170,9 +170,11 @@ void add_runnable_thread_noint(tcb_t *tcb) {
  *  
  *  @param  force_next_tcb The TCB of the thread to run next
  *
- *  @return void
+ *  @return 0 on success (in that case the context switch to the thread in
+ *          argument happened), a negative number if the thread passed as an
+ *          argument was not runnable at the moment of the call 
  */
-void force_next_thread(tcb_t *force_next_tcb) {
+int force_next_thread(tcb_t *force_next_tcb) {
 
   assert(kernel.current_thread != NULL && force_next_tcb != NULL &&
          kernel.init == KERNEL_INIT_TRUE);
@@ -180,7 +182,10 @@ void force_next_thread(tcb_t *force_next_tcb) {
 
   disable_interrupts();    
 
-  eff_mutex_unlock(&force_next_tcb->mutex);  
+  if (force_next_tcb->thread_state != THR_RUNNABLE) {
+    enable_interrupts();
+    return -1;
+  }
 
   kernel.current_thread->thread_state = THR_RUNNABLE;
 
@@ -206,5 +211,7 @@ void force_next_thread(tcb_t *force_next_tcb) {
   }
 
   context_switch(force_next_tcb);
+
+  return 0;
 
 }

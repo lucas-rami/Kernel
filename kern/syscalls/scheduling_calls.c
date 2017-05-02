@@ -38,14 +38,9 @@ int kern_yield(int tid) {
     tcb_t *next_thread = hash_table_get_element(&kernel.tcbs, &tmp);
 
     if (next_thread != NULL) {
-      eff_mutex_lock(&next_thread->mutex);
-
-      if (next_thread->thread_state == THR_RUNNABLE) {
-        // If the thread exists and is in the THR_RUNNABLE state, run it
-        // The mutex will be unlocked in force_next_thread()       
-        force_next_thread(next_thread);
+      if (next_thread->thread_state == THR_RUNNABLE) { 
+        return force_next_thread(next_thread);
       } else {
-        eff_mutex_unlock(&next_thread->mutex);  
         return -1;    
       }
 
