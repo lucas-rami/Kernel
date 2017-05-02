@@ -53,7 +53,7 @@ void kern_vanish() {
     is_last_thread = LAST_THREAD_TRUE;
     curr_task->task_state = EXITED;
   }
-
+  curr_task->num_of_threads--;
   eff_mutex_unlock(&curr_task->mutex);
 
   if (is_last_thread == LAST_THREAD_TRUE) {
@@ -134,7 +134,9 @@ void kern_vanish() {
       curr_task->parent->num_running_children--;
       curr_task->parent->num_waiting_threads--;
 
-      while (kern_make_runnable(wait_thread->tid) < 0);
+      while (kern_make_runnable(wait_thread->tid) < 0) {
+        kern_yield(wait_thread->tid);
+      }
     }
   } 
 

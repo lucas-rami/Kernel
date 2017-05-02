@@ -191,8 +191,7 @@ void linked_list_delete_list(generic_linked_list_t *list) {
 
   while(iterator != NULL) {
     generic_node_t *tmp = iterator->next;
-    // free the object stored in the linked list
-    free(iterator->value);
+    // free the node object
     free(iterator);
     iterator = tmp;
   }

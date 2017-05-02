@@ -71,9 +71,132 @@ If we don't have enough free frames in the system, we fail the fork system
 call.
 
 
+### 2.2 Exec
 
+The exec system call loads in a new program and overwrites the memory region
+being used by a current task. Our implementation reject a call to exec if it
+is done by a task with more than one thread running. Exec validates that the
+arguments(executable name and the argument vector) are actually part of the
+current task's memory and then loads in the program from the ELF file setting
+up its page tables. The next step is to create the stack for the execed 
+task such that its main wrapper gets the argument vector passed as a 
+parameter to the exec system call. Once we are sure exec will pass, we free 
+the address space of the invoking task and set up the kernel stack so that we
+can run the execed task next. Our implementation modifies the values on the 
+same kernel stack and after an iret, the execed task starts its execution.
+Exec also de-registers any software exception handlers that were registered
+earlier on the invoking thread.
 
-### 2.2 Sleep
+### 2.3 Swexn
+
+The swexn system call allows the user to handle exceptions through user code.
+The user has to specify the handler function, the exception stack and the 
+register values it wants the thread to have once it has exited swexn. 
+After doing some validation on the arguments passed, the system call
+registers/de-registers the exception handler based on the arguments. 
+Registering is as simple as just storing the pointers to exception stack, 
+the exception handler and a void* parameter for the handler. If the value
+of ureg passed is not NULL, the system call makes sure that the thread exits
+with the register values as specified in the argument. 
+
+### 2.4 Wait
+
+The wait system call is used to reap and cleanup the memory being used by 
+zombie tasks. The system call first validates the argument that it has
+received and then goes on to check if the current task has any zombie
+children. If so, the current thread deques the pcb of the zombie task and 
+extracts the exit status and original thread id of the zombie task as the
+wait call should fill in the status in the argument passed if it isn't NULL
+and should return the thread id of the original thread of the task that
+exited. Once we are done extracting the information we need, we free the 
+pcb of the reaped task and then the kernel stack completing our cleanup for
+the task. Before freeing the kernel stack, we ensure that we cleanup any
+memory that is in the garbage collector queue as the garbage collector queue 
+might contain pointers stored on the kernel stack of the last thread. 
+Once we are done emptying the garbage collector queue, we can safely delete
+the kernel stack for the last thread. If there is no zombie child present
+for this task, we add the current thread's tcb to the queue of waiting threads
+for this task and deschedule this thread blocking it until a child vanishes.
+Once, a thread is woken up by the child task exiting, it again repeats the 
+drill and extracts any information it needs from the pcb of the reaped task 
+and then proceeds to free the pcb and the kernel stack of the last thread
+
+### 2.5 Vanish
+
+The vanish system call is called by any thread to stop executing itself.
+If the thread isn't the last thread for this task, the system call simply 
+decrements the number of threads for this task, adds its tcb and the kernel
+stack to the garbage collector queue after freeing all the entries in the 
+garbage collector queue. This is done so that in case wait isn't called for 
+a long time, with each vanish system call we will at least delete the tcb
+and hence free up some sort of space in the kernel. After this, the tcb is
+deleted from the hash table and this thread is blocked by running the next
+thread but not putting this thread at the end of the runnable queue again.
+If in fact the thread calling vanish is the last thread of the task, we
+make the parent of all our running children as init. Then, we free up the
+memory being used by this task by freeing up the user space memory that this
+task was using. We delete everything including the page table entries and the
+directory by switching to init's page table directory as the kernel memory
+is directly mapped for all threads. Next, we delete the linked list we 
+created for keeping track of all the memory regions allocated using 
+new_pages. Next, we check if the current task has any zombie children present.
+If so, we append our zombie list to that of init so that init can reap them 
+later. Next we take a lock on the parent of the current task and remove
+this task from the running children list of the parent. Then, we check if
+there is at least one thread of my parent task waiting to reap a task. If yes,
+we dequeue the tcb of the waiting thread from the waiting threads queue of the
+parent and make it runnable after filling in the values that it would need.
+Otherwise, we add ourselves to the zombie queue of our parent hoping that it
+will reap this task sometime in the future.
+
+### 2.6 New_pages
+
+The new_pages system call can be used by the user to reserve more memory for
+itself. As our kernel does ZFOD, during new pages, we do not actually allocate
+a physical frame to the user to read/write data on. We have a zerof filled 
+frame for the entire kernel and every address requested through new_pages 
+initially has the address of this frame in its page table entry with only 
+read permissions. This is done as many users allocate much more memory than 
+they ever user and deferring the action of allocating and zeroing out a frame
+makes the implementation more efficient. During this system call, we set 
+bit 9 in the page table entry for all addresses being requested marking the
+page as one that the user has asked for in advance. If we get a page fault
+on such addresses, we allocate the frame that the user had asked for earlier
+and re-run the instruction.
+
+### 2.7 Remove_pages
+
+The remove_pages system call is used by the user to remove/deallocate memory
+it requested through new_pages. As only the starting address is given as a
+parameter to remove_pages, we have to maintain a linked list of all addresses
+allocated through the new_pages system call and the size of that region. We
+search through this linked list to find out if the argument passed to 
+remove_pages is an actual memory region allocated through new_pages. If yes,
+we remove that node from the linked list and then go on to reset bit 9
+and the page table entry for this address. This ensures that once remove_pages
+is called and then the user, tries to access the same memory address we should
+treat it as a valid page fault and not allocate a frame for it considering it
+as something that the user has requested before.
+
+### 2.8 Page fault handler
+
+The page fault handler has been made an INTERRUPT_GATE specially because we
+use a lot of register values such as cr2 during our handling of the page fault
+and if a page fault occurs while we are handling the first page fault, we 
+might end up in a race where the cr2 value might get overwritten. To avoid
+this data race, we have made page fault an INTERRUPT_GATE instead of a 
+TRAP_GATE. In our kernel, if a page fault happens, there can be three 
+scenarios. First, the page was requested by a new_pages system call and the 
+user is trying to write on it. In this scenario, we allocate a frame and 
+return from the page fault handler running the same instruction again.
+Second, the page was not requested by new_pages system call but we have a 
+software exception handler installed and we call that with the proper
+stack and it takes care of the rest. Third, the page wasn't requested through
+the new_pages system call and there is no exception handler either. In this
+case, this is a valid page fault and we print an error message on the screen
+and set the status to -2 and then call vanish for this thread.
+
+### 2.9 Sleep
 
 The sleep system calls deschedules the calling thread for at least n ticks,
 where n is provided by the function's caller. The kernel maintains a queue of 
@@ -99,7 +222,7 @@ most of the time. When a thread should be woken up on a tick, the callback
 function needs only to look at the HEAD element in the queue of sleeping
 threads as it is sorted in increasing order of remaining sleeping time.
 
-### 2.3 Readline
+### 2.10 Readline
 
 The readline() system call reads the next line from the console and copies
 it into a user provided buffer. When the function is called, the kernel checks 
@@ -116,16 +239,6 @@ procedure are made available for the next call (they will be typed in the shell
 automatically during the next call to readline()). The keyboard consumer thread
 then deschedules itself and yields to the thread descheduled on readline(), which
 will release the lock on readline() and return from the system call.
-
-
-
-
-
-
-
-
-
-
 
 
 
