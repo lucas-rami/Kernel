@@ -69,3 +69,63 @@ includes the frames that have been requested but haven't been actually
 allocated along with the number of frames that the task is actually using.
 If we don't have enough free frames in the system, we fail the fork system 
 call.
+
+
+
+
+### 2.2 Sleep
+
+The sleep system calls deschedules the calling thread for at least n ticks,
+where n is provided by the function's caller. The kernel maintains a queue of 
+sleeping threads, which is examined by the timer callback function on each timer
+interrupt. The key goal was to make this callback function runs as fast as
+possible, avoiding linear search in the sleeping threads queue.
+
+When a thread calls sleep(), the kernel will traverse the queue of sleeping
+threads and look at how much ticks remain before the timer wakes up each thread.
+The kernel will insert the invoking thread in the queue so that all threads
+closer to the HEAD have less ticks to wait than it, and so that all threads
+closer to the TAIl have more ticks to wait than it. Hence, at any time, the
+queue contains the threads in increasing number of ticks remaining before
+being woken up by the timer handler. Of course, this queue might be modifed
+bu the timer callback function, so sleep() disable interrupts before traversing
+the queue, seeking for the good position for the new thread. We trade this
+drop in performance (linear traversal with interrupts disabled) with a really
+fast timer callback function. 
+
+The timer callback is efficient because it knows whether a thread should
+be woken up by looking at only one variable, which is fast and is what happens
+most of the time. When a thread should be woken up on a tick, the callback 
+function needs only to look at the HEAD element in the queue of sleeping
+threads as it is sorted in increasing order of remaining sleeping time.
+
+### 2.3 Readline
+
+The readline() system call reads the next line from the console and copies
+it into a user provided buffer. When the function is called, the kernel checks 
+that the buffer lies within writable user-space memory, otherwise writing to
+it would cause a Page Fault. The invoking thread then has to lock a mutex before
+proceeding since each thread should waits for its turn to access the input stream.
+When the invoking thread is able to take the lock it fills a readline_t data
+structure with information about its buffer (address and length) as well as its
+TCB. The invoking thread then deschedules itself and yields to the keyboard 
+consumer kernel thread. This thread reads the queue of key events and buffers
+read characters until a '\n' is typed in, at which point it commits the content
+of its own buffer into the user-provided buffer. Characters not consumed by this 
+procedure are made available for the next call (they will be typed in the shell 
+automatically during the next call to readline()). The keyboard consumer thread
+then deschedules itself and yields to the thread descheduled on readline(), which
+will release the lock on readline() and return from the system call.
+
+
+
+
+
+
+
+
+
+
+
+
+
