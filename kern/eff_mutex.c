@@ -78,12 +78,7 @@ void eff_mutex_lock(eff_mutex_t *mp) {
   // Validate parameter and the fact that the mutex is initialized
   assert(mp != NULL);
   disable_interrupts();
-  if (mp->owner == kernel.current_thread->tid) {
-    enable_interrupts();
-    return;
-  }
-  while (mp->state == MUTEX_LOCKED) {
-    disable_interrupts();
+  if (mp->state == MUTEX_LOCKED) {
     generic_node_t tmp;
     tmp.value = (void *)kernel.current_thread;
     tmp.next = NULL;
@@ -111,10 +106,14 @@ void eff_mutex_unlock(eff_mutex_t *mp) {
     return;
   }
   assert(mp != NULL);
+  disable_interrupts();
   generic_node_t *tmp = stack_queue_dequeue(&mp->mutex_queue);
   if (tmp) {
-    kern_make_runnable(((tcb_t*)tmp->value)->tid);
+    add_runnable_thread_noint((tcb_t*)tmp->value);
+    mp->owner = ((tcb_t*)tmp->value)->tid;
+  } else {
+    mp->owner = -1;
+    mp->state = MUTEX_UNLOCKED;
   }
-  mp->owner = -1;
-  mp->state = MUTEX_UNLOCKED;
+  enable_interrupts();
 }
