@@ -127,7 +127,7 @@ void wake_up_threads(unsigned int ticks) {
     sleeper_t* sleeper = head->value;
   
     while (node != NULL && sleeper->ticks == ticks_buffer) { 
-      add_runnable_thread(sleeper->tcb); 
+      add_runnable_thread_noint(sleeper->tcb); 
       node = node->next;
       sleeper = (node == NULL) ? NULL : node->value;
     }

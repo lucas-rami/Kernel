@@ -83,7 +83,7 @@ int timer_init( void ( *tickback )( unsigned int ) )
 		// Invalid function pointer to the callback function
 		return -1;
 	}
-	if ( register_handler( (uintptr_t) timer_interrupt_handler, TRAP_GATE, 
+	if ( register_handler( (uintptr_t) timer_interrupt_handler, INTERRUPT_GATE, 
     TIMER_IDT_ENTRY, KERNEL_PRIVILEGE_LEVEL, SEGSEL_KERNEL_CS ) == -1 ) {
 		// Some error trying to register the handler
 		return -1;

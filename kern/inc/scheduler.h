@@ -16,6 +16,7 @@ tcb_t *next_thread();
 void make_runnable_and_switch();
 void block_and_switch(int holding_mutex, eff_mutex_t *mp);
 void add_runnable_thread(tcb_t *tcb);
+void add_runnable_thread_noint(tcb_t *tcb);
 void force_next_thread(tcb_t *force_next_tcb);
 
 #endif /* _SCHEDULER_H_ */

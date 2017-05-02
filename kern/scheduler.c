@@ -85,11 +85,6 @@ void block_and_switch(int holding_mutex, eff_mutex_t *mp) {
     eff_mutex_unlock(mp);
   }
 
-  if (kernel.cpu_idle == CPU_IDLE_TRUE) {
-    context_switch(next_thread());
-    return;
-  }
-
   kernel.current_thread->thread_state = THR_BLOCKED;
 
   context_switch(next_thread());
@@ -108,18 +103,16 @@ void block_and_switch(int holding_mutex, eff_mutex_t *mp) {
 void add_runnable_thread(tcb_t *tcb) {
 
   assert(tcb != NULL && kernel.init == KERNEL_INIT_TRUE);
-
-  // Reject the call if the thread is already in the runnable queue
-  if (tcb->thread_state == THR_RUNNABLE) {
-    return;
-  }
+  assert(tcb != kernel.idle_thread);
 
   disable_interrupts();
 
-  // Should not happen
-  if (tcb == kernel.idle_thread) {
-    assert(0);
+  // Reject the call if the thread is already in the runnable queue
+  if (tcb->thread_state == THR_RUNNABLE) {
+    enable_interrupts();
+    return;
   }
+
 
   tcb->thread_state = THR_RUNNABLE;
 
@@ -132,6 +125,40 @@ void add_runnable_thread(tcb_t *tcb) {
   stack_queue_enqueue(&kernel.runnable_queue, node_addr);
 
   enable_interrupts();
+
+}
+
+/** @brief  Makes a thread runnable by adding it to the runnable queue
+ *
+ *  If the thread that we are trying to make runnable is already in the 
+ *  THR_RUNNABLE state, then the function has no effect.
+ *  The only difference between this function and add_runnable_thread() is that
+ *  this one does not disable/enable interrupts, hence it should only be called
+ *  with interrupts already disabled
+ *
+ *  @param  tcb The TCB of the thread to make runnable
+ *
+ *  @return void
+ */
+void add_runnable_thread_noint(tcb_t *tcb) {
+
+  assert(tcb != NULL && kernel.init == KERNEL_INIT_TRUE);
+  assert(tcb != kernel.idle_thread);
+
+  // Reject the call if the thread is already in the runnable queue
+  if (tcb->thread_state == THR_RUNNABLE) {
+    return;
+  }
+
+  tcb->thread_state = THR_RUNNABLE;
+
+  // Create node at the lowest address of the thread's kernel stack
+  generic_node_t new_tail = {tcb, NULL};
+  generic_node_t * node_addr = (generic_node_t *)(tcb->esp0 - PAGE_SIZE);
+  *(node_addr) = new_tail;
+
+  // Enqueue the thread
+  stack_queue_enqueue(&kernel.runnable_queue, node_addr);
 
 }
 
@@ -149,17 +176,13 @@ void force_next_thread(tcb_t *force_next_tcb) {
 
   assert(kernel.current_thread != NULL && force_next_tcb != NULL &&
          kernel.init == KERNEL_INIT_TRUE);
+  assert(force_next_tcb != kernel.idle_thread);
 
   disable_interrupts();    
 
   eff_mutex_unlock(&force_next_tcb->mutex);  
 
   kernel.current_thread->thread_state = THR_RUNNABLE;
-
-  // Should not happen 
-  if (kernel.cpu_idle == CPU_IDLE_TRUE) {
-    assert(0);
-  }
 
   // Create new node for runnable queue
   generic_node_t new_tail = {kernel.current_thread, NULL};

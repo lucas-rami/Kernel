@@ -58,22 +58,22 @@ int kern_swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg) {
       return -1;
     }
 
-       /* When creating the exception stack in create_stack_sw_exception(), we
-  //    * write 8 + sizeof(ureg_t) bytes on the exception stack.
-  //    * We have to check that this space is writable */
+    /* When creating the exception stack in create_stack_sw_exception(), we
+     * write 8 + sizeof(ureg_t) bytes on the exception stack.
+     * We have to check that this space is writable */
     exception_stack -= len;
 
     if (is_buffer_valid(exception_stack, len, READ_WRITE) < 0) {
-  //     // Reject call if esp3 is invalid
+      // Reject call if esp3 is invalid
       return -1;
     }
   }
 
-  // // Validation for eip
+  // Validation for eip
   if (eip != NULL) {
 
     if (is_buffer_valid((unsigned int)eip, sizeof(uintptr_t), READ_ONLY) < 0) {
-  //     // Reject call if eip is invalid
+      // Reject call if eip is invalid
       return -1;
     }
 
