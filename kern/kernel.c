@@ -178,7 +178,9 @@ void keyboard_consumer() {
       }
 
       // Unlock the mutex on the console
-      eff_mutex_unlock(&kernel.console_mutex);
+      if (ch != '\n') {
+        eff_mutex_unlock(&kernel.console_mutex);
+      }
 
     } while (ch != '\n');
 
@@ -216,6 +218,8 @@ void keyboard_consumer() {
     // Make the descheduled thread runnable again
     tcb_t * tmp = kernel.rl.caller;
     kernel.rl.caller = NULL;
+
+    eff_mutex_unlock(&kernel.console_mutex);    
     
     disable_interrupts();
     kernel.keyboard_consumer_thread->thread_state = THR_BLOCKED;
